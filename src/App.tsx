@@ -1,0 +1,574 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSurveyStore } from './stores/surveyStore';
+import { SurveyIcon }     from './components/SurveyIcon';
+import { LangProvider, useLang } from './LangContext';
+import { strings }        from './i18n';
+import { MainTab, SurveyPoint } from './types';
+import AddNewPointScreen  from './screens/AddNewPointScreen';
+import ViewPointsScreen   from './screens/ViewPointsScreen';
+import ViewSetsScreen     from './screens/ViewSetsScreen';
+import CalculatorScreen   from './screens/CalculatorScreen';
+import SplashScreenWeb    from './screens/SplashScreenWeb';
+import LoginScreenWeb     from './screens/LoginScreenWeb';
+
+// ─── Root: wraps everything in the language provider ─────────────────────────
+export default function App() {
+  return (
+    <LangProvider>
+      <AppInner />
+    </LangProvider>
+  );
+}
+
+// ─── App state ────────────────────────────────────────────────────────────────
+type AppState = 'splash' | 'login' | 'app';
+
+function readEmail(): string | null {
+  try { return localStorage.getItem('auth:email'); } catch { return null; }
+}
+function splashAlreadyShown(): boolean {
+  try { return sessionStorage.getItem('splash:shown') === '1'; } catch { return false; }
+}
+
+// ─── Inner app (has access to useLang) ───────────────────────────────────────
+function AppInner() {
+  const { t, lang, setLang } = useLang();
+
+  // Determine initial app state
+  const [appState, setAppState] = useState<AppState>(() => {
+    if (!splashAlreadyShown()) return 'splash';
+    if (!readEmail())          return 'login';
+    return 'app';
+  });
+
+  const [email,       setEmail]       = useState<string>(() => readEmail() ?? '');
+  const [activeTab,   setActiveTab]   = useState<MainTab>('add');
+  const [editPoint,   setEditPoint]   = useState<SurveyPoint | undefined>(undefined);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const { ensureDefaultProject, activeProjectId } = useSurveyStore();
+
+  useEffect(() => { ensureDefaultProject(); }, []);
+
+  // ── Flow handlers ───────────────────────────────────────────────
+  const handleSplashDone = useCallback(() => {
+    if (!readEmail()) setAppState('login');
+    else              setAppState('app');
+  }, []);
+
+  const handleLogin = useCallback((e: string) => {
+    setEmail(e);
+    setAppState('app');
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    if (!window.confirm(t('logoutConfirm'))) return;
+    try { localStorage.removeItem('auth:email'); } catch {}
+    setEmail('');
+    setAppState('login');
+    setShowSettings(false);
+  }, [t]);
+
+  // ── Navigation ──────────────────────────────────────────────────
+  const handleEditPoint = useCallback((pt: SurveyPoint) => {
+    setEditPoint(pt);
+    setActiveTab('add');
+  }, []);
+
+  const handleEditConsumed = useCallback(() => {
+    setEditPoint(undefined);
+  }, []);
+
+  const projectId = activeProjectId ?? 'default-project';
+
+  // ── Main tab definitions (translated) ───────────────────────────
+  const MAIN_TABS: { id: MainTab; label: string }[] = [
+    { id: 'add',    label: t('tabAdd')    },
+    { id: 'points', label: t('tabPoints') },
+    { id: 'sets',   label: t('tabSets')   },
+    { id: 'calc',   label: t('tabCalc')   },
+  ];
+
+  // ── Render ──────────────────────────────────────────────────────
+  if (appState === 'splash') {
+    return <SplashScreenWeb onDone={handleSplashDone} />;
+  }
+  if (appState === 'login') {
+    return <LoginScreenWeb onLogin={handleLogin} />;
+  }
+
+  return (
+    <div style={styles.root}>
+      {/* ── Top header ──────────────────────────────────────────── */}
+      <header style={styles.header}>
+        <div style={styles.headerLeft}>
+          <SurveyIcon size={26} color="#F5C542" />
+          <span style={styles.headerTitle}>{t('appTitle')}</span>
+        </div>
+        <div style={styles.headerRight}>
+          {/* Language toggle */}
+          <button
+            style={styles.langBtn}
+            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
+            title={lang === 'en' ? strings.en.spanish : strings.es.english}
+            aria-label="Toggle language"
+          >
+            {lang === 'en' ? 'EN' : 'ES'}
+          </button>
+          {/* Settings */}
+          <button
+            style={styles.headerBtn}
+            onClick={() => setShowSettings(true)}
+            title={t('settings')}
+            aria-label={t('settings')}
+          >
+            <SettingsIcon />
+          </button>
+        </div>
+      </header>
+
+      {/* ── Main tab bar ────────────────────────────────────────── */}
+      <nav style={styles.tabBar} role="tablist">
+        {MAIN_TABS.map(tab => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              style={{
+                ...styles.tab,
+                ...(isActive ? styles.tabActive : {}),
+              }}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ── Screen content ──────────────────────────────────────── */}
+      <main style={styles.content}>
+        <div style={{ ...styles.screen, display: activeTab === 'add'    ? 'flex' : 'none' }}>
+          <AddNewPointScreen
+            projectId={projectId}
+            isVisible={activeTab === 'add'}
+            onViewPoints={() => setActiveTab('points')}
+            editPoint={editPoint}
+            onEditConsumed={handleEditConsumed}
+          />
+        </div>
+        <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
+          <ViewPointsScreen
+            projectId={projectId}
+            onEditPoint={handleEditPoint}
+          />
+        </div>
+        <div style={{ ...styles.screen, display: activeTab === 'sets'   ? 'flex' : 'none' }}>
+          <ViewSetsScreen projectId={projectId} />
+        </div>
+        <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
+          <CalculatorScreen />
+        </div>
+      </main>
+
+      {/* ── Footer ──────────────────────────────────────────────── */}
+      <footer style={styles.footer}>
+        <span>{t('appTitle')} · {t('appTagline')}</span>
+      </footer>
+
+      {/* ── Settings panel ──────────────────────────────────────── */}
+      {showSettings && (
+        <SettingsPanel
+          email={email}
+          lang={lang}
+          onSetLang={setLang}
+          onLogout={handleLogout}
+          onClose={() => setShowSettings(false)}
+          t={t}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Settings panel (bottom-sheet) ───────────────────────────────────────────
+interface SettingsPanelProps {
+  email:     string;
+  lang:      'en' | 'es';
+  onSetLang: (l: 'en' | 'es') => void;
+  onLogout:  () => void;
+  onClose:   () => void;
+  t:         (key: string) => string;
+}
+
+function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: SettingsPanelProps) {
+  return (
+    <div style={spS.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={spS.sheet}>
+        {/* Drag handle */}
+        <div style={spS.handle} />
+
+        {/* Title row */}
+        <div style={spS.titleRow}>
+          <span style={spS.title}>{t('settingsTitle')}</span>
+          <button style={spS.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        {/* ── Account section ─────────────────────────────────── */}
+        <div style={spS.section}>
+          <span style={spS.sectionLabel}>{t('settingsAccount')}</span>
+          <div style={spS.emailRow}>
+            <div style={spS.emailIcon}>@</div>
+            <div style={spS.emailBlock}>
+              <span style={spS.emailMeta}>{t('loggedInAs')}</span>
+              <span style={spS.emailVal}>{email}</span>
+            </div>
+          </div>
+          <button style={spS.logoutBtn} onClick={onLogout}>
+            {t('logout')}
+          </button>
+        </div>
+
+        {/* ── Language section ─────────────────────────────────── */}
+        <div style={spS.section}>
+          <span style={spS.sectionLabel}>{t('settingsAppearance')}</span>
+          <div style={spS.langRow}>
+            <span style={spS.langLabel}>{t('language')}</span>
+            <div style={spS.langToggleWrap}>
+              {(['en', 'es'] as const).map(l => (
+                <button
+                  key={l}
+                  style={{
+                    ...spS.langOpt,
+                    ...(lang === l ? spS.langOptActive : {}),
+                  }}
+                  onClick={() => onSetLang(l)}
+                >
+                  {l === 'en' ? t('english') : t('spanish')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Settings icon ────────────────────────────────────────────────────────────
+function SettingsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const GOLD = '#F4B02A';
+const NAVY = '#143A63';
+
+const styles: Record<string, React.CSSProperties> = {
+  root: {
+    display:       'flex',
+    flexDirection: 'column',
+    minHeight:     '100vh',
+    width:         '100%',        // lock to viewport width
+    maxWidth:      '480px',
+    margin:        '0 auto',
+    backgroundColor: '#F5F4F0',
+    boxShadow:     '0 0 40px rgba(0,0,0,0.12)',
+    overflowX:     'hidden',      // prevent any child from pushing us wider
+  },
+  header: {
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'space-between',
+    backgroundColor: NAVY,
+    padding:         '12px 16px',
+    flexShrink:      0,
+    width:           '100%',
+    boxSizing:       'border-box',
+  },
+  headerLeft: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        '10px',
+    minWidth:   0,
+  },
+  headerTitle: {
+    fontSize:      '17px',
+    fontWeight:    '700',
+    color:         '#FFFFFF',
+    letterSpacing: '-0.3px',
+    whiteSpace:    'nowrap',
+  },
+  headerRight: {
+    display:    'flex',
+    alignItems: 'center',
+    gap:        '6px',
+    flexShrink: 0,
+  },
+  langBtn: {
+    height:          32,
+    minWidth:        44,
+    borderRadius:    8,
+    backgroundColor: 'rgba(245,197,66,0.15)',
+    border:          '1px solid rgba(245,197,66,0.40)',
+    color:           '#F5C542',
+    fontSize:        12,
+    fontWeight:      800,
+    letterSpacing:   0.5,
+    cursor:          'pointer',
+    padding:         '0 10px',
+    // Only transition color/background — no width change
+    transition:      'background-color 0.15s, border-color 0.15s',
+  },
+  headerBtn: {
+    width:           34,
+    height:          34,
+    borderRadius:    '50%',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    color:           '#FFFFFF',
+    border:          '1px solid rgba(255,255,255,0.15)',
+    cursor:          'pointer',
+    flexShrink:      0,
+    transition:      'background-color 0.15s',
+  },
+  tabBar: {
+    display:         'flex',
+    flexDirection:   'row',
+    backgroundColor: '#FFFFFF',
+    borderBottom:    '1.5px solid #E5E7EB',
+    flexShrink:      0,
+    width:           '100%',      // never shrink below viewport width
+    overflow:        'hidden',    // clip any tab text overflow
+    boxSizing:       'border-box',
+  },
+  tab: {
+    // Fixed equal width — does NOT change between states
+    flex:            1,
+    minWidth:        0,           // allow tabs to shrink below content size
+    height:          '44px',
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    fontSize:        '12px',
+    fontWeight:      '700',
+    color:           '#9CA3AF',
+    backgroundColor: 'transparent',
+    border:          'none',
+    borderBottom:    '2.5px solid transparent',
+    cursor:          'pointer',
+    whiteSpace:      'nowrap',
+    overflow:        'hidden',    // clip label if tab gets narrow
+    padding:         '0 2px',
+    // Animate only color/background — no layout properties
+    transition:      'background-color 0.15s, color 0.15s, border-color 0.15s',
+  },
+  tabActive: {
+    color:             NAVY,
+    backgroundColor:   GOLD,
+    borderBottomColor: GOLD,
+  },
+  content: {
+    flex:          1,
+    display:       'flex',
+    flexDirection: 'column',
+    overflow:      'hidden',
+    position:      'relative',
+    width:         '100%',       // explicit width so children can't push it wider
+    minWidth:      0,            // allow shrinking below content size
+    boxSizing:     'border-box',
+  },
+  screen: {
+    flex:          1,
+    flexDirection: 'column',
+    overflow:      'auto',
+    width:         '100%',       // explicit width so it fills content exactly
+    minWidth:      0,            // prevent flex blowout from inner content
+    boxSizing:     'border-box',
+  },
+  footer: {
+    textAlign:       'center',
+    fontSize:        '11px',
+    color:           '#9CA3AF',
+    padding:         '10px 16px',
+    borderTop:       '1px solid #F3F4F6',
+    backgroundColor: '#FFFFFF',
+    flexShrink:      0,
+    width:           '100%',
+    boxSizing:       'border-box',
+  },
+};
+
+// ─── Settings panel styles ────────────────────────────────────────────────────
+const NAVY2 = '#143A63';
+const BDR   = '#E5E7EB';
+const SURF  = '#F0EEE8';
+
+const spS: Record<string, React.CSSProperties> = {
+  overlay: {
+    position:        'fixed',
+    inset:           0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    display:         'flex',
+    alignItems:      'flex-end',
+    zIndex:          500,
+  },
+  sheet: {
+    width:           '100%',
+    maxWidth:        480,
+    margin:          '0 auto',
+    backgroundColor: '#FFFFFF',
+    borderRadius:    '20px 20px 0 0',
+    padding:         '0 0 24px',
+    display:         'flex',
+    flexDirection:   'column',
+    gap:             0,
+  },
+  handle: {
+    alignSelf:       'center',
+    width:           40,
+    height:          4,
+    backgroundColor: BDR,
+    borderRadius:    2,
+    margin:          '10px auto 0',
+  },
+  titleRow: {
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'space-between',
+    padding:         '14px 20px 10px',
+    borderBottom:    `1px solid ${BDR}`,
+  },
+  title: {
+    fontSize:  18,
+    fontWeight: 800,
+    color:     '#111827',
+  },
+  closeBtn: {
+    width:           32,
+    height:          32,
+    borderRadius:    16,
+    backgroundColor: SURF,
+    border:          `1px solid ${BDR}`,
+    color:           '#374151',
+    fontSize:        14,
+    fontWeight:      700,
+    cursor:          'pointer',
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  section: {
+    padding:         '16px 20px',
+    display:         'flex',
+    flexDirection:   'column',
+    gap:             10,
+    borderBottom:    `1px solid ${BDR}`,
+  },
+  sectionLabel: {
+    fontSize:    11,
+    fontWeight:  800,
+    color:       '#9CA3AF',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase' as const,
+  },
+  emailRow: {
+    display:         'flex',
+    alignItems:      'center',
+    gap:             12,
+    backgroundColor: SURF,
+    borderRadius:    10,
+    padding:         '10px 14px',
+    border:          `1px solid ${BDR}`,
+  },
+  emailIcon: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: NAVY2,
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    color:           '#F5C542',
+    fontSize:        16,
+    fontWeight:      800,
+    flexShrink:      0,
+  },
+  emailBlock: {
+    display:       'flex',
+    flexDirection: 'column',
+    gap:           2,
+    minWidth:      0,
+  },
+  emailMeta: {
+    fontSize:  10,
+    fontWeight: 700,
+    color:     '#9CA3AF',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase' as const,
+  },
+  emailVal: {
+    fontSize:     14,
+    fontWeight:   700,
+    color:        '#111827',
+    overflow:     'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace:   'nowrap',
+  },
+  logoutBtn: {
+    height:          48,
+    borderRadius:    10,
+    backgroundColor: 'rgba(192,57,43,0.08)',
+    border:          '1.5px solid rgba(192,57,43,0.3)',
+    color:           '#C0392B',
+    fontSize:        14,
+    fontWeight:      800,
+    letterSpacing:   0.5,
+    cursor:          'pointer',
+    transition:      'background-color 0.15s',
+  },
+  langRow: {
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'space-between',
+  },
+  langLabel: {
+    fontSize:   14,
+    fontWeight: 600,
+    color:      '#374151',
+  },
+  langToggleWrap: {
+    display:         'flex',
+    borderRadius:    8,
+    border:          `1.5px solid ${BDR}`,
+    overflow:        'hidden',
+  },
+  langOpt: {
+    height:          36,
+    minWidth:        64,
+    border:          'none',
+    backgroundColor: SURF,
+    color:           '#374151',
+    fontSize:        13,
+    fontWeight:      600,
+    cursor:          'pointer',
+    padding:         '0 12px',
+    // Only animate colors
+    transition:      'background-color 0.15s, color 0.15s',
+  },
+  langOptActive: {
+    backgroundColor: NAVY2,
+    color:           '#FFFFFF',
+    fontWeight:      800,
+  },
+};
