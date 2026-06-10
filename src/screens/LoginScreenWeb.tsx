@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { LevelingRodIcon } from '../components/LevelingRodIcon';
-import { useLang }         from '../LangContext';
+import { useLang } from '../LangContext';
 
 interface Props {
   onLogin:      (email: string) => void;
@@ -89,7 +88,13 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
         {/* Logo row */}
         <div style={styles.logoRow}>
           <div style={styles.logoWrap}>
-            <LevelingRodIcon size="small" />
+            {/* mix-blend-mode:screen makes the black bg transparent,
+                leaving only the white rod against the navy square */}
+            <img
+              src="/rod.png"
+              alt=""
+              style={styles.logoRod}
+            />
           </div>
           <div style={styles.logoText}>
             <span style={styles.appName}>{t('splashTitle')}</span>
@@ -229,6 +234,14 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent:  'center',
     flexShrink:      0,
     boxShadow:       `0 2px 10px rgba(22,58,99,0.30)`,
+    overflow:        'hidden',
+  },
+  logoRod: {
+    width:        '100%',
+    height:       '100%',
+    objectFit:    'contain' as const,
+    mixBlendMode: 'screen' as const,
+    display:      'block',
   },
   logoText: {
     display:        'flex',

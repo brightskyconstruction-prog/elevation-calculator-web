@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { LevelingRodIcon } from '../components/LevelingRodIcon';
-import { useLang }         from '../LangContext';
+import { useLang } from '../LangContext';
 
 interface Props {
   onDone: () => void;
@@ -23,18 +22,20 @@ export default function SplashScreenWeb({ onDone }: Props) {
 
   return (
     <div style={styles.root}>
-      {/* Multi-layer gradient background */}
+      {/* Background gradients */}
       <div style={styles.bg} />
 
-      {/* Centre content — fades + slides up on load */}
+      {/* Centre content */}
       <div style={{ ...styles.center, animation: 'splashFadeUp 0.75s ease-out both' }}>
 
-        {/* Glow halo behind the rod */}
-        <div style={styles.rodHalo} />
-
-        {/* Leveling rod — scales in with a spring */}
+        {/* Rod image — mix-blend-mode:screen makes the black background
+            transparent, leaving only the white rod visible on the navy bg */}
         <div style={{ ...styles.rodWrap, animation: 'splashScaleIn 0.85s cubic-bezier(0.34,1.5,0.64,1) both' }}>
-          <LevelingRodIcon size="large" />
+          <img
+            src="/rod.png"
+            alt="Leveling rod"
+            style={styles.rodImg}
+          />
         </div>
 
         {/* Title */}
@@ -50,7 +51,7 @@ export default function SplashScreenWeb({ onDone }: Props) {
         <p style={styles.version}>{t('splashVersion')}</p>
       </div>
 
-      {/* "Powered by" — delayed fade in */}
+      {/* "Powered by" */}
       <p style={{ ...styles.poweredBy, animation: 'splashFadeUp 1s ease-out 0.5s both' }}>
         {t('splashPoweredBy')}
       </p>
@@ -80,9 +81,8 @@ const styles: Record<string, React.CSSProperties> = {
     position:      'absolute',
     inset:         0,
     background: `
-      radial-gradient(ellipse at 50% 34%, rgba(245,197,66,0.13) 0%, transparent 50%),
-      radial-gradient(ellipse at 18% 78%, rgba(59,130,246,0.09) 0%, transparent 42%),
-      radial-gradient(ellipse at 85% 10%, rgba(245,197,66,0.07) 0%, transparent 38%)
+      radial-gradient(ellipse at 50% 34%, rgba(245,197,66,0.12) 0%, transparent 52%),
+      radial-gradient(ellipse at 18% 78%, rgba(59,130,246,0.09) 0%, transparent 42%)
     `,
     pointerEvents: 'none',
   },
@@ -90,28 +90,26 @@ const styles: Record<string, React.CSSProperties> = {
     display:       'flex',
     flexDirection: 'column',
     alignItems:    'center',
-    gap:           18,
+    gap:           16,
     padding:       '0 32px',
     zIndex:        1,
     position:      'relative',
   },
-  rodHalo: {
-    position:      'absolute',
-    top:           -24,
-    left:          '50%',
-    transform:     'translateX(-50%)',
-    width:         130,
-    height:        300,
-    borderRadius:  '50%',
-    background:    'radial-gradient(ellipse at center, rgba(245,197,66,0.20) 0%, transparent 68%)',
-    pointerEvents: 'none',
-    zIndex:        0,
-    animation:     'splashGlowPulse 2.6s ease-in-out 0.6s infinite',
-  },
   rodWrap: {
     position: 'relative',
     zIndex:   1,
-    filter:   'drop-shadow(0 8px 32px rgba(0,0,0,0.55)) drop-shadow(0 2px 8px rgba(0,0,0,0.35))',
+  },
+  rodImg: {
+    // The image is square (same width & height). Render at fixed height;
+    // mix-blend-mode:screen removes the black background so only the white
+    // rod shows against the navy backdrop.
+    height:       240,
+    width:        'auto',
+    maxWidth:     '80vw',
+    display:      'block',
+    mixBlendMode: 'screen' as const,
+    // Extra brightness so the rod "pops" on screen
+    filter:       'brightness(1.08) contrast(1.05)',
   },
   titleBlock: {
     display:       'flex',
@@ -152,16 +150,16 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.5,
   },
   poweredBy: {
-    position:  'absolute',
-    bottom:    28,
-    left:      0,
-    right:     0,
-    textAlign: 'center',
-    fontSize:  11,
-    color:     'rgba(255,255,255,0.40)',
+    position:      'absolute',
+    bottom:        28,
+    left:          0,
+    right:         0,
+    textAlign:     'center',
+    fontSize:      11,
+    color:         'rgba(255,255,255,0.40)',
     letterSpacing: 0.4,
-    fontWeight: 500,
-    zIndex:    1,
+    fontWeight:    500,
+    zIndex:        1,
   },
   loadingBar: {
     position:        'absolute',
@@ -181,7 +179,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
 };
 
-// ─── Inject keyframe animations once ─────────────────────────────────────────
+// ─── Inject keyframe animations ───────────────────────────────────────────────
 const STYLE_ID = '__splashKf';
 if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
   const el = document.createElement('style');
@@ -196,12 +194,8 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
       to   { opacity: 1; transform: translateY(0);    }
     }
     @keyframes splashScaleIn {
-      from { transform: scale(0.78); opacity: 0.5; }
+      from { transform: scale(0.80); opacity: 0.5; }
       to   { transform: scale(1);    opacity: 1;   }
-    }
-    @keyframes splashGlowPulse {
-      0%, 100% { opacity: 0.6;  transform: translateX(-50%) scale(1);    }
-      50%       { opacity: 1.0; transform: translateX(-50%) scale(1.07); }
     }
   `;
   document.head.appendChild(el);
