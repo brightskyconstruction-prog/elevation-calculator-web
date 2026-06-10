@@ -234,7 +234,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [rodFeet,     setRodFeet]     = useState('');
   const [rodInches,   setRodInches]   = useState(0);
   const [rodFracDec,  setRodFracDec]  = useState(0);
-  const [rodFracLbl,  setRodFracLbl]  = useState('None');
+  const [rodFracLbl,  setRodFracLbl]  = useState('0/0');
   const [engFtStr,    setEngFtStr]    = useState('');
   const [bmElevStr,   setBmElevStr]   = useState('');
   const [pointName,   setPointName]   = useState('');
@@ -287,7 +287,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodFeet(pt.rodFeet ?? '');
     setRodInches(pt.rodInches ?? 0);
     setRodFracDec(pt.rodFractionDec ?? 0);
-    setRodFracLbl(pt.rodFractionLabel ?? 'None');
+    setRodFracLbl(pt.rodFractionLabel ?? '0/0');
     setEngFtStr(pt.engineeringFeet > 0 ? String(pt.engineeringFeet) : '');
     setBmElevStr(pt.bmElevation > 0 ? String(pt.bmElevation) : '');
     setPointName(pt.pointName ?? '');
@@ -301,7 +301,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   }, []);
 
   const clearForm = () => {
-    setRodFeet(''); setRodInches(0); setRodFracDec(0); setRodFracLbl('None');
+    setRodFeet(''); setRodInches(0); setRodFracDec(0); setRodFracLbl('0/0');
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
@@ -554,7 +554,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     style={s.rodSelect} value={String(rodFracDec)}
                     onChange={e => {
                       const dec = parseFloat(e.target.value);
-                      const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? 'None';
+                      const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? '0/0';
                       updateFromFI(rodFeet, rodInches, dec, lbl);
                     }}
                     disabled={!isEditMode}
@@ -566,8 +566,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 {isEditMode && (
                   <>
                     <div style={s.rodDiv} />
-                    <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, 'None')}>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, textAlign: 'center' }}>{t('clearBtn')}</span>
+                    <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, '0/0')}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const }}>{t('clearBtn')}</span>
                     </button>
                   </>
                 )}
@@ -579,7 +579,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           ) : (
             <>
               <input
-                style={{ ...s.engInput, border: `2px solid ${isEditMode ? BLUE_ACC : BLUE}` }}
+                style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}` }}
                 type="number" min="0" step="0.0001" value={engFtStr}
                 onChange={e => updateFromEng(e.target.value)}
                 placeholder="e.g. 5.5417" readOnly={!isEditMode}
@@ -609,13 +609,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
             </div>
           ) : isKnownElevation && !isEditMode ? (
-            <div style={{ ...s.autoBmBox, ...s.knownElevBox }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ ...s.autoBmLbl, color: '#FFFFFF' }}>{t('knownElevation')}</span>
-                <span style={s.autoBmDesc}>{t('benchmarkRefDesc')}</span>
+            <div style={s.autoBmBox}>
+              <div style={{ flex: 1 }}>
+                <span style={s.autoBmLbl}>{t('pointElevation')}</span>
               </div>
               <div style={s.autoBmRight}>
-                <span style={{ ...s.autoBmVal, color: '#FFFFFF' }}>{currentPoint!.bmElevation.toFixed(2)}</span>
+                <span style={s.autoBmVal}>{currentPoint!.bmElevation.toFixed(2)}</span>
                 <span style={s.autoBmUnit}>ft</span>
               </div>
             </div>
@@ -627,7 +626,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
                   type="number" step="0.0001" value={bmElevStr}
                   onChange={e => setBmElevStr(e.target.value)}
-                  placeholder="0.00" readOnly={!isEditMode}
+                  placeholder="" readOnly={!isEditMode}
                 />
                 <span style={{ fontSize: 13, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
               </div>
@@ -774,21 +773,21 @@ const s: Record<string, React.CSSProperties> = {
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 },
   sep:     { height: 1, backgroundColor: '#F3F4F6', margin: '2px 0' },
   secRow:  { display: 'flex', alignItems: 'center', gap: 4 },
-  secLbl:  { fontSize: 11, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase' },
+  secLbl:  { fontSize: 13, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase' },
 
-  fmtBtn:    { padding: '3px 8px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 10, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px' },
+  fmtBtn:    { padding: '3px 8px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 12, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px' },
   fmtBtnOn:  { backgroundColor: BLUE, border: `1px solid ${BLUE}`, color: '#fff' } as React.CSSProperties,
 
-  rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 76 },
+  rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 64 },
   rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 4px', gap: 4 },
-  rodPartLbl:  { fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textAlign: 'center' },
-  rodFeetInput:{ width: '100%', height: 44, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 15, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
-  rodSelect:   { width: '100%', height: 40, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 13, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
+  rodPartLbl:  { fontSize: 11, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.5px', textAlign: 'center' },
+  rodFeetInput:{ width: '100%', height: 38, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
+  rodSelect:   { width: '100%', height: 36, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 15, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
   rodDiv:      { width: 1, backgroundColor: '#F3F4F6', flexShrink: 0 },
   clearAllBtn: { width: 40, border: 'none', borderLeft: `1px solid #F3F4F6`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: `${SURFACE}88` },
 
-  engInput:    { height: 46, width: '100%', backgroundColor: BLUE, border: `2px solid ${BLUE_ACC}`, borderRadius: 6, textAlign: 'center', fontSize: 22, fontWeight: 700, color: '#fff', outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
-  hint:        { fontSize: 13, color: BLUE, textAlign: 'center', fontWeight: 700 },
+  engInput:    { height: 40, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
+  hint:        { fontSize: 15, color: BLUE, textAlign: 'center', fontWeight: 700 },
 
   autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '10px 12px', border: '1.5px solid #2A5898' },
   knownElevBox:{ border: `1.5px solid ${GOLD}`, backgroundColor: '#1A3A5C' } as React.CSSProperties,

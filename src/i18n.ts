@@ -210,8 +210,8 @@ const en = {
 
   // ── Add New Point ─────────────────────────────────────────────────
   feetLabel:           'FEET',
-  inchesLabel:         'IN',
-  fracLabel:           'FRAC',
+  inchesLabel:         'INCHES',
+  fracLabel:           'FRACTION',
   feetInchesBtn:       'Feet/Inches',
   engineeringFtBtn:    'Decimal Feet',
   clearBtn:            'Clear',
@@ -228,6 +228,7 @@ const en = {
   pointNamePlaceholder:'Optional name for this point',
   knownElevation:      'KNOWN ELEVATION',
   benchmarkRefDesc:    'This point is the benchmark reference for this set.',
+  pointElevation:      'POINT ELEVATION',
   derivedFrom:         'Derived from',
   engFtHint:           'Engineering Feet:',
   feetInchesHint:      'Feet - Inches:',
@@ -460,8 +461,8 @@ const es: typeof en = {
 
   // ── Add New Point ─────────────────────────────────────────────────
   feetLabel:           'PIES',
-  inchesLabel:         'IN',
-  fracLabel:           'FRAC',
+  inchesLabel:         'PULGADAS',
+  fracLabel:           'FRACCIÓN',
   feetInchesBtn:       'Pies/Pulgadas',
   engineeringFtBtn:    'Pies Decimales',
   clearBtn:            'Limpiar',
@@ -478,6 +479,7 @@ const es: typeof en = {
   pointNamePlaceholder:'Nombre opcional para este punto',
   knownElevation:      'ELEVACIÓN CONOCIDA',
   benchmarkRefDesc:    'Este punto es la referencia de este conjunto.',
+  pointElevation:      'ELEVACIÓN DEL PUNTO',
   derivedFrom:         'Derivado de',
   engFtHint:           'Pies de Ingeniería:',
   feetInchesHint:      'Pies - Pulgadas:',

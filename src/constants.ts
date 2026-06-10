@@ -6,7 +6,7 @@ export const INCHES_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 export const FRACTION_OPTIONS = [
-  { value: '0',        label: 'None'  },
+  { value: '0',        label: '0/0'   },
   { value: '0.0625',   label: '1/16'  },
   { value: '0.125',    label: '1/8'   },
   { value: '0.1875',   label: '3/16'  },
@@ -35,7 +35,7 @@ export function toEngFt(feet: string, inches: number, fraction: number): number 
 export function fromEngFt(eng: number): {
   feet: string; inches: number; fraction: number; frLabel: string;
 } {
-  if (isNaN(eng) || eng < 0) return { feet: '', inches: 0, fraction: 0, frLabel: 'None' };
+  if (isNaN(eng) || eng < 0) return { feet: '', inches: 0, fraction: 0, frLabel: '0/0' };
   const totalIn    = eng * 12;
   const ft         = Math.floor(totalIn / 12);
   const remIn      = totalIn - ft * 12;
@@ -51,7 +51,8 @@ export function fromEngFt(eng: number): {
 export function fmtFIF(feet: string, inches: number, frLabel: string): string {
   const f = parseFloat(feet);
   if (isNaN(f) && inches === 0) return '—';
-  const fr = frLabel && frLabel !== 'None' ? ` ${frLabel}` : '';
+  const isNoFrac = !frLabel || frLabel === 'None' || frLabel === '0/0';
+  const fr = isNoFrac ? '' : ` ${frLabel}`;
   return `${isNaN(f) ? 0 : f}'-${inches}${fr}"`;
 }
 
