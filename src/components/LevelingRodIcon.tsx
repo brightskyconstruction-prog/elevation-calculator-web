@@ -1,5 +1,3 @@
-import React from 'react';
-
 // ─── Telescoping leveling rod (grade rod) ─────────────────────────────────────
 // Matches the Philadelphia-style telescoping survey rod:
 //   • 5 sections, each narrower going up (staircase silhouette)
