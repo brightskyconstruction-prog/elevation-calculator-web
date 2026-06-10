@@ -229,7 +229,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const points = getPoints(projectId);
   const sets   = getSets(projectId);
 
-  const [currentIdx,  setCurrentIdx]  = useState(() => points.length > 0 ? points.length - 1 : -1);
+  const [currentIdx,  setCurrentIdx]  = useState(-1);   // -1 = new blank point; always start fresh
   const [rodFormat,   setRodFormat]   = useState<RodFormat>('fif');
   const [rodFeet,     setRodFeet]     = useState('');
   const [rodInches,   setRodInches]   = useState(0);
@@ -258,6 +258,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const engFt         = parseFloat(engFtStr);
   const isNewPoint    = currentIdx < 0 || currentIdx >= points.length;
   const assignedSetObj= sets.find(s => s.id === assignedSet);
+  // New button disabled while creating a new point OR while editing a saved one
+  const newDisabled   = isNewPoint || isEditMode;
 
   // ── Set reference point (for auto-derived BM) ─────────────────────────────
   const setReferencePoint = (() => {
@@ -313,10 +315,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     onEditConsumed?.();
   }, [editPoint]);
 
+  // Reset to a blank new point every time the tab becomes visible
   useEffect(() => {
     if (!isVisible) return;
-    const pt = currentIdx >= 0 && currentIdx < points.length ? points[currentIdx] : null;
-    if (pt) loadPoint(pt);
+    if (editPoint) return;   // editPoint handler takes precedence
+    clearForm();
+    setCurrentIdx(-1);
+    setIsEditMode(true);
+    setRodFormat('fif');
   }, [isVisible]);
 
   const goTo = (idx: number) => {
@@ -324,7 +330,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(false);
   };
 
-  const handleNewPoint = () => { clearForm(); setCurrentIdx(points.length); setIsEditMode(true); setRodFormat('fif'); };
+  const handleNewPoint = () => { clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif'); };
 
   // ── Rod format sync ────────────────────────────────────────────────────────
   const updateFromFI = (feet: string, inches: number, frac: number, fracLbl: string) => {
@@ -403,7 +409,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         ...(createdAddress   != null ? { createdAddress   } : {}),
       };
       addPoint(projectId, pt);
-      setCurrentIdx(getPoints(projectId).length);
+      const freshPoints = getPoints(projectId);
+      const savedIdx = freshPoints.findIndex(p => p.id === pt.id);
+      setCurrentIdx(savedIdx >= 0 ? savedIdx : freshPoints.length - 1);
+      setIsEditMode(false);
       setSavedAt(iso);
       setSaveMsg(t('pointSaved'));
     } else if (currentPoint) {
@@ -467,13 +476,20 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           onClick={() => goTo(currentIdx + 1)}
           disabled={isNewPoint || currentIdx >= points.length - 1}
         >›</button>
-        <button style={s.newBtn} onClick={handleNewPoint}>{t('newPoint')}</button>
+        {/* Edit — left of New, visible after save when not editing */}
         {!isNewPoint && !isEditMode && (
           <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
         )}
+        {/* Undo — visible while editing an existing saved point */}
         {!isNewPoint && isEditMode && currentPoint && (
           <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); }} title="Undo changes">↩</button>
         )}
+        {/* New — always visible; disabled while creating or editing */}
+        <button
+          style={{ ...s.newBtn, ...(newDisabled ? s.newBtnDisabled : {}) }}
+          onClick={newDisabled ? undefined : handleNewPoint}
+          disabled={newDisabled}
+        >{t('newPoint')}</button>
       </div>
 
       {/* Scrollable content */}
@@ -733,25 +749,27 @@ const c: Record<string, React.CSSProperties> = {
 
 const s: Record<string, React.CSSProperties> = {
   pointNav: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    backgroundColor: CARD, padding: '8px 12px',
+    display: 'flex', alignItems: 'center', gap: 6,
+    backgroundColor: CARD, padding: '5px 10px',
     borderBottom: `1px solid ${BORDER}`, flexShrink: 0,
   },
   navArrow: {
     width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE,
     border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 18, cursor: 'pointer', color: TEXT_PRI, lineHeight: 1, padding: 0,
+    fontSize: 18, cursor: 'pointer', color: TEXT_PRI, lineHeight: 1, padding: 0, flexShrink: 0,
   },
-  navCenter: { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  navLabel:  { fontSize: 14, fontWeight: 700, color: TEXT_PRI },
+  navCenter: { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  navLabel:  { fontSize: 16, fontWeight: 700, color: TEXT_PRI, flexShrink: 0 },
   inlineBtn: {
-    backgroundColor: CARD, borderRadius: 4, padding: '3px 7px',
-    border: `1.5px solid ${BLUE_ACC}`, fontSize: 9, fontWeight: 700,
-    color: BLUE, cursor: 'pointer', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+    backgroundColor: CARD, borderRadius: 6, padding: '5px 14px',
+    border: `1.5px solid ${BLUE_ACC}`, fontSize: 13, fontWeight: 700,
+    color: BLUE, cursor: 'pointer', minWidth: 100, maxWidth: 150,
+    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
   },
-  newBtn:    { backgroundColor: BLUE, borderRadius: 6, padding: '4px 10px', color: '#fff', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer' },
-  editBtn:   { backgroundColor: BLUE, borderRadius: 6, padding: '4px 10px', color: '#fff', fontSize: 11, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer' },
-  undoBtn:   { width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, cursor: 'pointer', color: TEXT_SEC },
+  newBtn:       { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 },
+  newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
+  editBtn:      { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer', flexShrink: 0 },
+  undoBtn:      { width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, cursor: 'pointer', color: TEXT_SEC, flexShrink: 0 },
 
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 },
   sep:     { height: 1, backgroundColor: '#F3F4F6', margin: '2px 0' },
