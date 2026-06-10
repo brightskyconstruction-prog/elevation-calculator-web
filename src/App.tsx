@@ -8,6 +8,7 @@ import ViewSetsScreen     from './screens/ViewSetsScreen';
 import CalculatorScreen   from './screens/CalculatorScreen';
 import SplashScreenWeb    from './screens/SplashScreenWeb';
 import LoginScreenWeb     from './screens/LoginScreenWeb';
+import SlopeScreen        from './screens/SlopeScreen';
 
 // ─── Root: wraps everything in the language provider ─────────────────────────
 export default function App() {
@@ -90,6 +91,7 @@ function AppInner() {
     { id: 'points', label: t('tabPoints') },
     { id: 'sets',   label: t('tabSets')   },
     { id: 'calc',   label: t('tabCalc')   },
+    { id: 'slope',  label: t('tabSlope')  },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
@@ -187,6 +189,9 @@ function AppInner() {
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
           <CalculatorScreen />
+        </div>
+        <div style={{ ...styles.screen, display: activeTab === 'slope'  ? 'flex' : 'none' }}>
+          <SlopeScreen />
         </div>
       </main>
 
@@ -404,29 +409,28 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#FFFFFF',
     borderBottom:    '1.5px solid #E5E7EB',
     flexShrink:      0,
-    width:           '100%',      // never shrink below viewport width
-    overflow:        'hidden',    // clip any tab text overflow
-    boxSizing:       'border-box',
+    width:           '100%',
+    boxSizing:       'border-box' as const,
+    // no overflow:hidden — tabs grow to fit wrapped text
   },
   tab: {
-    // Fixed equal width — does NOT change between states
     flex:            1,
-    minWidth:        0,           // allow tabs to shrink below content size
-    height:          '44px',
+    minWidth:        0,
+    // no fixed height — pad vertically so two-line labels fit
+    padding:         '5px 2px',
     display:         'flex',
     alignItems:      'center',
     justifyContent:  'center',
-    fontSize:        '12px',
+    fontSize:        '12.5px',
     fontWeight:      '700',
+    lineHeight:      '1.2',
+    textAlign:       'center' as const,
     color:           '#9CA3AF',
     backgroundColor: 'transparent',
     border:          'none',
     borderBottom:    '2.5px solid transparent',
     cursor:          'pointer',
-    whiteSpace:      'nowrap',
-    overflow:        'hidden',    // clip label if tab gets narrow
-    padding:         '0 2px',
-    // Animate only color/background — no layout properties
+    // allow text to wrap onto two lines
     transition:      'background-color 0.15s, color 0.15s, border-color 0.15s',
   },
   tabActive: {

@@ -39,10 +39,12 @@ const en = {
   invalidEmail:       'Please enter a valid email address.',
 
   // ── Main tabs ───────────────────────────────────────────────────
-  tabAdd:             'Add New Point',
-  tabPoints:          'View Points',
+  tabAdd:             'Point+',
+  tabPoints:          'Compare Height',
   tabSets:            'View Sets',
   tabCalc:            'Calculator',
+  tabSlope:           'Slope',
+  comingSoon:         'Coming Soon',
 
   // ── Calculator screen ────────────────────────────────────────────
   calcTabCalc:        'Calculator',
@@ -287,10 +289,12 @@ const es: typeof en = {
   invalidEmail:       'Por favor ingresa un correo electrónico válido.',
 
   // ── Main tabs ───────────────────────────────────────────────────
-  tabAdd:             'Agregar Punto',
-  tabPoints:          'Ver Puntos',
+  tabAdd:             'Point+',
+  tabPoints:          'Comparar Altura',
   tabSets:            'Ver Conjuntos',
   tabCalc:            'Calculadora',
+  tabSlope:           'Pendiente',
+  comingSoon:         'Próximamente',
 
   // ── Calculator screen ────────────────────────────────────────────
   calcTabCalc:        'Calculadora',
