@@ -24,9 +24,10 @@ const en = {
   spanish:            'Español',
 
   // ── Splash ──────────────────────────────────────────────────────
-  splashTitle:        'Elevation Calculator',
-  splashTagline:      'Professional Survey Tool for Civil Engineers',
+  splashTitle:        'Grade and Elevation Calculator',
+  splashTagline:      'Professional Survey Tool for Pipelayers, Excavators, and Graders',
   splashVersion:      'Version 1.0',
+  splashPoweredBy:    'Powered by Bright Sky Construction',
 
   // ── Login ───────────────────────────────────────────────────────
   loginTitle:         'Welcome Back',
@@ -34,6 +35,7 @@ const en = {
   emailLabel:         'Email Address',
   emailPlaceholder:   'you@example.com',
   continueBtn:        'Continue',
+  continueAsGuest:    'Continue as Guest',
   invalidEmail:       'Please enter a valid email address.',
 
   // ── Main tabs ───────────────────────────────────────────────────
@@ -270,9 +272,10 @@ const es: typeof en = {
   spanish:            'Español',
 
   // ── Splash ──────────────────────────────────────────────────────
-  splashTitle:        'Calculadora de Elevación',
-  splashTagline:      'Herramienta Profesional de Topografía para Ingenieros Civiles',
+  splashTitle:        'Calculadora de Grado y Elevación',
+  splashTagline:      'Herramienta Profesional para Niveladores, Excavadores y Operadores de Motoniveladora',
   splashVersion:      'Versión 1.0',
+  splashPoweredBy:    'Desarrollado por Bright Sky Construction',
 
   // ── Login ───────────────────────────────────────────────────────
   loginTitle:         'Bienvenido',
@@ -280,6 +283,7 @@ const es: typeof en = {
   emailLabel:         'Correo Electrónico',
   emailPlaceholder:   'tu@ejemplo.com',
   continueBtn:        'Continuar',
+  continueAsGuest:    'Continuar como Invitado',
   invalidEmail:       'Por favor ingresa un correo electrónico válido.',
 
   // ── Main tabs ───────────────────────────────────────────────────

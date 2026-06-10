@@ -61,6 +61,11 @@ function AppInner() {
     setAppState('app');
   }, []);
 
+  const handleGuestLogin = useCallback(() => {
+    setEmail('');
+    setAppState('app');
+  }, []);
+
   const handleLogout = useCallback(() => {
     if (!window.confirm(t('logoutConfirm'))) return;
     try { localStorage.removeItem('auth:email'); } catch {}
@@ -94,7 +99,7 @@ function AppInner() {
     return <SplashScreenWeb onDone={handleSplashDone} />;
   }
   if (appState === 'login') {
-    return <LoginScreenWeb onLogin={handleLogin} />;
+    return <LoginScreenWeb onLogin={handleLogin} onGuestLogin={handleGuestLogin} />;
   }
 
   return (
@@ -220,14 +225,14 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: Setting
         <div style={spS.section}>
           <span style={spS.sectionLabel}>{t('settingsAccount')}</span>
           <div style={spS.emailRow}>
-            <div style={spS.emailIcon}>@</div>
+            <div style={spS.emailIcon}>{email ? '@' : '👤'}</div>
             <div style={spS.emailBlock}>
-              <span style={spS.emailMeta}>{t('loggedInAs')}</span>
-              <span style={spS.emailVal}>{email}</span>
+              <span style={spS.emailMeta}>{email ? t('loggedInAs') : 'Session'}</span>
+              <span style={spS.emailVal}>{email || 'Guest Session'}</span>
             </div>
           </div>
           <button style={spS.logoutBtn} onClick={onLogout}>
-            {t('logout')}
+            {email ? t('logout') : 'Sign In'}
           </button>
         </div>
 
