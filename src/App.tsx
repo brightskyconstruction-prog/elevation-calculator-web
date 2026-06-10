@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSurveyStore } from './stores/surveyStore';
-import { SurveyIcon }     from './components/SurveyIcon';
 import { LangProvider, useLang } from './LangContext';
-import { strings }        from './i18n';
 import { MainTab, SurveyPoint } from './types';
 import AddNewPointScreen  from './screens/AddNewPointScreen';
 import ViewPointsScreen   from './screens/ViewPointsScreen';
@@ -107,19 +105,28 @@ function AppInner() {
       {/* ── Top header ──────────────────────────────────────────── */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          <SurveyIcon size={26} color="#F5C542" />
+          {/* Leveling rod — mix-blend-mode:screen removes black bg */}
+          <img src="/rod.png" alt="" style={styles.headerRod} />
           <span style={styles.headerTitle}>{t('appTitle')}</span>
         </div>
         <div style={styles.headerRight}>
-          {/* Language toggle */}
-          <button
-            style={styles.langBtn}
-            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
-            title={lang === 'en' ? strings.en.spanish : strings.es.english}
-            aria-label="Toggle language"
-          >
-            {lang === 'en' ? 'EN' : 'ES'}
-          </button>
+          {/* Two-button language toggle */}
+          <div style={styles.langToggle}>
+            <button
+              style={{ ...styles.langOpt, ...(lang === 'en' ? styles.langOptActive : {}) }}
+              onClick={() => setLang('en')}
+              aria-pressed={lang === 'en'}
+            >
+              {t('english')}
+            </button>
+            <button
+              style={{ ...styles.langOpt, ...(lang === 'es' ? styles.langOptActive : {}) }}
+              onClick={() => setLang('es')}
+              aria-pressed={lang === 'es'}
+            >
+              {t('spanish')}
+            </button>
+          </div>
           {/* Settings */}
           <button
             style={styles.headerBtn}
@@ -294,7 +301,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems:      'center',
     justifyContent:  'space-between',
     backgroundColor: NAVY,
-    padding:         '12px 16px',
+    padding:         '8px 14px',
     flexShrink:      0,
     width:           '100%',
     boxSizing:       'border-box',
@@ -302,15 +309,27 @@ const styles: Record<string, React.CSSProperties> = {
   headerLeft: {
     display:    'flex',
     alignItems: 'center',
-    gap:        '10px',
+    gap:        '8px',
     minWidth:   0,
+    flex:       1,
+    overflow:   'hidden',
+  },
+  headerRod: {
+    height:       '34px',
+    width:        '34px',
+    display:      'block',
+    flexShrink:   0,
+    mixBlendMode: 'screen' as const,
+    objectFit:    'contain' as const,
   },
   headerTitle: {
-    fontSize:      '17px',
+    fontSize:      '14px',
     fontWeight:    '700',
     color:         '#FFFFFF',
     letterSpacing: '-0.3px',
-    whiteSpace:    'nowrap',
+    whiteSpace:    'nowrap' as const,
+    overflow:      'hidden',
+    textOverflow:  'ellipsis',
   },
   headerRight: {
     display:    'flex',
@@ -318,20 +337,31 @@ const styles: Record<string, React.CSSProperties> = {
     gap:        '6px',
     flexShrink: 0,
   },
-  langBtn: {
-    height:          32,
-    minWidth:        44,
+  langToggle: {
+    display:         'flex',
+    alignItems:      'center',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     borderRadius:    8,
-    backgroundColor: 'rgba(245,197,66,0.15)',
-    border:          '1px solid rgba(245,197,66,0.40)',
-    color:           '#F5C542',
-    fontSize:        12,
-    fontWeight:      800,
-    letterSpacing:   0.5,
+    padding:         '2px',
+    gap:             '2px',
+  },
+  langOpt: {
+    height:          26,
+    padding:         '0 8px',
+    borderRadius:    6,
+    border:          'none',
+    backgroundColor: 'transparent',
+    color:           'rgba(255,255,255,0.52)',
+    fontSize:        '11px',
+    fontWeight:      700,
+    letterSpacing:   0.3,
     cursor:          'pointer',
-    padding:         '0 10px',
-    // Only transition color/background — no width change
-    transition:      'background-color 0.15s, border-color 0.15s',
+    transition:      'background-color 0.15s, color 0.15s',
+    whiteSpace:      'nowrap' as const,
+  },
+  langOptActive: {
+    backgroundColor: GOLD,
+    color:           NAVY,
   },
   headerBtn: {
     width:           34,

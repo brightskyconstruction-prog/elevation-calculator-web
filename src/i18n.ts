@@ -3,7 +3,7 @@ export type Lang = 'en' | 'es';
 
 const en = {
   // ── App / global ────────────────────────────────────────────────
-  appTitle:           'Elevation Calculator',
+  appTitle:           'Grade and Elevation Calculator',
   appTagline:         'Professional Survey Tool',
   version:            'Version 1.0',
   settings:           'Settings',
@@ -251,7 +251,7 @@ const en = {
 
 const es: typeof en = {
   // ── App / global ────────────────────────────────────────────────
-  appTitle:           'Calculadora de Elevación',
+  appTitle:           'Calculadora de Grado y Elevación',
   appTagline:         'Herramienta Profesional de Topografía',
   version:            'Versión 1.0',
   settings:           'Configuración',
