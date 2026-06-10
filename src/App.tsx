@@ -105,9 +105,14 @@ function AppInner() {
       {/* ── Top header ──────────────────────────────────────────── */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
-          {/* Leveling rod — mix-blend-mode:screen removes black bg */}
-          <img src="/rod.png" alt="" style={styles.headerRod} />
-          <span style={styles.headerTitle}>{t('appTitle')}</span>
+          {/* Rod image in a gold-bordered rounded container */}
+          <div style={styles.headerRodBox}>
+            <img src="/rod.png" alt="" style={styles.headerRod} />
+          </div>
+          {/* Title wraps naturally — no truncation */}
+          <div style={styles.headerTitleWrap}>
+            <span style={styles.headerTitle}>{t('appTitle')}</span>
+          </div>
         </div>
         <div style={styles.headerRight}>
           {/* Two-button language toggle */}
@@ -301,40 +306,56 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems:      'center',
     justifyContent:  'space-between',
     backgroundColor: NAVY,
-    padding:         '8px 14px',
+    padding:         '6px 10px',
+    gap:             '6px',
     flexShrink:      0,
     width:           '100%',
-    boxSizing:       'border-box',
+    boxSizing:       'border-box' as const,
   },
   headerLeft: {
     display:    'flex',
     alignItems: 'center',
-    gap:        '8px',
-    minWidth:   0,
+    gap:        '7px',
     flex:       1,
-    overflow:   'hidden',
+    minWidth:   0,
+  },
+  headerRodBox: {
+    width:           38,
+    height:          38,
+    borderRadius:    9,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    border:          '1.5px solid rgba(244,176,42,0.55)',
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    flexShrink:      0,
+    overflow:        'hidden',
+    boxShadow:       '0 1px 4px rgba(0,0,0,0.30)',
   },
   headerRod: {
-    height:       '34px',
-    width:        '34px',
+    width:        '88%',
+    height:       '88%',
     display:      'block',
-    flexShrink:   0,
     mixBlendMode: 'screen' as const,
     objectFit:    'contain' as const,
   },
+  headerTitleWrap: {
+    flex:     1,
+    minWidth: 0,
+  },
   headerTitle: {
-    fontSize:      '14px',
+    fontSize:      '13px',
     fontWeight:    '700',
     color:         '#FFFFFF',
-    letterSpacing: '-0.3px',
-    whiteSpace:    'nowrap' as const,
-    overflow:      'hidden',
-    textOverflow:  'ellipsis',
+    letterSpacing: '-0.2px',
+    lineHeight:    '1.25',
+    display:       'block',
+    // wraps naturally — no truncation
   },
   headerRight: {
     display:    'flex',
     alignItems: 'center',
-    gap:        '6px',
+    gap:        '5px',
     flexShrink: 0,
   },
   langToggle: {
@@ -347,14 +368,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   langOpt: {
     height:          26,
-    padding:         '0 8px',
+    padding:         '0 7px',
     borderRadius:    6,
     border:          'none',
     backgroundColor: 'transparent',
     color:           'rgba(255,255,255,0.52)',
-    fontSize:        '11px',
+    fontSize:        '10.5px',
     fontWeight:      700,
-    letterSpacing:   0.3,
+    letterSpacing:   0.2,
     cursor:          'pointer',
     transition:      'background-color 0.15s, color 0.15s',
     whiteSpace:      'nowrap' as const,
