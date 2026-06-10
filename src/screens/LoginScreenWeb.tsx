@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { useLang } from '../LangContext';
+import { LevelingRodIcon } from '../components/LevelingRodIcon';
+import { useLang }         from '../LangContext';
 
 interface Props {
   onLogin:      (email: string) => void;
@@ -88,21 +89,10 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
         {/* Logo row */}
         <div style={styles.logoRow}>
           <div style={styles.logoWrap}>
-            {/* Inline leveling rod icon — compact version */}
-            <svg viewBox="0 0 28 52" width="22" height="44" aria-hidden="true">
-              <rect x="6" y="1" width="16" height="38" rx="1.5" fill="#f5f5f5" />
-              <rect x="6" y="28" width="16" height="11" fill={GOLD2} />
-              <rect x="9" y="2"  width="10" height="4" fill="#1a1a1a" />
-              <rect x="9" y="9"  width="10" height="4" fill="#1a1a1a" />
-              <rect x="9" y="16" width="10" height="4" fill="#1a1a1a" />
-              <rect x="9" y="29" width="10" height="3.5" fill="#1a1a1a" opacity="0.7" />
-              <rect x="9" y="35" width="10" height="3.5" fill="#1a1a1a" opacity="0.7" />
-              <rect x="4"  y="38" width="20" height="3"  rx="1" fill={GOLD2} />
-              <rect x="3"  y="40" width="22" height="2.5" rx="1" fill="#444" />
-            </svg>
+            <LevelingRodIcon size="small" />
           </div>
           <div style={styles.logoText}>
-            <span style={styles.appName}>{t('appTitle')}</span>
+            <span style={styles.appName}>{t('splashTitle')}</span>
             <span style={styles.appTag}>{t('appTagline')}</span>
           </div>
         </div>
