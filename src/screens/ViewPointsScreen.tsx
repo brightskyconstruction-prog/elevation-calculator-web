@@ -64,9 +64,9 @@ const TYPE_THEME = {
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SELECT MODAL  (set-grouped two-point picker)
+// SELECT MODAL  (kept for reference — inline picker used instead)
 // ═══════════════════════════════════════════════════════════════════════════════
-interface SelectModalProps {
+interface _SelectModalProps {
   visible:  boolean;
   points:   SurveyPoint[];
   sets:     SurveySet[];
@@ -77,7 +77,7 @@ interface SelectModalProps {
   onClose:  () => void;
 }
 
-function SelectModal({ visible, points, sets, tempA, tempB, onSelect, onGo, onClose }: SelectModalProps) {
+function _SelectModal({ visible, points, sets, tempA, tempB, onSelect, onGo, onClose }: _SelectModalProps) {
   const { t } = useLang();
   const [setIdx, setSetIdx] = useState(0);
 
