@@ -1064,19 +1064,6 @@ interface SinglePointTabProps {
   onEditPoint?: (pt: SurveyPoint) => void;
 }
 
-// ── compact inline label: value row ─────────────────────────────────────────
-function SpInlineRow({ label, value, mono, valueColor }: {
-  label: string; value: string | React.ReactNode; mono?: boolean; valueColor?: string;
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, paddingBottom: 3, flexWrap: 'wrap' as const }}>
-      <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.6,
-        textTransform: 'uppercase' as const, flexShrink: 0, minWidth: 82 }}>{label}:</span>
-      <span style={{ fontSize: 12, fontWeight: 700, color: valueColor ?? TEXT_PRI,
-        fontFamily: mono ? 'monospace' : undefined, lineHeight: 1.3 }}>{value}</span>
-    </div>
-  );
-}
 
 function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
   const { t, lang } = useLang();
