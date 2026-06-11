@@ -484,16 +484,23 @@ interface CompareTabProps {
 
 function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId }: CompareTabProps) {
   const { t, lang } = useLang();
-  const [showModal,     setShowModal]     = useState(false);
-  const [tempA,         setTempA]         = useState<string | null>(null);
-  const [tempB,         setTempB]         = useState<string | null>(null);
-  const [selA,          setSelA]          = useState<string | null>(fromId);
-  const [selB,          setSelB]          = useState<string | null>(toId);
 
+  // showComparison: true = results view, false = picker view
+  const [showComparison, setShowComparison] = useState(!!(fromId && toId));
+  const [tempA,          setTempA]          = useState<string | null>(fromId);
+  const [tempB,          setTempB]          = useState<string | null>(toId);
+  const [selA,           setSelA]           = useState<string | null>(fromId);
+  const [selB,           setSelB]           = useState<string | null>(toId);
+  const [setIdx,         setSetIdx]         = useState(0);
+
+  // Auto-load when triggered from Point+ "Compare This Reading"
   useEffect(() => {
     if (fromId) {
       setSelA(fromId);
       setSelB(toId ?? null);
+      setTempA(fromId);
+      setTempB(toId ?? null);
+      setShowComparison(!!(fromId && toId));
     }
   }, [fromId, toId]);
 
@@ -514,6 +521,24 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
       try { localStorage.setItem(GOAL_KEY, JSON.stringify(goalValues)); } catch {}
     }
   }, [goalValues, GOAL_KEY]);
+
+  // Build set groups for inline picker
+  const groups = useMemo(() => {
+    const gs: Array<{ setObj: SurveySet | null; pts: SurveyPoint[]; setLabel: string; name: string; createdAt?: number }> = [];
+    sets.forEach(s => {
+      const pts = points.filter(p => p.setId === s.id);
+      if (pts.length > 0) gs.push({ setObj: s, pts, setLabel: s.setLabel ?? '', name: s.name, createdAt: s.createdAt });
+    });
+    const unset = points.filter(p => !p.setId);
+    if (unset.length > 0) gs.unshift({ setObj: null, pts: unset, setLabel: '', name: 'No Set' });
+    return gs;
+  }, [points, sets]);
+
+  const totalGroups = groups.length;
+  const safeIdx     = Math.min(setIdx, Math.max(0, totalGroups - 1));
+  const currentGroup = groups[safeIdx];
+  const canGo       = !!(tempA && tempB);
+  const selCount    = [tempA, tempB].filter(Boolean).length;
 
   const ptA = selA ? (points.find(p => p.id === selA) ?? null) : null;
   const ptB = selB ? (points.find(p => p.id === selB) ?? null) : null;
@@ -539,8 +564,8 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
     if (tempA && tempB) {
       setSelA(tempA); setSelB(tempB);
       setFromId(tempA); setToId(tempB);
+      setShowComparison(true);
     }
-    setShowModal(false);
   };
 
   const handleSwap = () => {
@@ -549,7 +574,11 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
     setFromId(b ?? null); setToId(a ?? null);
   };
 
-  const handleOpenModal = () => { setTempA(selA); setTempB(selB); setShowModal(true); };
+  // Cancel: return to picker, restore pending selection to last committed
+  const handleCancel = () => {
+    setTempA(selA); setTempB(selB);
+    setShowComparison(false);
+  };
 
   // Goal helpers
   const goalPt      = goalCard ? (points.find(p => p.id === goalCard.ptId) ?? null) : null;
@@ -590,9 +619,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
     return (
       <React.Fragment key={pt.id}>
-        {/* Main data row */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 8px', backgroundColor: rowBg }}>
-          {/* Col 1: Point */}
           <div style={{ flex: 3, display: 'flex', alignItems: 'center', paddingRight: 8 }}>
             <div style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: roleBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 4 }}>
               <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{role}</span>
@@ -602,52 +629,32 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               {pt.pointName && <div style={{ fontSize: 10, color: TEXT_DIS, marginTop: 1 }}>{pt.label}</div>}
             </div>
           </div>
-
-          {/* Vertical divider */}
           <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch', flexShrink: 0 }} />
-
-          {/* Col 2: Rod Reading */}
           <div style={{ flex: 2.8, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, padding: '0 8px' }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
             {rodGoal != null ? (
-              <div
-                style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center', minWidth: 52 }}
-                onClick={() => openGoal(pt.id, 'rod')}
-              >
+              <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center', minWidth: 52 }} onClick={() => openGoal(pt.id, 'rod')}>
                 <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('goalHeight')}</div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{rodGoal.toFixed(2)} ft</div>
               </div>
             ) : (
-              <div
-                style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '4px 6px', cursor: 'pointer', textAlign: 'center', marginTop: 3 }}
-                onClick={() => openGoal(pt.id, 'rod')}
-              >
+              <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '4px 6px', cursor: 'pointer', textAlign: 'center', marginTop: 3 }} onClick={() => openGoal(pt.id, 'rod')}>
                 <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{t('goalHeightBtn')}</span>
               </div>
             )}
           </div>
-
-          {/* Vertical divider */}
           <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch', flexShrink: 0 }} />
-
-          {/* Col 3: Elevation */}
           <div style={{ flex: 2.8, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, paddingLeft: 8 }}>
             {pt.bmElevation > 0 ? (
               <>
                 <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)}</span>
                 {elevGoal != null ? (
-                  <div
-                    style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center', minWidth: 52 }}
-                    onClick={() => openGoal(pt.id, 'elev')}
-                  >
+                  <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center', minWidth: 52 }} onClick={() => openGoal(pt.id, 'elev')}>
                     <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('goalElev')}</div>
                     <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{elevGoal.toFixed(2)} ft</div>
                   </div>
                 ) : (
-                  <div
-                    style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '4px 6px', cursor: 'pointer', textAlign: 'center', marginTop: 3 }}
-                    onClick={() => openGoal(pt.id, 'elev')}
-                  >
+                  <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '4px 6px', cursor: 'pointer', textAlign: 'center', marginTop: 3 }} onClick={() => openGoal(pt.id, 'elev')}>
                     <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{t('goalElevBtn')}</span>
                   </div>
                 )}
@@ -657,8 +664,6 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             )}
           </div>
         </div>
-
-        {/* Difference sub-row */}
         {(rodDiff != null || elevDiff != null) && (
           <div style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', backgroundColor: rowBg, borderTop: `1px solid ${BORDER_S}88` }}>
             <div style={{ flex: 3, paddingRight: 8 }}>
@@ -688,25 +693,20 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
   return (
     <div style={{ flex: 1, backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {!hasSelection ? (
-        /* Empty state */
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
-          <span style={{ fontSize: 40 }}>📐</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_PRI, textAlign: 'center' }}>{t('compareTwoPoints')}</span>
-          <span style={{ fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, maxWidth: 280 }}>
-            {t('compareDesc')}
-          </span>
-          <button
-            style={{ height: 50, backgroundColor: BLUE, border: 'none', borderRadius: 8, padding: '0 24px', color: '#fff', fontSize: 14, fontWeight: 700, letterSpacing: 0.3, cursor: 'pointer', marginTop: 8 }}
-            onClick={handleOpenModal}
-          >{t('selectTwoPointsBtn')}</button>
-        </div>
-      ) : (
-        /* Comparison view */
-        <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* Comparison card */}
+
+      {showComparison && hasSelection ? (
+        /* ── Comparison results view ── */
+        <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 80 }}>
+          {/* Summary card with cancel */}
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.55, color: compColor }}>{compText}</span>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, lineHeight: 1.55, color: compColor }}>{compText}</span>
+              <button
+                onClick={handleCancel}
+                style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_DIS, cursor: 'pointer', padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0 }}
+                title={t('cancel')}
+              >✕</button>
+            </div>
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
               <button
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, padding: '0 12px', height: 44, minWidth: 60, cursor: 'pointer' }}
@@ -716,47 +716,172 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 <span style={{ fontSize: 9, color: BLUE_ACC, fontWeight: 800, letterSpacing: 0.5 }}>{t('swapPoints')}</span>
               </button>
               <button
-                style={{ flex: 1, height: 44, backgroundColor: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: 0.2, cursor: 'pointer', textAlign: 'center', padding: '0 8px' }}
-                onClick={handleOpenModal}
+                style={{ flex: 1, height: 44, backgroundColor: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: 0.2, cursor: 'pointer', textAlign: 'center' as const, padding: '0 8px' }}
+                onClick={handleCancel}
               >{t('compareAnother')}</button>
             </div>
           </div>
 
           {/* 3-column table card */}
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', padding: '8px 8px', backgroundColor: RAISED }}>
               <div style={{ flex: 3, paddingRight: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' }}>{t('pointCol')}</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>{t('pointCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
               <div style={{ flex: 2.8, padding: '0 8px' }}>
-                <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' }}>{t('rodReadingCol')}</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>{t('rodReadingCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
               <div style={{ flex: 2.8, paddingLeft: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' }}>{t('elevationCol')}</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>{t('elevationCol')}</span>
               </div>
             </div>
-
             <div style={{ height: 1, backgroundColor: BORDER }} />
             {ptA && renderRow(ptA, 'A')}
             <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 8px' }} />
             {ptB && renderRow(ptB, 'B')}
           </div>
         </div>
-      )}
+      ) : (
+        /* ── Inline picker view ── */
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {totalGroups === 0 ? (
+            /* No points at all */
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
+              <span style={{ fontSize: 40 }}>📐</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_PRI, textAlign: 'center' }}>{t('compareTwoPoints')}</span>
+              <span style={{ fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, maxWidth: 280 }}>{t('compareDesc')}</span>
+            </div>
+          ) : (
+            <>
+              {/* Set header with nav arrows */}
+              <div style={{ padding: '10px 12px 8px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Left arrow */}
+                  <button
+                    style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 22, color: TEXT_PRI, cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    onClick={() => setSetIdx(Math.max(0, safeIdx - 1))}
+                    disabled={safeIdx === 0}
+                  >‹</button>
 
-      <SelectModal
-        visible={showModal}
-        points={points}
-        sets={sets}
-        tempA={tempA}
-        tempB={tempB}
-        onSelect={handleTempSelect}
-        onGo={handleGo}
-        onClose={() => setShowModal(false)}
-      />
+                  {/* Center: set info */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                    {currentGroup?.setLabel ? (
+                      <div style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 10px' }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.6 }}>{currentGroup.setLabel}</span>
+                      </div>
+                    ) : null}
+                    <span style={{ fontSize: 17, fontWeight: 700, color: TEXT_PRI, textAlign: 'center' }}>{currentGroup?.name ?? '—'}</span>
+                    {currentGroup?.createdAt ? (
+                      <span style={{ fontSize: 12, color: TEXT_DIS }}>
+                        {new Date(currentGroup.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    ) : null}
+                    {totalGroups > 1 && (
+                      <span style={{ fontSize: 11, color: TEXT_DIS }}>{safeIdx + 1} / {totalGroups}</span>
+                    )}
+                  </div>
+
+                  {/* Right arrow */}
+                  <button
+                    style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 22, color: TEXT_PRI, cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    onClick={() => setSetIdx(Math.min(totalGroups - 1, safeIdx + 1))}
+                    disabled={safeIdx >= totalGroups - 1}
+                  >›</button>
+                </div>
+
+                {/* Dot navigation */}
+                {totalGroups > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 7 }}>
+                    {groups.map((_, i) => (
+                      <div
+                        key={i}
+                        style={{ height: 6, width: i === safeIdx ? 14 : 6, borderRadius: 3, backgroundColor: i === safeIdx ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
+                        onClick={() => setSetIdx(i)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2-column point grid */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 4px' }}>
+                {(currentGroup?.pts ?? []).length === 0 ? (
+                  <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {(currentGroup?.pts ?? []).map(pt => {
+                      const isA = tempA === pt.id;
+                      const isB = tempB === pt.id;
+                      const sel = isA || isB;
+                      const elev = pt.bmElevation > 0 ? pt.bmElevation : pt.engineeringFeet;
+                      return (
+                        <div
+                          key={pt.id}
+                          style={{
+                            borderRadius: 10,
+                            border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
+                            backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
+                            padding: '10px 10px 8px',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            minHeight: 76,
+                            userSelect: 'none' as const,
+                          }}
+                          onClick={() => handleTempSelect(pt.id)}
+                        >
+                          {/* Selection badge */}
+                          {sel && (
+                            <div style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{isA ? '1' : '2'}</span>
+                            </div>
+                          )}
+                          <div style={{ fontSize: 15, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.2, paddingRight: sel ? 22 : 0 }}>{pt.label}</div>
+                          {pt.pointName && (
+                            <div style={{ fontSize: 12, color: TEXT_SEC, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.pointName}</div>
+                          )}
+                          <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{elev.toFixed(2)}</span>
+                            <span style={{ fontSize: 11, color: TEXT_DIS }}>ft</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Selection status */}
+              <div style={{ backgroundColor: RAISED, borderTop: `1px solid ${BORDER}`, padding: '6px 14px', flexShrink: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
+                  {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
+                </span>
+              </div>
+
+              {/* Bottom action buttons */}
+              <div style={{ padding: '8px 12px 10px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                <button
+                  style={{ height: 48, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 10, color: canGo ? '#fff' : TEXT_DIS, fontSize: 16, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.4, opacity: canGo ? 1 : 0.5 }}
+                  onClick={handleGo}
+                  disabled={!canGo}
+                >{t('goBtn')}</button>
+                {totalGroups > 1 && (
+                  <button
+                    style={{ height: 42, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 8, color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
+                  >{t('chooseFromAnotherSet')}</button>
+                )}
+              </div>
+
+              {/* Reserved ad space */}
+              <div style={{ height: 60, backgroundColor: RAISED, borderTop: `1px dashed ${BORDER_B}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <GoalModal
         visible={showGoalModal && goalCard != null && goalPt != null}
@@ -1549,17 +1674,17 @@ export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Gold sub-tab bar */}
-      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '6px 8px', gap: 6, flexShrink: 0 }}>
+      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '3px 6px', gap: 5, flexShrink: 0 }}>
         {SUB_TABS.map(tab => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               style={{
-                flex: 1, height: 40, borderRadius: 10,
+                flex: 1, height: 34, borderRadius: 8,
                 border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
                 backgroundColor: isActive ? '#FFFFFF' : GOLD,
-                color: '#163A63', fontSize: 12, fontWeight: 700,
+                color: '#163A63', fontSize: 14, fontWeight: 700,
                 cursor: 'pointer',
                 boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
                 whiteSpace: 'nowrap', overflow: 'hidden',
