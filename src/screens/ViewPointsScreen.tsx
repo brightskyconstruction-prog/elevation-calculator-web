@@ -602,42 +602,50 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
           ) : (
             <>
               {/* Compact single-row set header */}
-              <div style={{ padding: '5px 8px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ padding: '3px 6px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   {/* Left arrow */}
                   <button
-                    style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 20, color: TEXT_PRI, cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    style={{ width: 26, height: 26, borderRadius: 5, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 18, color: TEXT_PRI, cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
                     onClick={() => setSetIdx(Math.max(0, safeIdx - 1))}
                     disabled={safeIdx === 0}
                   >‹</button>
 
-                  {/* Center: SET badge | Name | Date — all on one line */}
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, overflow: 'hidden', minWidth: 0 }}>
+                  {/* Center: SET badge | Name | Date | count — single line */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', minWidth: 0 }}>
                     {currentGroup?.setLabel ? (
-                      <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '2px 7px', flexShrink: 0 }}>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.5 }}>{currentGroup.setLabel}</span>
+                      <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '1px 6px', flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{currentGroup.setLabel}</span>
                       </div>
                     ) : null}
                     {currentGroup?.setLabel && (
-                      <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
+                      <span style={{ color: BORDER_B, fontSize: 11, flexShrink: 0 }}>|</span>
                     )}
-                    <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
                     {currentGroup?.createdAt ? (
                       <>
-                        <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
-                        <span style={{ fontSize: 11, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
+                        <span style={{ color: BORDER_B, fontSize: 11, flexShrink: 0 }}>|</span>
+                        <span style={{ fontSize: 10, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
                           {new Date(currentGroup.createdAt).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </>
                     ) : null}
                     {totalGroups > 1 && (
-                      <span style={{ fontSize: 11, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
+                      <span style={{ fontSize: 10, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
                     )}
                   </div>
 
+                  {/* Clear button */}
+                  {selCount > 0 && (
+                    <button
+                      onClick={() => { setTempA(null); setTempB(null); }}
+                      style={{ height: 22, padding: '0 7px', borderRadius: 4, backgroundColor: 'rgba(231,76,60,0.08)', border: `1px solid rgba(231,76,60,0.30)`, fontSize: 10, fontWeight: 700, color: RED, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' as const }}
+                    >{t('clearSelection')}</button>
+                  )}
+
                   {/* Right arrow */}
                   <button
-                    style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 20, color: TEXT_PRI, cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    style={{ width: 26, height: 26, borderRadius: 5, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 18, color: TEXT_PRI, cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
                     onClick={() => setSetIdx(Math.min(totalGroups - 1, safeIdx + 1))}
                     disabled={safeIdx >= totalGroups - 1}
                   >›</button>
@@ -645,11 +653,11 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
                 {/* Dot indicators */}
                 {totalGroups > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 3 }}>
                     {groups.map((_, i) => (
                       <div
                         key={i}
-                        style={{ height: 5, width: i === safeIdx ? 12 : 5, borderRadius: 3, backgroundColor: i === safeIdx ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
+                        style={{ height: 4, width: i === safeIdx ? 10 : 4, borderRadius: 2, backgroundColor: i === safeIdx ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
                         onClick={() => setSetIdx(i)}
                       />
                     ))}
@@ -658,11 +666,11 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               </div>
 
               {/* 3-column point grid */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '7px 7px 4px' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 2px' }}>
                 {(currentGroup?.pts ?? []).length === 0 ? (
                   <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
                     {(currentGroup?.pts ?? []).map(pt => {
                       const isA = tempA === pt.id;
                       const isB = tempB === pt.id;
@@ -715,30 +723,32 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 )}
               </div>
 
-              {/* Selection status */}
-              <div style={{ backgroundColor: RAISED, borderTop: `1px solid ${BORDER}`, padding: '5px 12px', flexShrink: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
-                  {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
-                </span>
-              </div>
-
-              {/* Bottom action buttons — horizontal row */}
-              <div style={{ padding: '6px 10px 8px', display: 'flex', flexDirection: 'row', gap: 8, flexShrink: 0 }}>
-                <button
-                  style={{ flex: 1, height: 40, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 8, color: canGo ? '#fff' : TEXT_DIS, fontSize: 15, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.5 }}
-                  onClick={handleGo}
-                  disabled={!canGo}
-                >{t('goBtn')}</button>
-                {totalGroups > 1 && (
+              {/* Selection status + action buttons — flat, no card wrapper */}
+              <div style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: '4px 8px 6px', backgroundColor: SCREEN }}>
+                {/* Status line */}
+                <div style={{ marginBottom: 5 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
+                    {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
+                  </span>
+                </div>
+                {/* Buttons — horizontal, no card */}
+                <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
                   <button
-                    style={{ flex: 1.3, height: 40, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 8, color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 6px' }}
-                    onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
-                  >{t('chooseFromAnotherSet')}</button>
-                )}
+                    style={{ flex: 1, height: 38, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 7, color: canGo ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.45 }}
+                    onClick={handleGo}
+                    disabled={!canGo}
+                  >{t('goBtn')}</button>
+                  {totalGroups > 1 && (
+                    <button
+                      style={{ flex: 1.4, height: 38, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 7, color: TEXT_SEC, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '0 4px' }}
+                      onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
+                    >{t('chooseFromAnotherSet')}</button>
+                  )}
+                </div>
               </div>
 
               {/* Reserved ad space */}
-              <div style={{ height: 54, backgroundColor: RAISED, borderTop: `1px dashed ${BORDER_B}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ height: 48, borderTop: `1px dashed ${BORDER_B}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
               </div>
             </>
