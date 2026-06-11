@@ -50,7 +50,7 @@ const en = {
   calcTabCalc:        'Calculator',
   calcTabConv:        'Converter',
   decimalFeet:        'Decimal Feet',
-  ftInches:           'Ft-Inches',
+  ftInches:           'Feet-Inches',
   allClear:           'ALL CLEAR',
   calculate:          'CALCULATE',
   result:             'RESULT',

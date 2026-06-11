@@ -237,7 +237,7 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
     <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 4, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
       {(['eng', 'fif'] as Mode[]).map(m => (
         <button key={m} style={{
-          height: 26, border: 'none', cursor: 'pointer', fontSize: 9, fontWeight: 800,
+          height: 26, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800,
           letterSpacing: 0.2, color: mode === m ? '#fff' : TEXT_S,
           backgroundColor: mode === m ? NAVY : SURFACE,
           transition: 'background-color 0.12s, color 0.12s',
@@ -496,7 +496,7 @@ function CalculatorView() {
               <input style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={aEng} onChange={e => { setAEng(e.target.value); setResult(null); }} inputMode="decimal" placeholder="Decimal Feet" />
             )}
-            <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>Clear</button>
+            <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
           </div>
 
           {/* Operator */}
@@ -516,7 +516,7 @@ function CalculatorView() {
               <input style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={bEng} onChange={e => { setBEng(e.target.value); setResult(null); }} inputMode="decimal" placeholder="Decimal Feet" />
             )}
-            <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>Clear</button>
+            <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
           </div>
 
           {/* Result card */}
@@ -583,15 +583,15 @@ export default function CalculatorScreen() {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* Gold sub-tab bar — fixed widths, color-only transitions */}
-      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '6px 8px', gap: 6, flexShrink: 0 }}>
+      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '5px 8px', gap: 6, flexShrink: 0 }}>
         {SUB_TABS.map(tab => {
           const isActive = subTab === tab.id;
           return (
             <button key={tab.id} style={{
               // Fixed equal width — never changes between states
               flex: 1,
-              height: 40,
-              borderRadius: 10,
+              height: 34,
+              borderRadius: 8,
               // Same border-width in both states (only color changes)
               border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
               backgroundColor: isActive ? '#FFFFFF' : GOLD,
