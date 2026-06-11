@@ -537,8 +537,8 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
         {/* Difference row — numbers only, no directional words */}
         {(rodDiff != null || elevDiff != null) && (
           <div style={{ display: 'flex', alignItems: 'stretch', padding: '3px 6px', backgroundColor: rowBg, borderTop: `1px solid ${BORDER_S}88` }}>
-            <div style={{ flex: 1.2, paddingRight: 6, display: 'flex', alignItems: 'center' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('difference')}</span>
+            <div style={{ flex: 1.2, paddingRight: 6, display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('difference')}</span>
             </div>
             <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
             <div style={{ flex: 3.4, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '0 6px' }}>
@@ -597,11 +597,11 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('pointCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
-              <div style={{ flex: 3.4, padding: '0 6px' }}>
+              <div style={{ flex: 3.4, padding: '0 6px', textAlign: 'right' }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('rodReadingCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
-              <div style={{ flex: 3.4, paddingLeft: 6 }}>
+              <div style={{ flex: 3.4, paddingLeft: 6, textAlign: 'right' }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('elevationCol')}</span>
               </div>
             </div>
