@@ -456,7 +456,6 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
   const closeGoalModal = () => { setShowGoalModal(false); setGoalCard(null); setGoalInput(''); };
 
   const diffColor = (d: number) => d > 0.00005 ? GREEN : d < -0.00005 ? RED : TEXT_SEC;
-  const diffWord  = (d: number) => d > 0.00005 ? t('dirAbove') : d < -0.00005 ? t('dirBelow') : t('atGrade');
 
   // Render one data row + optional difference sub-row
   const renderRow = (pt: SurveyPoint, role: 'A' | 'B') => {
