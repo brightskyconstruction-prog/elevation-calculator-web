@@ -217,7 +217,7 @@ const en = {
   clearBtn:            'Clear',
   gotIt:               'Got it',
   benchmarkText:       'Enter elevation if this reading is at a benchmark / known elevation.',
-  setAssignment:       'Select the set this point belongs to.',
+  setAssignment:       'Select the set this point belongs to:',
   isAssignedTo:        'is assigned to:',
   createNewSetBtn:     'Create a new set with this point as the first point.',
   addToExistingSet:    'Add to Current Set',
@@ -250,6 +250,8 @@ const en = {
   willBeFirstPoint:    (label: string, engFt: string) => `Point ${label} (eng. ${engFt} ft) will be the first point in this set.`,
   addPointToSet:       (label: string) => `Add point ${label} to an existing set.`,
   assignToSetBtn:      (name: string) => `Assign to ${name}`,
+  compareThisReading:  'Compare This Reading',
+  findSlope:           'Find Slope',
 };
 
 const es: typeof en = {
@@ -468,7 +470,7 @@ const es: typeof en = {
   clearBtn:            'Limpiar',
   gotIt:               'Entendido',
   benchmarkText:       'Ingresa la elevación si esta lectura está en una referencia / elevación conocida.',
-  setAssignment:       'Selecciona el conjunto al que pertenece este punto.',
+  setAssignment:       'Selecciona el conjunto al que pertenece este punto:',
   isAssignedTo:        'está asignado a:',
   createNewSetBtn:     'Crear un nuevo conjunto con este punto como el primero.',
   addToExistingSet:    'Agregar al Conjunto Actual',
@@ -501,6 +503,8 @@ const es: typeof en = {
   willBeFirstPoint:    (label: string, engFt: string) => `Punto ${label} (ing. ${engFt} ft) será el primero en este conjunto.`,
   addPointToSet:       (label: string) => `Agregar punto ${label} a un conjunto existente.`,
   assignToSetBtn:      (name: string) => `Asignar a ${name}`,
+  compareThisReading:  'Comparar Esta Lectura',
+  findSlope:           'Calcular Pendiente',
 };
 
 export const strings: Record<Lang, typeof en> = { en, es };

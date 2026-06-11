@@ -24,11 +24,12 @@ const TEXT_DIS  = '#9CA3AF';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  projectId:       string;
-  isVisible?:      boolean;
-  onViewPoints?:   () => void;
-  editPoint?:      SurveyPoint | null;
-  onEditConsumed?: () => void;
+  projectId:        string;
+  isVisible?:       boolean;
+  onViewPoints?:    () => void;
+  editPoint?:       SurveyPoint | null;
+  onEditConsumed?:  () => void;
+  onComparePoint?:  (fromId: string, toId: string | null) => void;
 }
 
 type RodFormat = 'fif' | 'eng';
@@ -238,7 +239,7 @@ function InfoTip({ text }: { text: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed }: Props) {
+export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t } = useLang();
 
@@ -457,6 +458,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setTimeout(() => setSaveMsg(null), 2500);
   };
 
+  const handleCompareThis = () => {
+    if (!currentPoint || !onComparePoint) return;
+    let prevId: string | null = null;
+    if (currentPoint.setId) {
+      const setPoints = points
+        .filter(p => p.setId === currentPoint.setId && p.id !== currentPoint.id)
+        .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+      prevId = setPoints[0]?.id ?? null;
+    }
+    onComparePoint(currentPoint.id, prevId);
+  };
+
   const handleCreateSet = (name: string) => {
     const now = Date.now();
     const label = nextSetLabel(projectId);
@@ -661,7 +674,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {/* ── Set Assignment ── */}
         <div style={s.card}>
           <div style={s.secRow}>
-            <span style={{ ...s.secLbl, ...(assignedSetObj ? {} : { textTransform: 'none' as const, fontSize: 12, letterSpacing: 0, fontWeight: 600 }) }}>
+            <span style={s.secLbl}>
               {assignedSetObj
                 ? `${currentLabel}${pointName ? ` (${pointName})` : ''} ${t('isAssignedTo')}`
                 : t('setAssignment')}
@@ -686,7 +699,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {sets.length > 0 && lastUsedSet && (
                 <button style={s.setOptBtnSec} onClick={() => setAssignedSet(lastUsedSet.id)}>
-                  {t('addToExistingSet')}
+                  {`${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
                 </button>
               )}
               <button style={s.setOptBtnPri} onClick={() => setShowCreate(true)}>
@@ -720,11 +733,20 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
         )}
 
-        {/* ── Save / Update button ── */}
-        {(isNewPoint || isEditMode) && (
+        {/* ── Save / Update / Post-save actions ── */}
+        {(isNewPoint || isEditMode) ? (
           <button style={s.saveBtn} onClick={handleSave}>
             {isNewPoint ? t('savePoint') : t('updatePoint')}
           </button>
+        ) : currentPoint && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <button style={s.compareBtn} onClick={handleCompareThis}>
+              {t('compareThisReading')}
+            </button>
+            <button style={s.slopeBtn} onClick={() => alert(t('comingSoon'))}>
+              {t('findSlope')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -823,16 +845,18 @@ const s: Record<string, React.CSSProperties> = {
 
   bmRow:   { display: 'flex', alignItems: 'center', gap: 8 },
   bmTxt:   { flex: 1, fontSize: 13, color: TEXT_PRI, lineHeight: 1.5, fontWeight: 600 },
-  bmInput: { width: 92, height: 38, backgroundColor: '#f9f9f9', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 14, fontWeight: 700, color: TEXT_PRI, outline: 'none' },
+  bmInput: { width: 92, height: 38, backgroundColor: '#FFFFFF', border: `1.5px solid #6B7280`, borderRadius: 6, textAlign: 'center', fontSize: 14, fontWeight: 700, color: TEXT_PRI, outline: 'none' },
 
   assignedBadge:{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '8px 10px' },
   setLblBadge:  { backgroundColor: BLUE, borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: '0.4px' },
-  setOptBtnPri: { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
-  setOptBtnSec: { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 11, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  setOptBtnPri: { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  setOptBtnSec: { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
 
   timestampCard:{ backgroundColor: CARD, borderRadius: 8, border: `1px solid #F3F4F6`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 },
   savedAt:      { fontSize: 11, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
-  saveBtn: { height: 44, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  saveBtn:    { height: 40, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  compareBtn: { height: 40, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  slopeBtn:   { height: 38, width: '100%', backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };

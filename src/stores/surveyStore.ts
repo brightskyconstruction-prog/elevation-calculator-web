@@ -19,8 +19,8 @@ function generateLabel(existingPoints: SurveyPoint[]): string {
 
 function generateSetLabel(existingSets: SurveySet[]): string {
   let n = existingSets.length + 1;
-  while (existingSets.some(s => s.setLabel === `S${n}`)) n++;
-  return `S${n}`;
+  while (existingSets.some(s => s.setLabel === `SET-${n}`)) n++;
+  return `SET-${n}`;
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ export const useSurveyStore = create<SurveyState>()(
         const sets = get().sets.filter(s => s.projectId === projectId);
         sets.forEach((s, i) => {
           if (!s.setLabel) {
-            get().updateSet(projectId, s.id, { setLabel: `S${i + 1}` });
+            get().updateSet(projectId, s.id, { setLabel: `SET-${i + 1}` });
           }
         });
       },

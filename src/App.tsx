@@ -40,10 +40,12 @@ function AppInner() {
     return 'app';
   });
 
-  const [email,       setEmail]       = useState<string>(() => readEmail() ?? '');
-  const [activeTab,   setActiveTab]   = useState<MainTab>('add');
-  const [editPoint,   setEditPoint]   = useState<SurveyPoint | undefined>(undefined);
+  const [email,        setEmail]        = useState<string>(() => readEmail() ?? '');
+  const [activeTab,    setActiveTab]    = useState<MainTab>('add');
+  const [editPoint,    setEditPoint]    = useState<SurveyPoint | undefined>(undefined);
   const [showSettings, setShowSettings] = useState(false);
+  const [compareFromId, setCompareFromId] = useState<string | null>(null);
+  const [compareToId,   setCompareToId]   = useState<string | null>(null);
 
   const { ensureDefaultProject, activeProjectId } = useSurveyStore();
 
@@ -77,6 +79,12 @@ function AppInner() {
   const handleEditPoint = useCallback((pt: SurveyPoint) => {
     setEditPoint(pt);
     setActiveTab('add');
+  }, []);
+
+  const handleComparePoint = useCallback((fromId: string, toId: string | null) => {
+    setCompareFromId(fromId);
+    setCompareToId(toId);
+    setActiveTab('points');
   }, []);
 
   const handleEditConsumed = useCallback(() => {
@@ -176,12 +184,15 @@ function AppInner() {
             onViewPoints={() => setActiveTab('points')}
             editPoint={editPoint}
             onEditConsumed={handleEditConsumed}
+            onComparePoint={handleComparePoint}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
           <ViewPointsScreen
             projectId={projectId}
             onEditPoint={handleEditPoint}
+            compareFromId={compareFromId}
+            compareToId={compareToId}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'sets'   ? 'flex' : 'none' }}>

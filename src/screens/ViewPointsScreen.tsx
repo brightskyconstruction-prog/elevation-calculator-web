@@ -27,8 +27,10 @@ const GOLD_SVG  = '#F5A623';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
-  projectId:    string;
-  onEditPoint?: (pt: SurveyPoint) => void;
+  projectId:      string;
+  onEditPoint?:   (pt: SurveyPoint) => void;
+  compareFromId?: string | null;
+  compareToId?:   string | null;
 }
 
 // ─── Point type resolution ──────────────────────────────────────────────────────
@@ -1512,10 +1514,19 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW POINTS SCREEN — gold sub-tab shell
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function ViewPointsScreen({ projectId, onEditPoint }: Props) {
+export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId, compareToId }: Props) {
   const [activeTab, setActiveTab] = useState<PointsTab>('compare');
   const [fromId,    setFromId]    = useState<string | null>(null);
   const [toId,      setToId]      = useState<string | null>(null);
+
+  // Auto-load comparison when triggered from Point+ tab
+  useEffect(() => {
+    if (compareFromId) {
+      setFromId(compareFromId);
+      setToId(compareToId ?? null);
+      setActiveTab('compare');
+    }
+  }, [compareFromId, compareToId]);
 
   const { t } = useLang();
   const { getPoints, getSets } = useSurveyStore();
