@@ -91,6 +91,11 @@ function fifToEng(feet: string, inches: string, frac: string): number {
   return (f * 12 + i + fr) / 12;
 }
 
+function toFIFStr(eng: number): string {
+  const { feet, inches, frac } = engToFIF(Math.abs(eng));
+  return `${feet}'-${inches}${frac && frac !== '0' ? ` ${frac}` : ''}"`;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // GOAL ENTRY MODAL
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -392,11 +397,13 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
   const displayA = ptA ? (ptA.pointName ? `${ptA.label} (${ptA.pointName})` : ptA.label) : '';
   const displayB = ptB ? (ptB.pointName ? `${ptB.label} (${ptB.pointName})` : ptB.label) : '';
-  const diff     = ptA && ptB ? ptA.engineeringFeet - ptB.engineeringFeet : null;
+  // Larger rod reading = lower ground elevation, so flip direction vs raw subtraction
+  const diff     = ptA && ptB ? ptB.engineeringFeet - ptA.engineeringFeet : null;
   const absDiff  = diff != null ? Math.abs(diff) : null;
   const dirWord  = diff != null ? (Math.abs(diff) < 0.00005 ? t('dirSameLevel') : diff > 0 ? t('dirAbove') : t('dirBelow')) : '';
   const compColor= diff != null ? (Math.abs(diff) < 0.00005 ? BLUE_ACC : diff > 0 ? GREEN : RED) : TEXT_PRI;
-  const compText = ptA && ptB ? strings[lang].comparisonSentence(displayA, absDiff?.toFixed(2) ?? '0', dirWord, displayB) : '';
+  const absFIFStr= absDiff != null ? toFIFStr(absDiff) : '';
+  const compText = ptA && ptB ? strings[lang].comparisonFIF(displayA, absDiff?.toFixed(2) ?? '0', absFIFStr, dirWord, displayB) : '';
 
   const handleTempSelect = useCallback((ptId: string) => {
     if (tempA === ptId) { setTempA(null); return; }
@@ -453,82 +460,103 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
   // Render one data row + optional difference sub-row
   const renderRow = (pt: SurveyPoint, role: 'A' | 'B') => {
-    const rodKey  = `${pt.id}-rod`;
-    const elevKey = `${pt.id}-elev`;
+    const rodKey   = `${pt.id}-rod`;
+    const elevKey  = `${pt.id}-elev`;
     const rodGoal  = goalValues[rodKey];
     const elevGoal = goalValues[elevKey];
-    const rodDiff  = rodGoal  != null ? rodGoal  - pt.engineeringFeet : null;
+    const rodDiff  = rodGoal  != null ? rodGoal - pt.engineeringFeet : null;
     const elevBm   = pt.bmElevation > 0 ? pt.bmElevation : null;
     const elevDiff = (elevGoal != null && elevBm != null) ? elevGoal - elevBm : null;
-    const rowBg = role === 'A' ? 'rgba(47,127,191,0.07)' : 'rgba(31,138,77,0.07)';
+    const rowBg  = role === 'A' ? 'rgba(47,127,191,0.07)' : 'rgba(31,138,77,0.07)';
     const roleBg = role === 'A' ? BLUE : GREEN;
+
+    const rodFIF      = toFIFStr(pt.engineeringFeet);
+    const goalRodFIF  = rodGoal  != null ? toFIFStr(rodGoal)  : '';
+    const rodDiffFIF  = rodDiff  != null ? toFIFStr(Math.abs(rodDiff))  : '';
+    const elevFIF     = elevBm   != null ? toFIFStr(elevBm)   : '';
+    const goalElevFIF = elevGoal != null ? toFIFStr(elevGoal) : '';
+    const elevDiffFIF = elevDiff != null ? toFIFStr(Math.abs(elevDiff)) : '';
 
     return (
       <React.Fragment key={pt.id}>
-        <div style={{ display: 'flex', alignItems: 'center', padding: '8px 8px', backgroundColor: rowBg }}>
-          <div style={{ flex: 3, display: 'flex', alignItems: 'center', paddingRight: 8 }}>
-            <div style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: roleBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 4 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{role}</span>
+        <div style={{ display: 'flex', alignItems: 'stretch', padding: '6px 6px', backgroundColor: rowBg }}>
+          {/* POINT col — narrower */}
+          <div style={{ flex: 2, display: 'flex', alignItems: 'center', paddingRight: 6 }}>
+            <div style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: roleBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff' }}>{role}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pt.pointName || pt.label}</div>
-              {pt.pointName && <div style={{ fontSize: 10, color: TEXT_DIS, marginTop: 1 }}>{pt.label}</div>}
+              <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.pointName || pt.label}</div>
+              {pt.pointName && <div style={{ fontSize: 9, color: TEXT_DIS, marginTop: 1 }}>{pt.label}</div>}
             </div>
           </div>
           <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch', flexShrink: 0 }} />
-          <div style={{ flex: 2.8, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, padding: '0 8px' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+          {/* ROD READING col — decimal + FIF + goal */}
+          <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, padding: '0 6px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
+              <div style={{ fontSize: 10, color: TEXT_SEC, fontFamily: 'monospace' }}>{rodFIF}</div>
+            </div>
             {rodGoal != null ? (
-              <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center', minWidth: 52 }} onClick={() => openGoal(pt.id, 'rod')}>
-                <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('goalHeight')}</div>
+              <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'rod')}>
+                <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalHeight')}</div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{rodGoal.toFixed(2)} ft</div>
+                <div style={{ fontSize: 9, color: GREEN, fontFamily: 'monospace' }}>{goalRodFIF}</div>
               </div>
             ) : (
-              <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '4px 6px', cursor: 'pointer', textAlign: 'center', marginTop: 3 }} onClick={() => openGoal(pt.id, 'rod')}>
-                <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{t('goalHeightBtn')}</span>
+              <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'rod')}>
+                <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' as const }}>{t('goalHeightBtn')}</span>
               </div>
             )}
           </div>
           <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch', flexShrink: 0 }} />
-          <div style={{ flex: 2.8, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, paddingLeft: 8 }}>
+          {/* ELEVATION col — decimal + FIF + goal */}
+          <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, paddingLeft: 6 }}>
             {pt.bmElevation > 0 ? (
               <>
-                <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)}</span>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)} ft</div>
+                  <div style={{ fontSize: 10, color: TEXT_SEC, fontFamily: 'monospace' }}>{elevFIF}</div>
+                </div>
                 {elevGoal != null ? (
-                  <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center', minWidth: 52 }} onClick={() => openGoal(pt.id, 'elev')}>
-                    <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('goalElev')}</div>
+                  <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'elev')}>
+                    <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalElev')}</div>
                     <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{elevGoal.toFixed(2)} ft</div>
+                    <div style={{ fontSize: 9, color: GREEN, fontFamily: 'monospace' }}>{goalElevFIF}</div>
                   </div>
                 ) : (
-                  <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '4px 6px', cursor: 'pointer', textAlign: 'center', marginTop: 3 }} onClick={() => openGoal(pt.id, 'elev')}>
-                    <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{t('goalElevBtn')}</span>
+                  <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 5px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'elev')}>
+                    <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' as const }}>{t('goalElevBtn')}</span>
                   </div>
                 )}
               </>
             ) : (
-              <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>—</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>—</span>
             )}
           </div>
         </div>
+        {/* Difference row — numbers only, no directional words */}
         {(rodDiff != null || elevDiff != null) && (
-          <div style={{ display: 'flex', alignItems: 'center', padding: '5px 8px', backgroundColor: rowBg, borderTop: `1px solid ${BORDER_S}88` }}>
-            <div style={{ flex: 3, paddingRight: 8 }}>
-              <span style={{ fontSize: 7, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.4, textTransform: 'uppercase' }}>{t('difference')}</span>
+          <div style={{ display: 'flex', alignItems: 'stretch', padding: '3px 6px', backgroundColor: rowBg, borderTop: `1px solid ${BORDER_S}88` }}>
+            <div style={{ flex: 2, paddingRight: 6, display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: 7, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('difference')}</span>
             </div>
             <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
-            <div style={{ flex: 2.8, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '0 8px' }}>
+            <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '0 6px' }}>
               {rodDiff != null && (
-                <span style={{ fontSize: 12, fontWeight: 700, lineHeight: '15px', textAlign: 'right', color: diffColor(rodDiff) }}>
-                  {rodDiff > 0 ? '+' : ''}{rodDiff.toFixed(2)} ft {diffWord(rodDiff)} {t('diffRodLabel')}
-                </span>
+                <>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{Math.abs(rodDiff).toFixed(2)} ft</span>
+                  <span style={{ fontSize: 9, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{rodDiffFIF}</span>
+                </>
               )}
             </div>
             <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
-            <div style={{ flex: 2.8, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', paddingLeft: 8 }}>
+            <div style={{ flex: 3, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingLeft: 6 }}>
               {elevDiff != null && (
-                <span style={{ fontSize: 12, fontWeight: 700, lineHeight: '15px', textAlign: 'right', color: diffColor(elevDiff) }}>
-                  {elevDiff > 0 ? '+' : ''}{elevDiff.toFixed(2)} ft {diffWord(elevDiff)} {t('diffElevLabel')}
-                </span>
+                <>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{Math.abs(elevDiff).toFixed(2)} ft</span>
+                  <span style={{ fontSize: 9, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{elevDiffFIF}</span>
+                </>
               )}
             </div>
           </div>
@@ -542,27 +570,27 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
       {showComparison && hasSelection ? (
         /* ── Comparison results view ── */
-        <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 80 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* Summary card with cancel */}
-          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '10px 10px 8px', display: 'flex', flexDirection: 'column', gap: 7 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, lineHeight: 1.55, color: compColor }}>{compText}</span>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, lineHeight: 1.5, color: compColor }}>{compText}</span>
               <button
                 onClick={handleCancel}
-                style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_DIS, cursor: 'pointer', padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0 }}
+                style={{ background: 'none', border: 'none', fontSize: 18, color: TEXT_DIS, cursor: 'pointer', padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0 }}
                 title={t('cancel')}
               >✕</button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, padding: '0 12px', height: 44, minWidth: 60, cursor: 'pointer' }}
+                style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, padding: '0 10px', height: 34, cursor: 'pointer', flexShrink: 0 }}
                 onClick={handleSwap}
               >
-                <span style={{ fontSize: 17, color: BLUE_ACC, fontWeight: 700, lineHeight: 1 }}>⇆</span>
-                <span style={{ fontSize: 9, color: BLUE_ACC, fontWeight: 800, letterSpacing: 0.5 }}>{t('swapPoints')}</span>
+                <span style={{ fontSize: 16, color: BLUE_ACC, fontWeight: 700, lineHeight: 1 }}>⇆</span>
+                <span style={{ fontSize: 11, color: BLUE_ACC, fontWeight: 700 }}>{t('swapPoints')}</span>
               </button>
               <button
-                style={{ flex: 1, height: 44, backgroundColor: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: 0.2, cursor: 'pointer', textAlign: 'center' as const, padding: '0 8px' }}
+                style={{ flex: 1, height: 34, backgroundColor: BLUE, border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: 0.2, cursor: 'pointer', padding: '0 6px' }}
                 onClick={handleCancel}
               >{t('compareAnother')}</button>
             </div>
@@ -570,23 +598,28 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
           {/* 3-column table card */}
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', padding: '8px 8px', backgroundColor: RAISED }}>
-              <div style={{ flex: 3, paddingRight: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', padding: '6px 6px', backgroundColor: RAISED }}>
+              <div style={{ flex: 2, paddingRight: 6 }}>
                 <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>{t('pointCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
-              <div style={{ flex: 2.8, padding: '0 8px' }}>
+              <div style={{ flex: 3, padding: '0 6px' }}>
                 <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>{t('rodReadingCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
-              <div style={{ flex: 2.8, paddingLeft: 8 }}>
+              <div style={{ flex: 3, paddingLeft: 6 }}>
                 <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>{t('elevationCol')}</span>
               </div>
             </div>
             <div style={{ height: 1, backgroundColor: BORDER }} />
             {ptA && renderRow(ptA, 'A')}
-            <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 8px' }} />
+            <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 6px' }} />
             {ptB && renderRow(ptB, 'B')}
+          </div>
+
+          {/* Ad space */}
+          <div style={{ height: 54, borderTop: `1px dashed ${BORDER_B}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+            <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
           </div>
         </div>
       ) : (
