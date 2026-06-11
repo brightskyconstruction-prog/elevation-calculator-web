@@ -286,49 +286,78 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CONVERTER VIEW
+// CONVERTER VIEW — bidirectional, both cards always active
 // ═══════════════════════════════════════════════════════════════════════════════
 function ConverterView() {
   const { t } = useLang();
-  const [convMode,     setConvMode]     = useState<ConvMode>('fif_to_eng');
-  const [cFt,          setCFt]          = useState('');
-  const [cIn,          setCIn]          = useState(0);
-  const [cFr,          setCFr]          = useState(0);
-  const [cFrL,         setCFrL]         = useState('None');
-  const [cFtErr,       setCFtErr]       = useState('');
-  const [cEng,         setCEng]         = useState('');
-  const [convHistory,  setConvHistory]  = useState<ConvItem[]>(() => loadJson(KEY_CONV, []));
-  const [showAllConvs, setShowAllConvs] = useState(false);
+  const [cFt,         setCFt]         = useState('');
+  const [cIn,         setCIn]         = useState(0);
+  const [cFr,         setCFr]         = useState(0);
+  const [cFrL,        setCFrL]        = useState('None');
+  const [cFtErr,      setCFtErr]      = useState('');
+  const [cEng,        setCEng]        = useState('');
+  const [convHistory, setConvHistory] = useState<ConvItem[]>(() => loadJson(KEY_CONV, []));
+  const [showAllConvs,setShowAllConvs]= useState(false);
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CONV, JSON.stringify(convHistory)); } catch {}
   }, [convHistory]);
 
-  const onCFtChange = (v: string) => {
-    if (v === '' || /^\d+$/.test(v)) { setCFt(v); setCFtErr(''); }
-    else setCFtErr('Whole numbers only');
+  // Compute decimal string from current FIF values
+  const engFromFIF = (ft: string, inches: number, frac: number): string => {
+    if (ft === '') return '';
+    const eng = fifToEng(ft, inches, frac);
+    return isNaN(eng) ? '' : eng.toFixed(4);
   };
 
-  const handleClear = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCEng(''); setCFtErr(''); setConvMode('fif_to_eng'); };
+  // FIF card handlers — auto-update decimal
+  const onCFtChange = (v: string) => {
+    if (v !== '' && !/^\d+$/.test(v)) { setCFtErr('Whole numbers only'); return; }
+    setCFt(v); setCFtErr('');
+    setCEng(engFromFIF(v, cIn, cFr));
+  };
+  const onSelectInches = (inches: number) => {
+    setCIn(inches);
+    setCEng(engFromFIF(cFt, inches, cFr));
+  };
+  const onSelectFrac = (frac: number, frL: string) => {
+    setCFr(frac); setCFrL(frL);
+    setCEng(engFromFIF(cFt, cIn, frac));
+  };
 
-  const cFtVal  = parseInt(cFt, 10);
-  const cEngVal = parseFloat(cEng);
-  const isFif   = convMode === 'fif_to_eng';
-  const canConv = isFif
-    ? (cFt !== '' && !isNaN(cFtVal) && cFtVal >= 0)
-    : (cEng !== '' && !isNaN(cEngVal) && cEngVal >= 0);
-
-  const handleConvert = () => {
-    if (!canConv) return;
-    if (isFif) {
-      const engVal = fifToEng(cFt, cIn, cFr);
-      setCEng(engVal.toFixed(2));
-      setConvHistory(prev => [{ id: uid(), mode: 'fif_to_eng' as ConvMode, fifFeet: cFtVal, fifInches: cIn, fifFracLbl: cFrL, engVal }, ...prev].slice(0, MAX_HIST));
-    } else {
-      const fif = engToFif(cEngVal);
-      setCFt(String(fif.feet)); setCIn(fif.inches); setCFrL(fif.fracLbl); setCFr(fracLblToDecimal(fif.fracLbl));
-      setConvHistory(prev => [{ id: uid(), mode: 'eng_to_fif' as ConvMode, fifFeet: fif.feet, fifInches: fif.inches, fifFracLbl: fif.fracLbl, engVal: cEngVal }, ...prev].slice(0, MAX_HIST));
+  // Decimal card handler — auto-update FIF
+  const onEngChange = (v: string) => {
+    setCEng(v);
+    const num = parseFloat(v);
+    if (v !== '' && !isNaN(num) && num >= 0) {
+      const fif = engToFif(num);
+      setCFt(String(fif.feet));
+      setCIn(fif.inches);
+      setCFrL(fif.fracLbl);
+      setCFr(fracLblToDecimal(fif.fracLbl));
+      setCFtErr('');
     }
+  };
+
+  // Individual clears (both sides sync to empty)
+  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); };
+  const clearEng = () => { setCEng(''); setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); };
+  const handleAllClear = () => clearFIF();
+
+  const cEngVal = parseFloat(cEng);
+  const cFtVal  = parseInt(cFt, 10);
+  const canConv = (cEng !== '' && !isNaN(cEngVal)) || (cFt !== '' && !isNaN(cFtVal));
+
+  // Save to history explicitly
+  const handleConvert = () => {
+    if (!canConv || cEng === '') return;
+    const engNum = parseFloat(cEng);
+    const ftNum  = cFt !== '' ? parseInt(cFt, 10) : 0;
+    if (isNaN(engNum)) return;
+    setConvHistory(prev => [{
+      id: uid(), mode: 'fif_to_eng' as ConvMode,
+      fifFeet: ftNum, fifInches: cIn, fifFracLbl: cFrL, engVal: engNum,
+    }, ...prev].slice(0, MAX_HIST));
   };
 
   const handleDeleteAllConvs = () => {
@@ -340,61 +369,70 @@ function ConverterView() {
     <>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 12, display: 'flex', flexDirection: 'column', gap: 12, boxSizing: 'border-box', width: '100%' }}>
 
-        {/* Card row */}
+        {/* ── Card row: FIF | = | Decimal ── */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'stretch', minWidth: 0 }}>
 
-          {/* FIF card */}
-          <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${isFif ? GOLD : BORDER}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6, opacity: isFif ? 1 : 0.6 }}>
-            <span style={{ fontSize: 7, fontWeight: 800, color: isFif ? GOLD : TEXT_D, letterSpacing: 0.6, textTransform: 'uppercase' }}>{isFif ? t('inputLabel') : t('outputLabel')}</span>
-            <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('feetInchesLabel')}</span>
+          {/* FIF card — always active */}
+          <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
             <input
-              style={{ width: '100%', height: 38, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: isFif ? '#fff' : SURFACE, fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
+              style={{ width: '100%', height: 38, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
               value={cFt} onChange={e => onCFtChange(e.target.value)}
-              inputMode="numeric" placeholder="Feet" readOnly={!isFif}
+              inputMode="numeric" placeholder="Feet"
             />
             {cFtErr && <span style={{ fontSize: 7, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
-            <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' }}
-              value={String(cIn)} onChange={e => setCIn(parseInt(e.target.value, 10))} disabled={!isFif}>
+            <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' as const }}
+              value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
               {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' }}
+            <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' as const }}
               value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
                 const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
-                if (opt) { setCFr(parseFloat(opt.value)); setCFrL(opt.label); }
-              }} disabled={!isFif}>
+                if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
+              }}>
               {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            <button style={{ height: 24, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 9, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
+              onClick={clearFIF}>✕ {t('clearBtn')}</button>
           </div>
 
-          {/* ⇄ Switch */}
+          {/* = center */}
           <div style={{ width: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: NAVY, border: `2px solid ${GOLD}`, color: GOLD, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-              onClick={() => setConvMode(m => m === 'fif_to_eng' ? 'eng_to_fif' : 'fif_to_eng')}>⇄</button>
+            <div style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: NAVY, border: `2px solid ${GOLD}`, color: GOLD, fontSize: 20, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' as const }}>=</div>
           </div>
 
-          {/* Eng card */}
-          <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${!isFif ? GOLD : BORDER}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6, opacity: !isFif ? 1 : 0.6 }}>
-            <span style={{ fontSize: 7, fontWeight: 800, color: !isFif ? GOLD : TEXT_D, letterSpacing: 0.6, textTransform: 'uppercase' }}>{!isFif ? t('inputLabel') : t('outputLabel')}</span>
-            <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeetLabel')}</span>
+          {/* Decimal card — always active */}
+          <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0 }}>
               <input
-                style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: !isFif ? '#fff' : SURFACE, fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
-                value={cEng} onChange={e => setCEng(e.target.value)}
-                inputMode="decimal" placeholder="0.0000" readOnly={isFif}
+                style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                value={cEng} onChange={e => onEngChange(e.target.value)}
+                inputMode="decimal" placeholder="0.0000"
               />
               <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>ft</span>
             </div>
+            <button style={{ height: 24, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 9, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
+              onClick={clearEng}>✕ {t('clearBtn')}</button>
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* ── Action buttons ── */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{ flex: 1, height: 52, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }} onClick={handleClear}>{t('clear')}</button>
-          <button style={{ flex: 2, height: 52, backgroundColor: canConv ? NAVY : SURFACE, border: `2px solid ${canConv ? GOLD : BORDER}`, borderRadius: 8, color: canConv ? '#fff' : TEXT_D, fontSize: 13, fontWeight: 800, letterSpacing: 1.5, cursor: canConv ? 'pointer' : 'default', opacity: canConv ? 1 : 0.55 }}
-            onClick={handleConvert} disabled={!canConv}>{t('convert')}</button>
+          <button style={{ flex: 1, height: 52, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            onClick={handleAllClear}>{t('allClear')}</button>
+          <button style={{
+            flex: 2, height: 52,
+            backgroundColor: canConv ? NAVY : '#4B5563',
+            border: `2px solid ${canConv ? GOLD : '#6B7280'}`,
+            borderRadius: 8,
+            color: canConv ? '#fff' : '#D1D5DB',
+            fontSize: 13, fontWeight: 800, letterSpacing: 1.5,
+            cursor: canConv ? 'pointer' : 'default',
+          }} onClick={handleConvert} disabled={!canConv}>{t('convert')}</button>
         </div>
 
-        {/* Recent Conversions */}
+        {/* ── Recent Conversions ── */}
         {convHistory.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
@@ -539,7 +577,7 @@ function CalculatorView() {
         {/* Action buttons */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button style={{ flex: 1, height: 45, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }} onClick={handleAllClear}>{t('allClear')}</button>
-          <button style={{ flex: 2, height: 45, backgroundColor: canCalc ? NAVY : SURFACE, border: `2px solid ${canCalc ? GOLD : BORDER}`, borderRadius: 8, color: canCalc ? '#fff' : TEXT_D, fontSize: 13, fontWeight: 800, letterSpacing: 1.5, cursor: canCalc ? 'pointer' : 'default', opacity: canCalc ? 1 : 0.55 }}
+          <button style={{ flex: 2, height: 45, backgroundColor: canCalc ? NAVY : '#4B5563', border: `2px solid ${canCalc ? GOLD : '#6B7280'}`, borderRadius: 8, color: canCalc ? '#fff' : '#D1D5DB', fontSize: 13, fontWeight: 800, letterSpacing: 1.5, cursor: canCalc ? 'pointer' : 'default' }}
             onClick={handleCalculate} disabled={!canCalc}>{t('calculate')}</button>
         </div>
 
