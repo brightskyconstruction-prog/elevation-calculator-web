@@ -39,7 +39,7 @@ const en = {
   invalidEmail:       'Please enter a valid email address.',
 
   // ── Main tabs ───────────────────────────────────────────────────
-  tabAdd:             'Point+',
+  tabAdd:             'Point ⊕',
   tabPoints:          'Compare Height',
   tabSets:            'View Sets',
   tabCalc:            'Calculator',
@@ -311,7 +311,7 @@ const es: typeof en = {
   invalidEmail:       'Por favor ingresa un correo electrónico válido.',
 
   // ── Main tabs ───────────────────────────────────────────────────
-  tabAdd:             'Point+',
+  tabAdd:             'Punto ⊕',
   tabPoints:          'Comparar Altura',
   tabSets:            'Ver Conjuntos',
   tabCalc:            'Calculadora',
