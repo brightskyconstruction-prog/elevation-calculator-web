@@ -490,6 +490,13 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
   const [selA,          setSelA]          = useState<string | null>(fromId);
   const [selB,          setSelB]          = useState<string | null>(toId);
 
+  useEffect(() => {
+    if (fromId) {
+      setSelA(fromId);
+      setSelB(toId ?? null);
+    }
+  }, [fromId, toId]);
+
   // Goal state
   const [goalCard,      setGoalCard]      = useState<{ ptId: string; field: 'rod' | 'elev' } | null>(null);
   const [goalInput,     setGoalInput]     = useState('');

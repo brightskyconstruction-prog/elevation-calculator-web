@@ -530,7 +530,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 24 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 80 }}>
 
         {/* ── Rod Reading + Benchmark card ── */}
         <div style={s.card}>
@@ -709,6 +709,22 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           )}
         </div>
 
+        {/* ── Save / Update / Post-save actions ── */}
+        {(isNewPoint || isEditMode) ? (
+          <button style={s.saveBtn} onClick={handleSave}>
+            {isNewPoint ? t('savePoint') : t('updatePoint')}
+          </button>
+        ) : currentPoint && (
+          <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <button style={s.compareBtn} onClick={handleCompareThis}>
+              {t('compareThisReading')}
+            </button>
+            <button style={s.slopeBtn} onClick={() => alert(t('comingSoon'))}>
+              {t('findSlope')}
+            </button>
+          </div>
+        )}
+
         {/* ── Timestamp + Location ── */}
         {savedAt && (
           <div style={s.timestampCard}>
@@ -730,22 +746,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             ) : (
               <span style={{ fontSize: 12, color: TEXT_DIS }}>{t('locationUnavailable')}</span>
             )}
-          </div>
-        )}
-
-        {/* ── Save / Update / Post-save actions ── */}
-        {(isNewPoint || isEditMode) ? (
-          <button style={s.saveBtn} onClick={handleSave}>
-            {isNewPoint ? t('savePoint') : t('updatePoint')}
-          </button>
-        ) : currentPoint && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <button style={s.compareBtn} onClick={handleCompareThis}>
-              {t('compareThisReading')}
-            </button>
-            <button style={s.slopeBtn} onClick={() => alert(t('comingSoon'))}>
-              {t('findSlope')}
-            </button>
           </div>
         )}
       </div>
@@ -835,10 +835,10 @@ const s: Record<string, React.CSSProperties> = {
   engInput:    { height: 40, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
   hint:        { fontSize: 15, color: BLUE, textAlign: 'center', fontWeight: 700 },
 
-  autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '10px 12px', border: '1.5px solid #2A5898' },
+  autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '7px 10px', border: '1.5px solid #2A5898' },
   knownElevBox:{ border: `1.5px solid ${GOLD}`, backgroundColor: '#1A3A5C' } as React.CSSProperties,
-  autoBmLbl:   { fontSize: 9, fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.8px', textTransform: 'uppercase' },
-  autoBmDesc:  { fontSize: 11, color: '#F5F7FA', lineHeight: 1.5 },
+  autoBmLbl:   { fontSize: 12, fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.6px', textTransform: 'uppercase' },
+  autoBmDesc:  { fontSize: 12, color: '#F5F7FA', lineHeight: 1.5 },
   autoBmRight: { display: 'flex', alignItems: 'flex-end', gap: 3 },
   autoBmVal:   { fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: 'monospace' },
   autoBmUnit:  { fontSize: 13, fontWeight: 700, color: '#F5F7FA', marginBottom: 2 },
@@ -857,6 +857,6 @@ const s: Record<string, React.CSSProperties> = {
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
   saveBtn:    { height: 40, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
-  compareBtn: { height: 40, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
-  slopeBtn:   { height: 38, width: '100%', backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  compareBtn: { height: 36, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  slopeBtn:   { height: 36, flex: 1, minWidth: 120, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };
