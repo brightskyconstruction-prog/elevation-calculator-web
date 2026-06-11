@@ -665,91 +665,92 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 )}
               </div>
 
-              {/* 3-column point grid */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px 2px' }}>
-                {(currentGroup?.pts ?? []).length === 0 ? (
-                  <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
-                    {(currentGroup?.pts ?? []).map(pt => {
-                      const isA = tempA === pt.id;
-                      const isB = tempB === pt.id;
-                      const sel = isA || isB;
-                      return (
-                        <div
-                          key={pt.id}
-                          style={{
-                            borderRadius: 8,
-                            border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
-                            backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
-                            padding: '6px 6px 5px',
-                            cursor: 'pointer',
-                            position: 'relative',
-                            userSelect: 'none' as const,
-                          }}
-                          onClick={() => handleTempSelect(pt.id)}
-                        >
-                          {/* Deselect ✕ button */}
-                          {sel && (
-                            <button
-                              onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
-                              style={{ position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0, zIndex: 1 }}
-                            >
-                              <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
-                            </button>
-                          )}
-                          {/* PT label */}
-                          <div style={{ fontSize: 13, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, paddingRight: sel ? 18 : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.label}</div>
-                          {/* Point name */}
-                          {pt.pointName && (
-                            <div style={{ fontSize: 10, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, marginTop: 1 }}>{pt.pointName}</div>
-                          )}
-                          {/* Rod height */}
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                            <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerRod')}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                            <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>
+              {/* Unified scrollable body: grid → status → buttons → ad */}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {/* 3-column point grid */}
+                <div style={{ padding: '6px 6px 4px' }}>
+                  {(currentGroup?.pts ?? []).length === 0 ? (
+                    <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
+                      {(currentGroup?.pts ?? []).map(pt => {
+                        const isA = tempA === pt.id;
+                        const isB = tempB === pt.id;
+                        const sel = isA || isB;
+                        return (
+                          <div
+                            key={pt.id}
+                            style={{
+                              borderRadius: 8,
+                              border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
+                              backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
+                              padding: '6px 6px 5px',
+                              cursor: 'pointer',
+                              position: 'relative',
+                              userSelect: 'none' as const,
+                            }}
+                            onClick={() => handleTempSelect(pt.id)}
+                          >
+                            {/* Deselect ✕ button */}
+                            {sel && (
+                              <button
+                                onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
+                                style={{ position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0, zIndex: 1 }}
+                              >
+                                <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
+                              </button>
+                            )}
+                            {/* PT label */}
+                            <div style={{ fontSize: 13, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, paddingRight: sel ? 18 : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.label}</div>
+                            {/* Point name */}
+                            {pt.pointName && (
+                              <div style={{ fontSize: 10, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, marginTop: 1 }}>{pt.pointName}</div>
+                            )}
+                            {/* Rod height */}
+                            <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                              <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerRod')}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                              <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>
+                            </div>
+                            {/* Elevation */}
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                              <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerElev')}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                              {pt.bmElevation > 0 && <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>}
+                            </div>
                           </div>
-                          {/* Elevation */}
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                            <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerElev')}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                            {pt.bmElevation > 0 && <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Selection status + action buttons — flat, no card wrapper */}
-              <div style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: '4px 8px 6px', backgroundColor: SCREEN }}>
-                {/* Status line */}
-                <div style={{ marginBottom: 5 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
-                    {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
-                  </span>
-                </div>
-                {/* Buttons — horizontal, no card */}
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
-                  <button
-                    style={{ flex: 1, height: 38, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 7, color: canGo ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.45 }}
-                    onClick={handleGo}
-                    disabled={!canGo}
-                  >{t('goBtn')}</button>
-                  {totalGroups > 1 && (
-                    <button
-                      style={{ flex: 1.4, height: 38, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 7, color: TEXT_SEC, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '0 4px' }}
-                      onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
-                    >{t('chooseFromAnotherSet')}</button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* Reserved ad space */}
-              <div style={{ height: 48, borderTop: `1px dashed ${BORDER_B}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
+                {/* Status + buttons — immediately after grid, in the flow */}
+                <div style={{ padding: '4px 8px 6px', borderTop: `1px solid ${BORDER}` }}>
+                  <div style={{ marginBottom: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
+                      {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
+                    <button
+                      style={{ flex: 1, height: 38, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 7, color: canGo ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.45 }}
+                      onClick={handleGo}
+                      disabled={!canGo}
+                    >{t('goBtn')}</button>
+                    {totalGroups > 1 && (
+                      <button
+                        style={{ flex: 1.4, height: 38, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 7, color: TEXT_SEC, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '0 4px' }}
+                        onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
+                      >{t('chooseFromAnotherSet')}</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Ad space — clean, no container */}
+                <div style={{ height: 60, borderTop: `1px dashed ${BORDER_B}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
+                </div>
               </div>
             </>
           )}
