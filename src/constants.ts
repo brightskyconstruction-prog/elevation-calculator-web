@@ -53,7 +53,7 @@ export function fmtFIF(feet: string, inches: number, frLabel: string): string {
   if (isNaN(f) && inches === 0) return '—';
   const isNoFrac = !frLabel || frLabel === 'None' || frLabel === '0/0';
   const fr = isNoFrac ? '' : ` ${frLabel}`;
-  return `${isNaN(f) ? 0 : f}'-${inches}${fr}"`;
+  return `${isNaN(f) ? 0 : f}' ${inches}${fr}"`;
 }
 
 export function fmtTimestamp(ts: number | string): string {

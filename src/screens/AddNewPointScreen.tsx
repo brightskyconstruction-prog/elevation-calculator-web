@@ -262,10 +262,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [savedLat,    setSavedLat]    = useState<number | null>(null);
   const [savedLon,    setSavedLon]    = useState<number | null>(null);
   const [isEditMode,  setIsEditMode]  = useState(true);
-  const [showCreate,  setShowCreate]  = useState(false);
-  const [showAssign,  setShowAssign]  = useState(false);
-  const [showNameModal, setShowNameModal] = useState(false);
-  const [saveMsg,     setSaveMsg]     = useState<string | null>(null);
+  const [showCreate,     setShowCreate]     = useState(false);
+  const [showAssign,     setShowAssign]     = useState(false);
+  const [showNameModal,  setShowNameModal]  = useState(false);
+  const [saveMsg,        setSaveMsg]        = useState<string | null>(null);
+  const [setWarning,     setSetWarning]     = useState(false);
+  const [newSetElevWarn, setNewSetElevWarn] = useState(false);
 
   const lockRef = useRef(false);
 
@@ -330,6 +332,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
+    setSetWarning(false); setNewSetElevWarn(false);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -383,6 +386,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const handleSave = async () => {
     const eng = parseFloat(engFtStr);
     if (isNaN(eng) || eng <= 0) { alert(t('rodReadingAlert')); return; }
+    if (!assignedSet) { setSetWarning(true); return; }
+    setSetWarning(false);
 
     const bm   = autoDerivedBm != null
       ? autoDerivedBm
@@ -564,6 +569,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                         updateFromFI(v, rodInches, rodFracDec, rodFracLbl);
                       }
                     }}
+                    onFocus={e => e.target.select()}
                     onKeyDown={e => {
                       const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
                       if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
@@ -610,19 +616,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 )}
               </div>
               {engDisplay && (
-                <span style={s.hint}>{t('engFtHint')} {engFtStr}′</span>
+                <div style={s.autoGenBlock}>
+                  <span style={s.autoGenLbl}>{t('autoGenEngFt')} :</span>
+                  <span style={s.hint}>{engFtStr}′</span>
+                </div>
               )}
             </>
           ) : (
             <>
               <input
                 style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}` }}
-                type="number" min="0" step="0.0001" value={engFtStr}
-                onChange={e => updateFromEng(e.target.value)}
-                placeholder="0.0 feet" readOnly={!isEditMode}
+                type="text" inputMode="decimal" value={engFtStr}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (v === '' || /^\d*\.?\d*$/.test(v)) updateFromEng(v);
+                }}
+                onFocus={e => e.target.select()}
+                placeholder="0.00 ft" readOnly={!isEditMode}
               />
               {fifDisplay && fifDisplay !== '—' && (
-                <span style={s.hint}>{t('feetInchesHint')} {fifDisplay}</span>
+                <div style={s.autoGenBlock}>
+                  <span style={s.autoGenLbl}>{t('autoGenFIF')} :</span>
+                  <span style={s.hint}>{fifDisplay}</span>
+                </div>
               )}
             </>
           )}
@@ -662,7 +678,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 <input
                   style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
                   type="number" step="0.0001" value={bmElevStr}
-                  onChange={e => setBmElevStr(e.target.value)}
+                  onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
                   placeholder="" readOnly={!isEditMode}
                 />
                 <span style={{ fontSize: 13, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
@@ -672,7 +688,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         </div>
 
         {/* ── Set Assignment ── */}
-        <div style={s.card}>
+        <div style={{ ...s.card, ...(setWarning && !assignedSetObj ? { border: `1.5px solid #EF4444` } : {}) }}>
           <div style={s.secRow}>
             <span style={s.secLbl}>
               {assignedSetObj
@@ -698,13 +714,26 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {sets.length > 0 && lastUsedSet && (
-                <button style={s.setOptBtnSec} onClick={() => setAssignedSet(lastUsedSet.id)}>
+                <button style={s.setOptBtnSec} onClick={() => { setAssignedSet(lastUsedSet.id); setSetWarning(false); }}>
                   {`${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
                 </button>
               )}
-              <button style={s.setOptBtnPri} onClick={() => setShowCreate(true)}>
+              <button style={s.setOptBtnPri} onClick={() => {
+                if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
+                  setNewSetElevWarn(true);
+                  return;
+                }
+                setNewSetElevWarn(false);
+                setShowCreate(true);
+              }}>
                 {t('createNewSetBtn')}
               </button>
+              {newSetElevWarn && (
+                <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>
+              )}
+              {setWarning && (
+                <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>
+              )}
             </div>
           )}
         </div>
@@ -759,7 +788,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       <AssignSetModal
         open={showAssign} onClose={() => setShowAssign(false)}
         sets={sets} allPoints={points}
-        pointLabel={currentLabel} onAssign={id => setAssignedSet(id)}
+        pointLabel={currentLabel} onAssign={id => { setAssignedSet(id); setSetWarning(false); }}
       />
       <QuickEditModal
         open={showNameModal} title={t('pointName')} placeholder={t('pointNamePlaceholder')}
@@ -832,8 +861,11 @@ const s: Record<string, React.CSSProperties> = {
   rodDiv:      { width: 1, backgroundColor: '#F3F4F6', flexShrink: 0 },
   clearAllBtn: { width: 40, border: 'none', borderLeft: `1px solid #F3F4F6`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: `${SURFACE}88` },
 
-  engInput:    { height: 40, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
-  hint:        { fontSize: 15, color: BLUE, textAlign: 'center', fontWeight: 700 },
+  engInput:     { height: 40, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
+  hint:         { fontSize: 15, color: BLUE, textAlign: 'center', fontWeight: 700 },
+  autoGenBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
+  autoGenLbl:   { fontSize: 10, color: TEXT_DIS, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase' as const },
+  warnMsg:      { fontSize: 12, color: '#EF4444', fontWeight: 600, padding: '4px 0' },
 
   autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '7px 10px', border: '1.5px solid #2A5898' },
   knownElevBox:{ border: `1.5px solid ${GOLD}`, backgroundColor: '#1A3A5C' } as React.CSSProperties,
