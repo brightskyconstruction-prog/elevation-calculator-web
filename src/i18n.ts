@@ -212,6 +212,15 @@ const en = {
   svsElevLabel:       'ELEVATION',
   svsDerivedBm:       'DERIVED BM',
   svsBmElev:          'BM ELEV.',
+  manageSets:         'Manage Sets',
+  deleteSelectedSet:  'Delete This Set',
+  deleteAllSetsBtn:   'Delete All Sets',
+  viewSetDetails:     'View Set Details',
+  viewAllSets:        'View All Sets',
+  prevSet:            'Previous',
+  nextSet:            'Next',
+  svsCreatedLabel:    'Created',
+  svsPointsLabel:     'Points',
 
   // ── Settings ─────────────────────────────────────────────────────
   settingsTitle:      'Settings',
@@ -475,6 +484,15 @@ const es: typeof en = {
   svsElevLabel:       'ELEVACIÓN',
   svsDerivedBm:       'REF. DERIVADA',
   svsBmElev:          'ELEV. REF.',
+  manageSets:         'Administrar Conjuntos',
+  deleteSelectedSet:  'Eliminar Este Conjunto',
+  deleteAllSetsBtn:   'Eliminar Todos los Conjuntos',
+  viewSetDetails:     'Ver Detalles del Conjunto',
+  viewAllSets:        'Ver Todos los Conjuntos',
+  prevSet:            'Anterior',
+  nextSet:            'Siguiente',
+  svsCreatedLabel:    'Creado',
+  svsPointsLabel:     'Puntos',
 
   // ── Settings ─────────────────────────────────────────────────────
   settingsTitle:      'Configuración',

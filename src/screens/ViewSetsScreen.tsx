@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSurveyStore } from '../stores/surveyStore';
 import { SurveySet, SurveyPoint } from '../types';
 import { fmtTimestamp } from '../constants';
@@ -11,14 +11,16 @@ const BLUE_A  = '#3B82F6';
 const BLUE_D  = 'rgba(30,87,153,0.12)';
 const GOLD    = '#F4B02A';
 const BORDER  = '#E5E7EB';
+const BORDER_S = '#D1D5DB';
 const SURFACE = '#F0EEE8';
 const CARD    = '#FFFFFF';
 const SCREEN  = '#F5F4F0';
 const TEXT_P  = '#111827';
 const TEXT_S  = '#374151';
 const TEXT_D  = '#9CA3AF';
+const RED     = '#C0392B';
 
-type Filter   = 'latest' | 'name' | 'search';
+type Filter    = 'latest' | 'name' | 'search';
 type PointType = 'benchmark' | 'derived' | 'standalone';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -28,26 +30,7 @@ function fmtDateFull(ts: number, lang: string): string {
   });
 }
 
-interface SetStats {
-  benchmarkElev: number | null;
-  highestBmElev: number | null;
-  lowestBmElev:  number | null;
-  range:         number | null;
-}
-
-function computeSetStats(setId: string, points: SurveyPoint[]): SetStats {
-  const setPts = points.filter(p => p.setId === setId);
-  const withBm = setPts.filter(p => (p.bmElevation ?? 0) > 0);
-  if (withBm.length === 0) return { benchmarkElev: null, highestBmElev: null, lowestBmElev: null, range: null };
-  const sorted = [...withBm].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
-  const refBm  = sorted[0].bmElevation!;
-  const elevs  = withBm.map(p => p.bmElevation!);
-  const high   = Math.max(...elevs);
-  const low    = Math.min(...elevs);
-  return { benchmarkElev: refBm, highestBmElev: high, lowestBmElev: low, range: withBm.length > 1 ? high - low : null };
-}
-
-// ─── Point type theming ───────────────────────────────────────────────────────
+// ─── Point type theming (used by SetDetailView) ───────────────────────────────
 const TYPE_THEME: Record<PointType, { border: string; badgeBg: string; badgeBdr: string; badgeTxt: string; labelKey: string }> = {
   benchmark:  { border: '#F5A623', badgeBg: '#FFF3CD', badgeBdr: '#F5A623', badgeTxt: '#92610A', labelKey: 'spBenchmarkBadge' },
   derived:    { border: BLUE,      badgeBg: BLUE_D,    badgeBdr: BLUE,      badgeTxt: BLUE_A,    labelKey: 'spDerivedBadge'   },
@@ -60,10 +43,10 @@ const ELEV_LABEL_KEY: Record<PointType, string> = {
   standalone: 'svsBmElev',
 };
 
-// ─── SetDetailView (bottom-sheet overlay) ─────────────────────────────────────
+// ─── SetDetailView (bottom-sheet) ─────────────────────────────────────────────
 interface SetDetailProps {
-  set:    SurveySet;
-  points: SurveyPoint[];   // points in this set
+  set:     SurveySet;
+  points:  SurveyPoint[];
   onClose: () => void;
 }
 
@@ -72,7 +55,6 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
   const sorted = [...points].sort((a, b) =>
     a.label.localeCompare(b.label, undefined, { numeric: true }));
 
-  // Resolve benchmark (earliest point with bmElevation > 0)
   const referenceId = (() => {
     const cands = points.filter(p => (p.bmElevation ?? 0) > 0)
       .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
@@ -106,24 +88,21 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, borderRadius: '20px 20px 0 0', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Handle */}
         <div style={{ alignSelf: 'center', width: 40, height: 4, backgroundColor: BORDER, borderRadius: 2, margin: '10px auto 4px' }} />
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', padding: '12px 16px', gap: 12, borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', padding: '10px 14px', gap: 10, borderBottom: `1px solid ${BORDER}` }}>
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
               {set.setLabel && (
                 <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{set.setLabel}</span>
               )}
-              <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_P }}>{set.name}</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: TEXT_P }}>{set.name}</span>
             </div>
           </div>
-          <button style={{ padding: '6px 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT_S, fontSize: 13, fontWeight: 600, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
+          <button style={{ padding: '5px 10px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT_S, fontSize: 12, fontWeight: 600, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
         </div>
 
-        {/* Stats bar */}
-        <div style={{ display: 'flex', padding: '8px 12px', gap: 8, borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', padding: '7px 12px', gap: 7, borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' as const }}>
           <div style={sdS.stat}>
             <span style={sdS.statLbl}>{t('statPoints')}</span>
             <span style={sdS.statVal}>{sorted.length}</span>
@@ -148,14 +127,13 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
           )}
         </div>
 
-        {/* Point list */}
         {sorted.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
             <span style={{ fontSize: 36 }}>📍</span>
             <p style={{ color: TEXT_S, textAlign: 'center', margin: 0 }}>{t('pointsInSet')}</p>
           </div>
         ) : (
-          <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sorted.map((pt, idx) => {
               const ptType  = getType(pt);
               const theme   = TYPE_THEME[ptType];
@@ -167,24 +145,22 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
               const lon     = pt.createdLongitude;
 
               return (
-                <div key={pt.id} style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {/* Header */}
+                <div key={pt.id} style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <div style={{ width: 44, height: 44, backgroundColor: BLUE_D, borderRadius: 6, border: `1px solid ${BLUE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, backgroundColor: BLUE_D, borderRadius: 6, border: `1px solid ${BLUE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_A, letterSpacing: 0.5 }}>{pt.label}</span>
                     </div>
                     <div style={{ flex: 1 }}>
                       {pt.pointName && <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_P }}>{pt.pointName}</div>}
                       {pt.takenBy   && <div style={{ fontSize: 11, color: TEXT_S }}>{pt.takenBy}</div>}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
                       <span style={{ fontSize: 10, color: TEXT_D, backgroundColor: SURFACE, borderRadius: 3, padding: '1px 5px' }}>#{idx + 1}</span>
                       <span style={{ backgroundColor: theme.badgeBg, border: `1px solid ${theme.badgeBdr}`, borderRadius: 4, padding: '2px 5px', fontSize: 7.5, fontWeight: 800, color: theme.badgeTxt }}>{t(theme.labelKey)}</span>
                     </div>
                   </div>
 
-                  {/* Data grid */}
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 7 }}>
                     <div style={sdS.cell}>
                       <span style={sdS.cellLbl}>{t('rodReading')}</span>
                       <span style={sdS.cellVal}>{fmtRod(pt)}</span>
@@ -198,10 +174,9 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
                     )}
                   </div>
 
-                  {/* Location */}
                   {addr && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: TEXT_S }}>
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {addr}</span>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>📍 {addr}</span>
                       {lat != null && lon != null && (
                         <a href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`} target="_blank" rel="noreferrer"
                           style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none' }}>{t('svsMapBtn')}</a>
@@ -209,9 +184,8 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
                     </div>
                   )}
 
-                  {/* Timestamp */}
                   {pt.savedAt && (
-                    <div style={{ fontSize: 10, color: TEXT_D, borderTop: `1px solid ${BORDER}`, paddingTop: 6 }}>
+                    <div style={{ fontSize: 10, color: TEXT_D, borderTop: `1px solid ${BORDER}`, paddingTop: 5 }}>
                       {t('svsRecorded')}: {fmtTimestamp(pt.savedAt)}
                     </div>
                   )}
@@ -235,107 +209,87 @@ const sdS: Record<string, React.CSSProperties> = {
   cellSub: { fontSize: 10, color: TEXT_S, fontFamily: 'monospace' },
 };
 
-// ─── Set Card ─────────────────────────────────────────────────────────────────
-interface SetCardProps {
-  set:          SurveySet;
-  points:       SurveyPoint[];
-  isSelected:   boolean;
-  isSelectMode: boolean;
-  onToggle:     () => void;
-  onDelete:     () => void;
-  onOpen:       () => void;
+// ─── View All Sets Modal ───────────────────────────────────────────────────────
+interface ViewAllSetsModalProps {
+  sets:       SurveySet[];
+  points:     SurveyPoint[];
+  currentIdx: number;
+  onSelect:   (idx: number) => void;
+  onClose:    () => void;
+  lang:       string;
 }
 
-function SetCard({ set, points, isSelected, isSelectMode, onToggle, onDelete, onOpen }: SetCardProps) {
-  const { t, lang } = useLang();
-  const ptCount = points.filter(p => p.setId === set.id).length;
-  const stats   = useMemo(() => computeSetStats(set.id, points), [set.id, points]);
-
-  const handleClick = () => { if (isSelectMode) onToggle(); else onOpen(); };
-
+function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose, lang }: ViewAllSetsModalProps) {
+  const { t } = useLang();
   return (
-    <div
-      style={{
-        backgroundColor: isSelected ? 'rgba(30,87,153,0.04)' : CARD, borderRadius: 10,
-        border: `1px solid ${isSelected ? BLUE : BORDER}`,
-        padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
-        cursor: 'pointer', userSelect: 'none',
-      } as React.CSSProperties}
-      onClick={handleClick}
-    >
-      {/* Top row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {isSelectMode && (
-          <div style={{ width: 22, height: 22, borderRadius: 5, border: `2px solid ${isSelected ? BLUE_A : BORDER}`, backgroundColor: isSelected ? BLUE_A : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {isSelected && <span style={{ color: '#fff', fontSize: 12, fontWeight: 800, lineHeight: 1 }}>✓</span>}
-          </div>
-        )}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          {set.setLabel && (
-            <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: 0.4, flexShrink: 0 }}>{set.setLabel}</span>
-          )}
-          <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_P, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{set.name}</span>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, borderRadius: '18px 18px 0 0', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ alignSelf: 'center', width: 38, height: 4, backgroundColor: BORDER_S, borderRadius: 2, margin: '10px auto 4px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px 6px', borderBottom: `1px solid ${BORDER}` }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P }}>{t('viewAllSets')}</span>
+          <button style={{ padding: '4px 9px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 11, fontWeight: 600, color: TEXT_S, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
         </div>
-        {!isSelectMode && (
-          <button
-            style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: 'rgba(42,20,20,0.08)', border: 'none', cursor: 'pointer', fontSize: 14 }}
-            onClick={e => { e.stopPropagation(); onDelete(); }}
-            title={t('delete')}
-          >🗑</button>
-        )}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {sets.map((s, idx) => {
+            const ptCount = points.filter(p => p.setId === s.id).length;
+            const isCur   = idx === currentIdx;
+            return (
+              <div key={s.id}
+                style={{ backgroundColor: isCur ? BLUE_D : CARD, border: `1px solid ${isCur ? BLUE_A : BORDER}`, borderRadius: 7, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}
+                onClick={() => { onSelect(idx); onClose(); }}>
+                {s.setLabel && (
+                  <span style={{ backgroundColor: BLUE, borderRadius: 3, padding: '2px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: 0.4, flexShrink: 0 }}>{s.setLabel}</span>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_P, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.name}</div>
+                  <div style={{ fontSize: 10, color: TEXT_D }}>{strings[lang].svsCreated(fmtDateFull(s.createdAt, lang))} · {strings[lang].svsPts(ptCount)}</div>
+                </div>
+                {isCur && <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_A, flexShrink: 0 }}>✓</span>}
+              </div>
+            );
+          })}
+        </div>
       </div>
-
-      {/* Meta chips */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 6px', fontSize: 11, fontWeight: 600, color: BLUE_A }}>
-          {strings[lang].svsPts(ptCount)}
-        </span>
-        <span style={{ fontSize: 11, color: TEXT_D }}>{strings[lang].svsCreated(fmtDateFull(set.createdAt, lang))}</span>
-      </div>
-
-      {/* Elevation stats */}
-      {stats.benchmarkElev != null && (
-        <div style={{ backgroundColor: SURFACE, borderRadius: 6, padding: '6px 8px', border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={scS.statRow}>
-            <span style={scS.statLbl}>{t('svsBenchmarkElev')}</span>
-            <span style={{ ...scS.statVal, color: '#B8730A', fontWeight: 800 }}>{stats.benchmarkElev.toFixed(3)} ft</span>
-          </div>
-          {stats.highestBmElev != null && stats.highestBmElev !== stats.benchmarkElev && (
-            <div style={scS.statRow}>
-              <span style={scS.statLbl}>{t('svsHighestDerived')}</span>
-              <span style={scS.statVal}>{stats.highestBmElev.toFixed(3)} ft</span>
-            </div>
-          )}
-          {stats.lowestBmElev != null && stats.lowestBmElev !== stats.benchmarkElev && (
-            <div style={scS.statRow}>
-              <span style={scS.statLbl}>{t('svsLowestDerived')}</span>
-              <span style={scS.statVal}>{stats.lowestBmElev.toFixed(3)} ft</span>
-            </div>
-          )}
-          {stats.range != null && (
-            <div style={scS.statRow}>
-              <span style={scS.statLbl}>{t('svsElevRange')}</span>
-              <span style={scS.statVal}>{stats.range.toFixed(3)} ft</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Footer */}
-      {!isSelectMode && (
-        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 6, textAlign: 'right' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: BLUE_A }}>{t('viewDetails')}</span>
-        </div>
-      )}
     </div>
   );
 }
 
-const scS: Record<string, React.CSSProperties> = {
-  statRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  statLbl: { fontSize: 9, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' },
-  statVal: { fontSize: 11, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
-};
+// ─── Manage Sets Action Sheet ──────────────────────────────────────────────────
+interface ManageSheetProps {
+  hasSet:       boolean;
+  onDeleteThis: () => void;
+  onDeleteAll:  () => void;
+  onClose:      () => void;
+}
+
+function ManageSheet({ hasSet, onDeleteThis, onDeleteAll, onClose }: ManageSheetProps) {
+  const { t } = useLang();
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
+        <div style={{ alignSelf: 'center', width: 38, height: 4, backgroundColor: BORDER_S, borderRadius: 2, margin: '10px auto 4px' }} />
+        <div style={{ padding: '4px 12px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {hasSet && (
+            <button
+              style={{ width: '100%', padding: '12px 14px', backgroundColor: 'rgba(192,57,43,0.06)', border: `1px solid rgba(192,57,43,0.25)`, borderRadius: 10, fontSize: 14, fontWeight: 700, color: RED, cursor: 'pointer', textAlign: 'left' as const }}
+              onClick={onDeleteThis}
+            >{t('deleteSelectedSet')}</button>
+          )}
+          <button
+            style={{ width: '100%', padding: '12px 14px', backgroundColor: 'rgba(192,57,43,0.06)', border: `1px solid rgba(192,57,43,0.25)`, borderRadius: 10, fontSize: 14, fontWeight: 700, color: RED, cursor: 'pointer', textAlign: 'left' as const }}
+            onClick={onDeleteAll}
+          >{t('deleteAllSetsBtn')}</button>
+          <button
+            style={{ width: '100%', padding: '12px 14px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, fontSize: 14, fontWeight: 600, color: TEXT_S, cursor: 'pointer' }}
+            onClick={onClose}
+          >{t('cancel')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 interface Props { projectId: string }
@@ -348,9 +302,10 @@ export default function ViewSetsScreen({ projectId }: Props) {
 
   const [filter,       setFilter]       = useState<Filter>('latest');
   const [search,       setSearch]       = useState('');
+  const [rawIdx,       setRawIdx]       = useState<number | null>(null);
   const [detailSet,    setDetailSet]    = useState<SurveySet | null>(null);
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
+  const [showManage,   setShowManage]   = useState(false);
+  const [showAllModal, setShowAllModal] = useState(false);
 
   const displayed = useMemo(() => {
     let arr = [...sets];
@@ -363,32 +318,33 @@ export default function ViewSetsScreen({ projectId }: Props) {
     return arr;
   }, [sets, filter, search]);
 
-  const toggleSet   = (id: string) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const selectAll   = () => setSelectedIds(new Set(displayed.map(s => s.id)));
-  const clearSelect = () => { setSelectedIds(new Set()); setIsSelectMode(false); };
+  // Reset navigator when filter/search changes
+  useEffect(() => { setRawIdx(null); }, [filter, search]);
 
-  const handleDeleteSingle = (s: SurveySet) => {
-    if (!window.confirm(strings[lang].deleteSingleSet(s.name))) return;
-    deleteSet(projectId, s.id);
-  };
+  const curIdx = rawIdx !== null
+    ? Math.max(0, Math.min(rawIdx, displayed.length - 1))
+    : 0;
 
-  const handleBulkDelete = () => {
-    const count = selectedIds.size;
-    if (!window.confirm(strings[lang].deleteBulkSets(count))) return;
-    selectedIds.forEach(id => deleteSet(projectId, id));
-    setSelectedIds(new Set());
-    setIsSelectMode(false);
+  const curSet  = displayed[curIdx] ?? null;
+  const ptCount = curSet ? points.filter(p => p.setId === curSet.id).length : 0;
+
+  const detailPoints = detailSet ? points.filter(p => p.setId === detailSet.id) : [];
+
+  const handleDeleteThis = () => {
+    if (!curSet) return;
+    setShowManage(false);
+    if (!window.confirm(strings[lang].deleteSingleSet(curSet.name))) return;
+    deleteSet(projectId, curSet.id);
+    setRawIdx(null);
   };
 
   const handleDeleteAll = () => {
+    setShowManage(false);
     if (sets.length === 0) return;
     if (!window.confirm(strings[lang].deleteAllSets(sets.length))) return;
     sets.forEach(s => deleteSet(projectId, s.id));
-    setSelectedIds(new Set());
-    setIsSelectMode(false);
+    setRawIdx(null);
   };
-
-  const detailPoints = detailSet ? points.filter(p => p.setId === detailSet.id) : [];
 
   const FILTERS: { id: Filter; label: string }[] = [
     { id: 'latest', label: t('setLatest') },
@@ -399,29 +355,29 @@ export default function ViewSetsScreen({ projectId }: Props) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
 
-      {/* Gold filter bar */}
-      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '6px 8px', gap: 6, flexShrink: 0 }}>
+      {/* ── Gold filter bar — compact ── */}
+      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '5px 8px', gap: 6, flexShrink: 0 }}>
         {FILTERS.map(f => {
           const isActive = filter === f.id;
           return (
             <button key={f.id} style={{
-              flex: 1, height: 40, borderRadius: 10,
+              flex: 1, height: 34, borderRadius: 8,
               border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
               backgroundColor: isActive ? '#FFFFFF' : GOLD,
-              color: '#163A63', fontSize: 12, fontWeight: 700,
+              color: '#163A63', fontSize: 13, fontWeight: 700,
               cursor: 'pointer', boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-              whiteSpace: 'nowrap', overflow: 'hidden',
-              transition: 'background-color 0.15s, border-color 0.15s, box-shadow 0.15s',
+              whiteSpace: 'nowrap' as const, overflow: 'hidden',
+              transition: 'background-color 0.15s',
             }} onClick={() => setFilter(f.id)}>{f.label}</button>
           );
         })}
       </div>
 
-      {/* Search input */}
+      {/* ── Search input ── */}
       {filter === 'search' && (
-        <div style={{ padding: '8px 12px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ padding: '6px 10px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>
           <input
-            style={{ width: '100%', height: 36, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '0 12px', fontSize: 13, color: TEXT_P, outline: 'none', backgroundColor: SURFACE, boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 32, borderRadius: 6, border: `1px solid ${BORDER}`, padding: '0 10px', fontSize: 13, color: TEXT_P, outline: 'none', backgroundColor: SURFACE, boxSizing: 'border-box' as const }}
             placeholder={t('searchSets')}
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -430,29 +386,20 @@ export default function ViewSetsScreen({ projectId }: Props) {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.6, textTransform: 'uppercase' }}>
+      {/* ── Toolbar ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
           {strings[lang].svsSets(sets.length)}
         </span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {!isSelectMode ? (
-            <>
-              <button style={tbS.btn} onClick={() => setIsSelectMode(true)}>{t('selectSets')}</button>
-              {sets.length > 0 && (
-                <button style={tbS.deleteBtn} onClick={handleDeleteAll}>{t('deleteAll')}</button>
-              )}
-            </>
-          ) : (
-            <>
-              <button style={tbS.btn} onClick={selectAll}>{t('selectAll')}</button>
-              <button style={tbS.btn} onClick={clearSelect}>{t('cancel')}</button>
-            </>
-          )}
-        </div>
+        {sets.length > 0 && (
+          <button
+            style={{ height: 26, padding: '0 10px', backgroundColor: BLUE_D, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+            onClick={() => setShowManage(true)}
+          >{t('manageSets')}</button>
+        )}
       </div>
 
-      {/* List */}
+      {/* ── Main scrollable body ── */}
       {displayed.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
           <span style={{ fontSize: 40 }}>🗂</span>
@@ -464,34 +411,95 @@ export default function ViewSetsScreen({ projectId }: Props) {
           </p>
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: isSelectMode && selectedIds.size > 0 ? 72 : 8 }}>
-          {displayed.map(s => (
-            <SetCard
-              key={s.id}
-              set={s}
-              points={points}
-              isSelected={selectedIds.has(s.id)}
-              isSelectMode={isSelectMode}
-              onToggle={() => toggleSet(s.id)}
-              onDelete={() => handleDeleteSingle(s)}
-              onOpen={() => setDetailSet(s)}
-            />
-          ))}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+          {/* ── Single set card ── */}
+          {curSet && (
+            <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${BLUE}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {curSet.setLabel && (
+                  <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: 0.5, flexShrink: 0 }}>{curSet.setLabel}</span>
+                )}
+                <span style={{ fontSize: 17, fontWeight: 800, color: TEXT_P, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{curSet.name}</span>
+              </div>
+
+              {/* Info grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 10px' }}>
+                <div>
+                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('svsCreatedLabel')}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_P }}>{fmtDateFull(curSet.createdAt, lang)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('svsPointsLabel')}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: BLUE_A }}>{ptCount}</div>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  style={{ flex: 1, height: 32, backgroundColor: BLUE_D, border: `1px solid ${BLUE}`, borderRadius: 7, fontSize: 12, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+                  onClick={() => setDetailSet(curSet)}
+                >{t('viewSetDetails')}</button>
+                <button
+                  style={{ height: 32, padding: '0 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 7, fontSize: 12, fontWeight: 700, color: TEXT_S, cursor: 'pointer' }}
+                  onClick={() => setShowAllModal(true)}
+                >{t('viewAllSets')}</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Prev / Next navigation ── */}
+          {displayed.length > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <button
+                disabled={curIdx === 0}
+                style={{ flex: 1, height: 30, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: curIdx === 0 ? TEXT_D : BLUE_A, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
+                onClick={() => setRawIdx(curIdx - 1)}
+              >← {t('prevSet')}</button>
+              <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_S, whiteSpace: 'nowrap' as const }}>
+                {curIdx + 1}/{displayed.length}
+              </span>
+              <button
+                disabled={curIdx === displayed.length - 1}
+                style={{ flex: 1, height: 30, backgroundColor: curIdx === displayed.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === displayed.length - 1 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: curIdx === displayed.length - 1 ? TEXT_D : BLUE_A, cursor: curIdx === displayed.length - 1 ? 'default' : 'pointer', opacity: curIdx === displayed.length - 1 ? 0.4 : 1 }}
+                onClick={() => setRawIdx(curIdx + 1)}
+              >{t('nextSet')} →</button>
+            </div>
+          )}
+
+          {/* Ad space */}
+          <div style={{ height: 54, borderTop: `1px dashed ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+            <span style={{ fontSize: 10, color: TEXT_D, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
+          </div>
         </div>
       )}
 
-      {/* Bulk action bar */}
-      {isSelectMode && selectedIds.size > 0 && (
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: CARD, borderTop: `1px solid ${BORDER}`, padding: '10px 16px' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_P }}>{selectedIds.size} {t('selected')}</span>
-          <button
-            style={{ backgroundColor: '#C0392B', border: 'none', borderRadius: 8, padding: '8px 16px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-            onClick={handleBulkDelete}
-          >{t('deleteSelected')}</button>
-        </div>
+      {/* Manage Sets action sheet */}
+      {showManage && (
+        <ManageSheet
+          hasSet={!!curSet}
+          onDeleteThis={handleDeleteThis}
+          onDeleteAll={handleDeleteAll}
+          onClose={() => setShowManage(false)}
+        />
       )}
 
-      {/* SetDetailView overlay */}
+      {/* View All Sets modal */}
+      {showAllModal && (
+        <ViewAllSetsModal
+          sets={displayed}
+          points={points}
+          currentIdx={curIdx}
+          onSelect={idx => setRawIdx(idx)}
+          onClose={() => setShowAllModal(false)}
+          lang={lang}
+        />
+      )}
+
+      {/* Set detail overlay */}
       {detailSet && (
         <SetDetailView
           set={detailSet}
@@ -502,8 +510,3 @@ export default function ViewSetsScreen({ projectId }: Props) {
     </div>
   );
 }
-
-const tbS: Record<string, React.CSSProperties> = {
-  btn:       { backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 600, color: TEXT_S, cursor: 'pointer' },
-  deleteBtn: { backgroundColor: 'rgba(192,57,43,0.10)', border: '1px solid rgba(192,57,43,0.3)', borderRadius: 6, padding: '4px 8px', fontSize: 11, fontWeight: 700, color: '#C0392B', cursor: 'pointer' },
-};
