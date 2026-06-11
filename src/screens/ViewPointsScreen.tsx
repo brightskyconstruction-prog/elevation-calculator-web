@@ -601,49 +601,55 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             </div>
           ) : (
             <>
-              {/* Set header with nav arrows */}
-              <div style={{ padding: '10px 12px 8px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Compact single-row set header */}
+              <div style={{ padding: '5px 8px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   {/* Left arrow */}
                   <button
-                    style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 22, color: TEXT_PRI, cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 20, color: TEXT_PRI, cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
                     onClick={() => setSetIdx(Math.max(0, safeIdx - 1))}
                     disabled={safeIdx === 0}
                   >‹</button>
 
-                  {/* Center: set info */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  {/* Center: SET badge | Name | Date — all on one line */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, overflow: 'hidden', minWidth: 0 }}>
                     {currentGroup?.setLabel ? (
-                      <div style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 10px' }}>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.6 }}>{currentGroup.setLabel}</span>
+                      <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '2px 7px', flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.5 }}>{currentGroup.setLabel}</span>
                       </div>
                     ) : null}
-                    <span style={{ fontSize: 17, fontWeight: 700, color: TEXT_PRI, textAlign: 'center' }}>{currentGroup?.name ?? '—'}</span>
+                    {currentGroup?.setLabel && (
+                      <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
+                    )}
+                    <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
                     {currentGroup?.createdAt ? (
-                      <span style={{ fontSize: 12, color: TEXT_DIS }}>
-                        {new Date(currentGroup.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </span>
+                      <>
+                        <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
+                        <span style={{ fontSize: 11, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
+                          {new Date(currentGroup.createdAt).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </>
                     ) : null}
                     {totalGroups > 1 && (
-                      <span style={{ fontSize: 11, color: TEXT_DIS }}>{safeIdx + 1} / {totalGroups}</span>
+                      <span style={{ fontSize: 11, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
                     )}
                   </div>
 
                   {/* Right arrow */}
                   <button
-                    style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 22, color: TEXT_PRI, cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    style={{ width: 30, height: 30, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 20, color: TEXT_PRI, cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
                     onClick={() => setSetIdx(Math.min(totalGroups - 1, safeIdx + 1))}
                     disabled={safeIdx >= totalGroups - 1}
                   >›</button>
                 </div>
 
-                {/* Dot navigation */}
+                {/* Dot indicators */}
                 {totalGroups > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 5, marginTop: 7 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 4 }}>
                     {groups.map((_, i) => (
                       <div
                         key={i}
-                        style={{ height: 6, width: i === safeIdx ? 14 : 6, borderRadius: 3, backgroundColor: i === safeIdx ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
+                        style={{ height: 5, width: i === safeIdx ? 12 : 5, borderRadius: 3, backgroundColor: i === safeIdx ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
                         onClick={() => setSetIdx(i)}
                       />
                     ))}
@@ -651,45 +657,56 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 )}
               </div>
 
-              {/* 2-column point grid */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 4px' }}>
+              {/* 3-column point grid */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '7px 7px 4px' }}>
                 {(currentGroup?.pts ?? []).length === 0 ? (
                   <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                     {(currentGroup?.pts ?? []).map(pt => {
                       const isA = tempA === pt.id;
                       const isB = tempB === pt.id;
                       const sel = isA || isB;
-                      const elev = pt.bmElevation > 0 ? pt.bmElevation : pt.engineeringFeet;
                       return (
                         <div
                           key={pt.id}
                           style={{
-                            borderRadius: 10,
+                            borderRadius: 8,
                             border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
                             backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
-                            padding: '10px 10px 8px',
+                            padding: '6px 6px 5px',
                             cursor: 'pointer',
                             position: 'relative',
-                            minHeight: 76,
                             userSelect: 'none' as const,
                           }}
                           onClick={() => handleTempSelect(pt.id)}
                         >
-                          {/* Selection badge */}
+                          {/* Deselect ✕ button */}
                           {sel && (
-                            <div style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: 10, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{isA ? '1' : '2'}</span>
-                            </div>
+                            <button
+                              onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
+                              style={{ position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0, zIndex: 1 }}
+                            >
+                              <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
+                            </button>
                           )}
-                          <div style={{ fontSize: 15, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.2, paddingRight: sel ? 22 : 0 }}>{pt.label}</div>
+                          {/* PT label */}
+                          <div style={{ fontSize: 13, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, paddingRight: sel ? 18 : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.label}</div>
+                          {/* Point name */}
                           {pt.pointName && (
-                            <div style={{ fontSize: 12, color: TEXT_SEC, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.pointName}</div>
+                            <div style={{ fontSize: 10, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, marginTop: 1 }}>{pt.pointName}</div>
                           )}
-                          <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 2 }}>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{elev.toFixed(2)}</span>
-                            <span style={{ fontSize: 11, color: TEXT_DIS }}>ft</span>
+                          {/* Rod height */}
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                            <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerRod')}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                            <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>
+                          </div>
+                          {/* Elevation */}
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                            <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerElev')}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                            {pt.bmElevation > 0 && <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>}
                           </div>
                         </div>
                       );
@@ -699,29 +716,29 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               </div>
 
               {/* Selection status */}
-              <div style={{ backgroundColor: RAISED, borderTop: `1px solid ${BORDER}`, padding: '6px 14px', flexShrink: 0 }}>
+              <div style={{ backgroundColor: RAISED, borderTop: `1px solid ${BORDER}`, padding: '5px 12px', flexShrink: 0 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
                   {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
                 </span>
               </div>
 
-              {/* Bottom action buttons */}
-              <div style={{ padding: '8px 12px 10px', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+              {/* Bottom action buttons — horizontal row */}
+              <div style={{ padding: '6px 10px 8px', display: 'flex', flexDirection: 'row', gap: 8, flexShrink: 0 }}>
                 <button
-                  style={{ height: 48, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 10, color: canGo ? '#fff' : TEXT_DIS, fontSize: 16, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.4, opacity: canGo ? 1 : 0.5 }}
+                  style={{ flex: 1, height: 40, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 8, color: canGo ? '#fff' : TEXT_DIS, fontSize: 15, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.5 }}
                   onClick={handleGo}
                   disabled={!canGo}
                 >{t('goBtn')}</button>
                 {totalGroups > 1 && (
                   <button
-                    style={{ height: 42, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 8, color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                    style={{ flex: 1.3, height: 40, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 8, color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '0 6px' }}
                     onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
                   >{t('chooseFromAnotherSet')}</button>
                 )}
               </div>
 
               {/* Reserved ad space */}
-              <div style={{ height: 60, backgroundColor: RAISED, borderTop: `1px dashed ${BORDER_B}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ height: 54, backgroundColor: RAISED, borderTop: `1px dashed ${BORDER_B}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
               </div>
             </>
