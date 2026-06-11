@@ -1064,62 +1064,27 @@ interface SinglePointTabProps {
   onEditPoint?: (pt: SurveyPoint) => void;
 }
 
-// ── label style helper ──────────────────────────────────────────────────────
-function SpDetailLabel({ text }: { text: string }) {
-  return (
-    <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.8,
-      textTransform: 'uppercase', marginBottom: 3 }}>
-      {text}
-    </div>
-  );
-}
-
-// ── section card wrapper ────────────────────────────────────────────────────
-function SpSection({ children, accent }: { children: React.ReactNode; accent?: string }) {
-  return (
-    <div style={{
-      backgroundColor: CARD,
-      borderRadius: 10,
-      border: `1px solid ${BORDER}`,
-      borderLeft: `4px solid ${accent ?? BORDER_B}`,
-      padding: '12px 14px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 10,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ── key-value row ───────────────────────────────────────────────────────────
-function SpRow({ label, value, mono, valueColor }: {
-  label: string; value: string | React.ReactNode;
-  mono?: boolean; valueColor?: string;
+// ── compact inline label: value row ─────────────────────────────────────────
+function SpInlineRow({ label, value, mono, valueColor }: {
+  label: string; value: string | React.ReactNode; mono?: boolean; valueColor?: string;
 }) {
   return (
-    <div>
-      <SpDetailLabel text={label} />
-      <div style={{
-        fontSize: 13, fontWeight: 700,
-        color: valueColor ?? TEXT_PRI,
-        fontFamily: mono ? 'monospace' : undefined,
-        lineHeight: 1.4,
-      }}>
-        {value}
-      </div>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, paddingBottom: 3, flexWrap: 'wrap' as const }}>
+      <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.6,
+        textTransform: 'uppercase' as const, flexShrink: 0, minWidth: 82 }}>{label}:</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: valueColor ?? TEXT_PRI,
+        fontFamily: mono ? 'monospace' : undefined, lineHeight: 1.3 }}>{value}</span>
     </div>
   );
 }
 
 function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
-  const { t } = useLang();
-  const { deletePoint, deletePoints } = useSurveyStore();
+  const { t, lang } = useLang();
+  const { deletePoint } = useSurveyStore();
 
   const [search,       setSearch]       = useState('');
-  const [detailPt,     setDetailPt]     = useState<SurveyPoint | null>(null);
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
+  const [rawIdx,       setRawIdx]       = useState<number | null>(null);
+  const [showAllModal, setShowAllModal] = useState(false);
 
   // ── derived maps ──────────────────────────────────────────────────────────
   const setMap = useMemo(() => {
@@ -1130,6 +1095,7 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
 
   const typeMap = useMemo(() => resolvePointTypes(points, sets), [points, sets]);
 
+  // Sorted + filtered list — used for both single-card nav and "View All" modal
   const sorted = useMemo(() => {
     const q = search.trim().toLowerCase();
     return [...points]
@@ -1146,335 +1112,91 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
       });
   }, [points, setMap, search]);
 
-  // Keep detailPt in sync: if the point is deleted elsewhere, close detail
-  useEffect(() => {
-    if (detailPt && !points.find(p => p.id === detailPt.id)) {
-      setDetailPt(null);
+  // Default to most recently updated point
+  const defaultIdx = useMemo(() => {
+    if (sorted.length === 0) return 0;
+    let best = 0;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].updatedAt > sorted[best].updatedAt) best = i;
     }
-  }, [points, detailPt]);
+    return best;
+  }, [sorted]);
 
-  // ── actions ───────────────────────────────────────────────────────────────
-  const toggleSelect = (id: string) =>
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+  // Reset nav when search changes
+  useEffect(() => { setRawIdx(null); }, [search]);
 
-  const selectAll   = () => setSelectedIds(new Set(sorted.map(p => p.id)));
-  const clearSelect = () => { setSelectedIds(new Set()); setIsSelectMode(false); };
-
-  const handleDeleteSingle = useCallback((pt: SurveyPoint) => {
-    if (!window.confirm(`Delete ${pt.label}${pt.pointName ? ` ("${pt.pointName}")` : ''}? This action cannot be undone.`)) return;
-    setDetailPt(null);
-    deletePoint(projectId, pt.id);
-  }, [projectId, deletePoint]);
-
-  const handleBulkDelete = () => {
-    const count = selectedIds.size;
-    if (!count || !window.confirm(`Delete ${count} point${count > 1 ? 's' : ''}? This action cannot be undone.`)) return;
-    deletePoints(projectId, [...selectedIds]);
-    setSelectedIds(new Set());
-    setIsSelectMode(false);
-  };
+  const curIdx = rawIdx !== null
+    ? Math.max(0, Math.min(rawIdx, sorted.length - 1))
+    : defaultIdx;
 
   // ── date formatter ────────────────────────────────────────────────────────
   const fmtMs = (ms: number) =>
-    new Date(ms).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    new Date(ms).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  // ── current point derived values ──────────────────────────────────────────
+  const pt      = sorted[curIdx] ?? null;
+  const ptType  = pt ? (typeMap.get(pt.id) ?? 'standalone') : 'standalone';
+  const theme   = TYPE_THEME[ptType];
+  const setObj  = pt?.setId ? setMap[pt.setId] : null;
+  const hasBm   = (pt?.bmElevation ?? 0) > 0;
+
+  const fif    = pt ? engToFIF(pt.engineeringFeet) : { feet: 0, inches: '0', frac: '0' };
+  const rFeet  = pt?.rodFeet ?? fif.feet;
+  const rInch  = pt?.rodInches != null ? String(pt.rodInches) : fif.inches;
+  const rFrac  = (pt?.rodFractionLabel && pt.rodFractionLabel !== '0')
+                 ? pt.rodFractionLabel : (fif.frac !== '0' ? fif.frac : '');
+  const fifStr = pt ? `${rFeet}' ${rInch}${rFrac ? ` ${rFrac}` : ''}"` : '';
+
+  const badgeLabel = ptType === 'benchmark' ? t('spBenchmarkBadge')
+                   : ptType === 'derived'   ? t('spDerivedBadge')
+                   : t('spStandaloneBadge');
+
+  const handleDeleteSingle = useCallback((delPt: SurveyPoint) => {
+    if (!window.confirm(`Delete ${delPt.label}${delPt.pointName ? ` ("${delPt.pointName}")` : ''}? This action cannot be undone.`)) return;
+    const prevLen = sorted.length;
+    deletePoint(projectId, delPt.id);
+    setRawIdx(prev => {
+      const newLen = prevLen - 1;
+      if (newLen <= 0) return 0;
+      return Math.min(prev ?? 0, newLen - 1);
+    });
+  }, [projectId, deletePoint, sorted.length]);
 
   // ══════════════════════════════════════════════════════════════════════════
-  // DETAIL VIEW
-  // ══════════════════════════════════════════════════════════════════════════
-  if (detailPt) {
-    const pt      = detailPt;
-    const ptType  = typeMap.get(pt.id) ?? 'standalone';
-    const theme   = TYPE_THEME[ptType];
-    const setObj  = pt.setId ? setMap[pt.setId] : null;
-    const hasBm   = (pt.bmElevation ?? 0) > 0;
-    const lat     = pt.createdLatitude;
-    const lon     = pt.createdLongitude;
-    const addr    = pt.createdAddress ? pt.createdAddress.replace(/,?\n/g, ', ') : null;
-
-    // FIF string: prefer stored fields, fall back to engToFIF
-    const fif     = engToFIF(pt.engineeringFeet);
-    const rFeet   = pt.rodFeet   ?? fif.feet;
-    const rInch   = pt.rodInches != null ? String(pt.rodInches) : fif.inches;
-    const rFrac   = (pt.rodFractionLabel && pt.rodFractionLabel !== '0')
-                    ? pt.rodFractionLabel
-                    : (fif.frac !== '0' ? fif.frac : '');
-    const fifStr  = `${rFeet}' ${rInch}${rFrac ? ` ${rFrac}` : ''}"`;
-
-    // Badge label via i18n
-    const badgeLabel = ptType === 'benchmark'
-      ? t('spBenchmarkBadge')
-      : ptType === 'derived'
-      ? t('spDerivedBadge')
-      : t('spStandaloneBadge');
-
-    // Find the benchmark source for derived points
-    const bmSource = ptType === 'derived' && pt.setId
-      ? points.find(p => p.setId === pt.setId && typeMap.get(p.id) === 'benchmark')
-      : null;
-
-    return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-        {/* Detail nav bar */}
-        <div style={{
-          backgroundColor: CARD,
-          borderBottom: `1px solid ${BORDER_S}`,
-          padding: '9px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-          gap: 8,
-        }}>
-          <button
-            onClick={() => setDetailPt(null)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              backgroundColor: SURFACE, border: `1px solid ${BORDER}`,
-              borderRadius: 6, padding: '6px 10px',
-              fontSize: 12, fontWeight: 700, color: BLUE, cursor: 'pointer',
-            }}
-          >
-            ← {t('spBack')}
-          </button>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {onEditPoint && (
-              <button
-                onClick={() => onEditPoint(pt)}
-                style={{
-                  backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`,
-                  borderRadius: 6, padding: '6px 12px',
-                  fontSize: 12, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer',
-                }}
-              >{t('edit')}</button>
-            )}
-            <button
-              onClick={() => handleDeleteSingle(pt)}
-              style={{
-                backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.35)',
-                borderRadius: 6, padding: '6px 12px',
-                fontSize: 12, fontWeight: 700, color: RED, cursor: 'pointer',
-              }}
-            >{t('delete')}</button>
-          </div>
-        </div>
-
-        {/* Scrollable detail content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 24 }}>
-
-          {/* ── Header card ─────────────────────────────────────── */}
-          <div style={{
-            backgroundColor: CARD,
-            borderRadius: 10,
-            border: `1px solid ${BORDER}`,
-            borderLeft: `4px solid ${theme.border}`,
-            padding: '12px 14px',
-          }}>
-            {/* ID + name */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-              <span style={{ fontSize: 20, fontWeight: 900, color: BLUE_ACC, letterSpacing: 0.4 }}>
-                {pt.label}
-              </span>
-              {pt.pointName && (
-                <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>• {pt.pointName}</span>
-              )}
-            </div>
-            {/* Badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-              <div style={{
-                borderRadius: 4, border: `1px solid ${theme.badgeBdr}`,
-                backgroundColor: theme.badgeBg, padding: '3px 8px',
-              }}>
-                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.7, color: theme.badgeTxt }}>
-                  {badgeLabel}
-                </span>
-              </div>
-              {setObj && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 3,
-                  backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '3px 7px',
-                }}>
-                  {setObj.setLabel && (
-                    <span style={{ fontSize: 9, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.4 }}>
-                      {setObj.setLabel}
-                    </span>
-                  )}
-                  <span style={{ fontSize: 9, fontWeight: 700, color: NAVY }}>{setObj.name}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── Identity section ────────────────────────────────── */}
-          <SpSection accent={BLUE}>
-            <SpRow label={t('spPointId')} value={pt.label} mono />
-            {pt.pointName && (
-              <SpRow label={t('pointName')} value={pt.pointName} />
-            )}
-            <SpRow label={t('spPointType')} value={badgeLabel} />
-            {setObj && (
-              <SpRow label={t('spSet')}
-                value={`${setObj.setLabel ? setObj.setLabel + ' · ' : ''}${setObj.name}`} />
-            )}
-            <SpRow label={t('spCreated')}     value={fmtMs(pt.createdAt)} />
-            <SpRow label={t('spLastUpdated')} value={fmtMs(pt.updatedAt)} />
-          </SpSection>
-
-          {/* ── Rod Reading section ──────────────────────────────── */}
-          <SpSection accent={NAVY}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-              {t('rodReading')}
-            </div>
-            <SpRow label={t('spFeetInches')}  value={fifStr}                           mono />
-            <SpRow label={t('spDecimalFeet')} value={`${pt.engineeringFeet.toFixed(2)} ft`} mono />
-          </SpSection>
-
-          {/* ── Elevation section ────────────────────────────────── */}
-          {hasBm && (
-            <SpSection accent={ptType === 'benchmark' ? GOLD_SVG : BLUE_ACC}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: ptType === 'benchmark' ? '#B8730A' : BLUE_ACC, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-                {t('elevation')}
-              </div>
-              <SpRow
-                label={ptType === 'benchmark' ? t('spBenchmarkElev') : t('elevation')}
-                value={`${(pt.bmElevation ?? 0).toFixed(2)} ft`}
-                mono
-                valueColor={ptType === 'benchmark' ? '#92610A' : TEXT_PRI}
-              />
-              {pt.elevation != null && pt.elevation !== pt.bmElevation && (
-                <SpRow label={t('elevation')} value={`${pt.elevation.toFixed(2)} ft`} mono />
-              )}
-              {ptType === 'derived' && bmSource && (
-                <SpRow
-                  label={t('spDerivedFrom')}
-                  value={bmSource.pointName ? `${bmSource.label} (${bmSource.pointName})` : bmSource.label}
-                  valueColor={BLUE_ACC}
-                />
-              )}
-            </SpSection>
-          )}
-
-          {/* ── Assignment section (only if takenBy or setObj exists) ── */}
-          {(pt.takenBy || setObj) && (
-            <SpSection accent={GREEN}>
-              {pt.takenBy && (
-                <SpRow label={t('spAssignedTo')} value={pt.takenBy} />
-              )}
-              {setObj && (
-                <SpRow label={t('spSet')}
-                  value={`${setObj.setLabel ? setObj.setLabel + ' · ' : ''}${setObj.name}`} />
-              )}
-            </SpSection>
-          )}
-
-          {/* ── Location section ─────────────────────────────────── */}
-          <SpSection accent={addr ? BLUE_MID : BORDER_B}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-              {t('location')}
-            </div>
-            {addr ? (
-              <>
-                <SpRow label={t('location')} value={`📍 ${addr}`} />
-                {lat != null && lon != null && (
-                  <>
-                    <SpRow label={t('spCoordinates')} value={
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span>{t('spLatitude')}:  {lat.toFixed(6)}°</span>
-                        <span>{t('spLongitude')}: {lon.toFixed(6)}°</span>
-                      </div>
-                    } mono />
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-block', alignSelf: 'flex-start',
-                        backgroundColor: BLUE, borderRadius: 6,
-                        padding: '6px 12px', color: '#fff',
-                        fontSize: 11, fontWeight: 700, textDecoration: 'none',
-                      }}
-                    >{t('viewOnMaps')}</a>
-                  </>
-                )}
-              </>
-            ) : (
-              <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_DIS }}>
-                {t('spLocationNA')}
-              </div>
-            )}
-          </SpSection>
-
-        </div>
-      </div>
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // LIST VIEW
+  // RENDER
   // ══════════════════════════════════════════════════════════════════════════
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' as const }}>
 
-      {/* Top bar */}
-      <div style={{
-        backgroundColor: CARD,
-        borderBottom: `1px solid ${BORDER_S}`,
-        padding: 12,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        flexShrink: 0,
-      }}>
+      {/* ── Compact top bar ── */}
+      <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
             {points.length} {t('surveyPoints')}
           </span>
-          {!isSelectMode ? (
+          {points.length > 0 && (
             <button
-              style={{ backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '4px 8px', border: `1px solid ${BLUE}`, fontSize: 11, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer' }}
-              onClick={() => setIsSelectMode(true)}
-            >{t('selectMode')}</button>
-          ) : (
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button style={{ backgroundColor: SURFACE, borderRadius: 4, padding: '4px 8px', border: `1px solid ${BORDER}`, fontSize: 11, fontWeight: 600, color: TEXT_SEC, cursor: 'pointer' }} onClick={selectAll}>{t('selectAll')}</button>
-              <button style={{ backgroundColor: SURFACE, borderRadius: 4, padding: '4px 8px', border: `1px solid ${BORDER}`, fontSize: 11, fontWeight: 600, color: TEXT_SEC, cursor: 'pointer' }} onClick={clearSelect}>{t('cancel')}</button>
-            </div>
+              style={{ height: 28, padding: '0 10px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer' }}
+              onClick={() => setShowAllModal(true)}
+            >{t('viewAllPoints')}</button>
           )}
         </div>
         <input
-          style={{ height: 38, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 12px', fontSize: 13, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' }}
+          style={{ height: 36, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 12px', fontSize: 13, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' as const, width: '100%' }}
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={t('searchPlaceholder')}
         />
       </div>
 
-      {/* Hint strip */}
-      {points.length > 0 && !isSelectMode && (
-        <div style={{
-          backgroundColor: BLUE_DEEP,
-          borderBottom: `1px solid rgba(30,87,153,0.15)`,
-          padding: '6px 14px',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 10.5, fontWeight: 600, color: BLUE_ACC }}>
-            {t('spSelectHint')}
-          </span>
-        </div>
-      )}
-
-      {/* Scroll area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 80 }}>
+      {/* ── Main scrollable body ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
 
         {/* Empty state */}
         {sorted.length === 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 8 }}>
             <span style={{ fontSize: 44 }}>📄</span>
-            <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_PRI }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: TEXT_PRI }}>
               {search ? t('noMatchingPoints') : t('noPointsRecorded')}
             </span>
             <span style={{ fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.55 }}>
@@ -1483,106 +1205,164 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
           </div>
         )}
 
-        {/* Compact tappable rows */}
-        {sorted.map((pt, i) => {
-          const ptType     = typeMap.get(pt.id) ?? 'standalone';
-          const theme      = TYPE_THEME[ptType];
-          const setObj     = pt.setId ? setMap[pt.setId] : null;
-          const isSelected = selectedIds.has(pt.id);
+        {/* ── Single point card ── */}
+        {pt && (
+          <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, overflow: 'hidden' }}>
 
-          return (
-            <div
-              key={`${pt.id}-${i}`}
-              style={{
-                backgroundColor: isSelected ? 'rgba(47,127,191,0.06)' : CARD,
-                borderRadius: 8,
-                border: `1px solid ${isSelected ? BLUE : BORDER}`,
-                borderLeft: `4px solid ${theme.border}`,
-                padding: '9px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                cursor: 'pointer',
-                userSelect: 'none',
-              }}
-              onClick={() => {
-                if (isSelectMode) { toggleSelect(pt.id); return; }
-                setDetailPt(pt);
-              }}
-            >
-              {/* Checkbox (select mode) */}
-              {isSelectMode && (
-                <div style={{
-                  width: 20, height: 20, borderRadius: 4,
-                  border: `2px solid ${isSelected ? BLUE : BORDER}`,
-                  backgroundColor: isSelected ? BLUE : SURFACE,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  {isSelected && <span style={{ color: '#fff', fontSize: 11, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+            {/* Header: label + name + Edit/Delete */}
+            <div style={{ padding: '10px 12px 7px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const, marginBottom: 5 }}>
+                  <span style={{ fontSize: 19, fontWeight: 900, color: BLUE_ACC, letterSpacing: 0.3 }}>{pt.label}</span>
+                  {pt.pointName && <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI }}>• {pt.pointName}</span>}
                 </div>
-              )}
-
-              {/* Main content */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                {/* Label + name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.4 }}>
-                    {pt.label}
-                  </span>
-                  {pt.pointName && (
-                    <span style={{ fontSize: 13, fontWeight: 600, color: TEXT_PRI }}>• {pt.pointName}</span>
-                  )}
-                </div>
-                {/* Badges + rod reading preview */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                  <div style={{
-                    borderRadius: 3, border: `1px solid ${theme.badgeBdr}`,
-                    backgroundColor: theme.badgeBg, padding: '1px 6px',
-                  }}>
-                    <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.5, color: theme.badgeTxt }}>
-                      {ptType === 'benchmark' ? t('spBenchmarkBadge') : ptType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge')}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' as const }}>
+                  <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '2px 7px' }}>
+                    <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.7, color: theme.badgeTxt }}>{badgeLabel}</span>
                   </div>
                   {setObj && (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 2,
-                      backgroundColor: BLUE_DEEP, borderRadius: 3, padding: '1px 5px',
-                    }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 6px' }}>
                       {setObj.setLabel && <span style={{ fontSize: 8, fontWeight: 800, color: BLUE_ACC }}>{setObj.setLabel}</span>}
                       <span style={{ fontSize: 8, fontWeight: 700, color: NAVY }}>{setObj.name}</span>
                     </div>
                   )}
-                  <span style={{ fontSize: 10, fontWeight: 600, color: TEXT_DIS, fontFamily: 'monospace' }}>
-                    {pt.engineeringFeet.toFixed(2)} ft
-                  </span>
                 </div>
               </div>
-
-              {/* Chevron (non-select mode) */}
-              {!isSelectMode && (
-                <span style={{ fontSize: 16, color: TEXT_DIS, flexShrink: 0, lineHeight: 1 }}>›</span>
-              )}
+              <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                {onEditPoint && (
+                  <button onClick={() => onEditPoint(pt)}
+                    style={{ height: 28, padding: '0 9px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer' }}
+                  >{t('edit')}</button>
+                )}
+                <button onClick={() => handleDeleteSingle(pt)}
+                  style={{ height: 28, padding: '0 9px', backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.30)', borderRadius: 6, fontSize: 11, fontWeight: 700, color: RED, cursor: 'pointer' }}
+                >{t('delete')}</button>
+              </div>
             </div>
-          );
-        })}
+
+            <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 12px' }} />
+
+            {/* Identity details */}
+            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <SpInlineRow label={t('spPointId')}    value={pt.label} mono />
+              {pt.pointName && <SpInlineRow label={t('pointName')}    value={pt.pointName} />}
+              <SpInlineRow label={t('spPointType')}  value={badgeLabel} />
+              {setObj && <SpInlineRow label={t('spSet')} value={`${setObj.setLabel ? setObj.setLabel + ' · ' : ''}${setObj.name}`} />}
+              <SpInlineRow label={t('spCreated')}     value={fmtMs(pt.createdAt)} />
+              <SpInlineRow label={t('spLastUpdated')} value={fmtMs(pt.updatedAt)} />
+            </div>
+
+            <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 12px' }} />
+
+            {/* Rod Reading */}
+            <div style={{ padding: '7px 12px 8px' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: NAVY, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('rodReading')}</div>
+              <SpInlineRow label={t('spFeetInches')}  value={fifStr}                               mono />
+              <SpInlineRow label={t('spDecimalFeet')} value={`${pt.engineeringFeet.toFixed(2)} ft`} mono />
+            </div>
+
+            {/* Elevation */}
+            {hasBm && (
+              <>
+                <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 12px' }} />
+                <div style={{ padding: '7px 12px 9px' }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: ptType === 'benchmark' ? '#B8730A' : BLUE_ACC, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('elevation')}</div>
+                  <SpInlineRow
+                    label={ptType === 'benchmark' ? t('spBenchmarkElev') : t('elevation')}
+                    value={`${(pt.bmElevation ?? 0).toFixed(2)} ft`}
+                    mono
+                    valueColor={ptType === 'benchmark' ? '#92610A' : TEXT_PRI}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Prev / Next navigation ── */}
+        {sorted.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              disabled={curIdx === 0}
+              style={{ flex: 1, height: 36, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: curIdx === 0 ? TEXT_DIS : BLUE, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.45 : 1 }}
+              onClick={() => setRawIdx(curIdx - 1)}
+            >← {t('prevPoint')}</button>
+            <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC, whiteSpace: 'nowrap' as const }}>
+              {curIdx + 1} / {sorted.length}
+            </span>
+            <button
+              disabled={curIdx === sorted.length - 1}
+              style={{ flex: 1, height: 36, backgroundColor: curIdx === sorted.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === sorted.length - 1 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 12, fontWeight: 700, color: curIdx === sorted.length - 1 ? TEXT_DIS : BLUE, cursor: curIdx === sorted.length - 1 ? 'default' : 'pointer', opacity: curIdx === sorted.length - 1 ? 0.45 : 1 }}
+              onClick={() => setRawIdx(curIdx + 1)}
+            >{t('nextPoint')} →</button>
+          </div>
+        )}
+
+        {/* Ad space */}
+        <div style={{ height: 54, borderTop: `1px dashed ${BORDER_B}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+          <span style={{ fontSize: 10, color: TEXT_DIS, letterSpacing: 0.8, fontWeight: 600 }}>AD SPACE</span>
+        </div>
       </div>
 
-      {/* Bulk action floating bar */}
-      {isSelectMode && selectedIds.size > 0 && (
-        <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          backgroundColor: CARD, borderTop: `1px solid ${BORDER}`,
-          padding: '12px 16px',
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>
-            {selectedIds.size} {t('selected')}
-          </span>
-          <button
-            style={{ backgroundColor: '#C0392B', borderRadius: 6, padding: '10px 16px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-            onClick={handleBulkDelete}
-          >{t('deleteSelected')}</button>
+      {/* ── View All Modal (bottom sheet) ── */}
+      {showAllModal && (
+        <div
+          style={{ position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.46)', zIndex: 200, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'flex-end' }}
+          onClick={() => setShowAllModal(false)}
+        >
+          <div
+            style={{ backgroundColor: CARD, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div style={{ padding: '13px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>
+                {points.length} {t('surveyPoints')}
+              </span>
+              <button onClick={() => setShowAllModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_DIS, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+              >✕</button>
+            </div>
+            {/* Modal list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {sorted.map((mpt, i) => {
+                const mType  = typeMap.get(mpt.id) ?? 'standalone';
+                const mTheme = TYPE_THEME[mType];
+                const mSet   = mpt.setId ? setMap[mpt.setId] : null;
+                const mBadge = mType === 'benchmark' ? t('spBenchmarkBadge') : mType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge');
+                const isCur  = curIdx === i;
+                return (
+                  <div key={mpt.id}
+                    style={{ backgroundColor: isCur ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isCur ? BLUE : BORDER}`, borderLeft: `3px solid ${mTheme.border}`, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    onClick={() => { setRawIdx(i); setShowAllModal(false); }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC }}>{mpt.label}</span>
+                        {mpt.pointName && <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>• {mpt.pointName}</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' as const }}>
+                        <div style={{ borderRadius: 3, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '1px 5px' }}>
+                          <span style={{ fontSize: 7, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
+                        </div>
+                        {mSet && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 2, backgroundColor: BLUE_DEEP, borderRadius: 3, padding: '1px 5px' }}>
+                            {mSet.setLabel && <span style={{ fontSize: 7, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
+                            <span style={{ fontSize: 7, fontWeight: 700, color: NAVY }}>{mSet.name}</span>
+                          </div>
+                        )}
+                        <span style={{ fontSize: 9, fontWeight: 600, color: TEXT_DIS, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
+                        {(mpt.bmElevation ?? 0) > 0 && (
+                          <span style={{ fontSize: 9, fontWeight: 600, color: TEXT_SEC, fontFamily: 'monospace' }}>· {(mpt.bmElevation ?? 0).toFixed(2)} ft elev</span>
+                        )}
+                      </div>
+                    </div>
+                    {isCur && <span style={{ fontSize: 14, color: BLUE, flexShrink: 0 }}>✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
