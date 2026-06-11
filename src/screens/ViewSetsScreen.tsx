@@ -216,11 +216,10 @@ interface ViewAllSetsModalProps {
   currentIdx: number;
   onSelect:   (idx: number) => void;
   onClose:    () => void;
-  lang:       string;
 }
 
-function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose, lang }: ViewAllSetsModalProps) {
-  const { t } = useLang();
+function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: ViewAllSetsModalProps) {
+  const { t, lang } = useLang();
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -495,7 +494,6 @@ export default function ViewSetsScreen({ projectId }: Props) {
           currentIdx={curIdx}
           onSelect={idx => setRawIdx(idx)}
           onClose={() => setShowAllModal(false)}
-          lang={lang}
         />
       )}
 
