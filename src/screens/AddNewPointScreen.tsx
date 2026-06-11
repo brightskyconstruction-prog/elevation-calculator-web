@@ -194,19 +194,35 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave }: Qu
 // ─── Info tooltip ─────────────────────────────────────────────────────────────
 function InfoTip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+  const [tipPos, setTipPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
   const { t } = useLang();
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const tipW = 248;
+      const margin = 10;
+      let left = rect.left - tipW / 2 + rect.width / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - tipW - margin));
+      setTipPos({ top: rect.bottom + 6, left });
+    }
+    setOpen(v => !v);
+  };
+
   return (
     <span style={{ position: 'relative', display: 'inline-flex' }}>
       <button
+        ref={btnRef}
         style={{ background: 'none', border: 'none', color: BLUE_ACC, fontSize: 13, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
-        onClick={() => setOpen(v => !v)}
+        onClick={handleToggle}
       >ⓘ</button>
       {open && (
         <div style={{
-          position: 'absolute', bottom: '120%', left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', top: tipPos.top, left: tipPos.left,
           backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
-          padding: '10px 14px', width: 240, fontSize: 12, color: TEXT_SEC,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.14)', zIndex: 50, lineHeight: 1.5,
+          padding: '10px 14px', width: 248, fontSize: 12, color: TEXT_SEC,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)', zIndex: 9999, lineHeight: 1.5,
         }}>
           {text}
           <br />
@@ -280,6 +296,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const fifDisplay = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
   const engDisplay = !isNaN(engFt) && engFt > 0 ? `${engFt.toFixed(2)} ft` : '';
+
+  // Last used set: set associated with the most recently updated point that has a setId
+  const lastUsedSet = (() => {
+    const pointsWithSet = points.filter(p => p.setId);
+    if (pointsWithSet.length === 0) return sets[0] ?? null;
+    const mostRecent = pointsWithSet.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b));
+    return sets.find(s => s.id === mostRecent.setId) ?? sets[0] ?? null;
+  })();
 
   // ── Load point into form ───────────────────────────────────────────────────
   const loadPoint = useCallback((pt: SurveyPoint) => {
@@ -582,7 +606,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}` }}
                 type="number" min="0" step="0.0001" value={engFtStr}
                 onChange={e => updateFromEng(e.target.value)}
-                placeholder="e.g. 5.5417" readOnly={!isEditMode}
+                placeholder="0.0 feet" readOnly={!isEditMode}
               />
               {fifDisplay && fifDisplay !== '—' && (
                 <span style={s.hint}>{t('feetInchesHint')} {fifDisplay}</span>
@@ -637,7 +661,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {/* ── Set Assignment ── */}
         <div style={s.card}>
           <div style={s.secRow}>
-            <span style={s.secLbl}>
+            <span style={{ ...s.secLbl, ...(assignedSetObj ? {} : { textTransform: 'none' as const, fontSize: 12, letterSpacing: 0, fontWeight: 600 }) }}>
               {assignedSetObj
                 ? `${currentLabel}${pointName ? ` (${pointName})` : ''} ${t('isAssignedTo')}`
                 : t('setAssignment')}
@@ -660,8 +684,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {sets.length > 0 && (
-                <button style={s.setOptBtnSec} onClick={() => setShowAssign(true)}>
+              {sets.length > 0 && lastUsedSet && (
+                <button style={s.setOptBtnSec} onClick={() => setAssignedSet(lastUsedSet.id)}>
                   {t('addToExistingSet')}
                 </button>
               )}
