@@ -808,41 +808,75 @@ interface GraphTabProps {
 
 function GraphTab({ points, sets }: GraphTabProps) {
   const { t } = useLang();
-  const [selectedSet, setSelectedSet] = useState('all');
+  const [selectedSet, setSelectedSet] = useState('');
+  const [showMoreSets, setShowMoreSets] = useState(false);
+
+  // Sets that contain at least one point
+  const availableSets = useMemo(() =>
+    sets.filter(s => points.some(p => p.setId === s.id)),
+    [sets, points]
+  );
+
+  // Auto-select first set when sets become available
+  useEffect(() => {
+    if (!selectedSet && availableSets.length > 0) {
+      setSelectedSet(availableSets[0].id);
+    }
+  }, [availableSets.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Effective set — fallback to first available if none committed yet
+  const effectiveSet = selectedSet || availableSets[0]?.id || '';
 
   const filtered = useMemo(() => {
-    const base = selectedSet === 'all' ? points : points.filter(p => p.setId === selectedSet);
+    const base = effectiveSet ? points.filter(p => p.setId === effectiveSet) : points;
     return [...base]
       .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
       .slice(0, 20);
-  }, [points, selectedSet]);
+  }, [points, effectiveSet]);
 
-  // Reference set name for header
   const refSetName = useMemo(() => {
-    if (selectedSet !== 'all') return sets.find(s => s.id === selectedSet)?.name ?? '';
-    const firstSetId = filtered.find(p => p.setId)?.setId;
-    return firstSetId ? sets.find(s => s.id === firstSetId)?.name ?? '' : '';
-  }, [selectedSet, sets, filtered]);
+    return sets.find(s => s.id === effectiveSet)?.name ?? '';
+  }, [effectiveSet, sets]);
 
-  // Set filter chips
-  const setChips: Array<{ id: string; label: string }> = [{ id: 'all', label: t('allSets') }];
-  sets.forEach(s => {
-    if (points.some(p => p.setId === s.id))
-      setChips.push({ id: s.id, label: s.setLabel ? `${s.setLabel} ${s.name}` : s.name });
-  });
+  // First 3 sets visible; rest behind "More Sets" dropdown
+  const VISIBLE = 3;
+  const visibleChips = availableSets.slice(0, VISIBLE);
+  const hiddenChips  = availableSets.slice(VISIBLE);
 
-  const ChipsRow = setChips.length > 1 ? (
-    <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 4, marginBottom: 8 }}>
-      {setChips.map(chip => {
-        const active = selectedSet === chip.id;
+  const ChipsRow = availableSets.length > 0 ? (
+    <div style={{ display: 'flex', gap: 5, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      {visibleChips.map(s => {
+        const active = effectiveSet === s.id;
+        const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
         return (
-          <button
-            key={chip.id}
-            style={{ height: 30, padding: '0 8px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 11, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
-            onClick={() => setSelectedSet(chip.id)}
-          >{chip.label}</button>
+          <button key={s.id}
+            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 12, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+            onClick={() => { setSelectedSet(s.id); setShowMoreSets(false); }}
+          >{label}</button>
         );
       })}
+      {hiddenChips.length > 0 && (
+        <div style={{ position: 'relative' as const }}>
+          <button
+            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
+            onClick={() => setShowMoreSets(v => !v)}
+          >{showMoreSets ? '▲' : '▼'} {t('moreSets')}</button>
+          {showMoreSets && (
+            <div style={{ position: 'absolute' as const, top: 36, left: 0, backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.12)', zIndex: 10, minWidth: 150, overflow: 'hidden' }}>
+              {hiddenChips.map(s => {
+                const active = effectiveSet === s.id;
+                const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
+                return (
+                  <button key={s.id}
+                    style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left' as const, background: active ? '#EEF4FF' : 'none', border: 'none', color: active ? BLUE : TEXT_PRI, fontSize: 12, fontWeight: active ? 700 : 500, cursor: 'pointer' }}
+                    onClick={() => { setSelectedSet(s.id); setShowMoreSets(false); }}
+                  >{label}</button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   ) : null;
 
@@ -853,42 +887,40 @@ function GraphTab({ points, sets }: GraphTabProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 40 }}>
           <span style={{ fontSize: 36 }}>📡</span>
           <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_PRI }}>{t('noPointsDisplay')}</span>
-          <span style={{ fontSize: 13, color: TEXT_DIS, textAlign: 'center' }}>
-            {selectedSet === 'all' ? t('addPointsToGraph') : t('noPointsInSetYet')}
-          </span>
+          <span style={{ fontSize: 13, color: TEXT_DIS, textAlign: 'center' }}>{t('addPointsToGraph')}</span>
         </div>
       </div>
     );
   }
 
-  // ── SVG chart geometry ────────────────────────────────────────────────────
-  const n      = filtered.length;
-  const W      = 380;
-  // Bottom padding scales: more points → more label space needed (labels truncated)
-  const PAD_B  = n <= 6 ? 52 : 46;
-  const PAD_L  = 44, PAD_R = 10, PAD_T = 28;
-  const H      = 320 + PAD_B;
-  const PLOT_W = W - PAD_L - PAD_R;
-  const PLOT_H = H - PAD_T - PAD_B;
+  // ── SVG chart geometry ─────────────────────────────────────────────────────
+  const n       = filtered.length;
+  const W       = 380;
+  const PAD_B   = n <= 6 ? 62 : 56;   // extra room: point labels + x-axis title
+  const PAD_L   = 46, PAD_R = 10, PAD_T = 32;
+  const H       = 320 + PAD_B;
+  const PLOT_W  = W - PAD_L - PAD_R;
+  const PLOT_H  = H - PAD_T - PAD_B;
 
-  const vals   = filtered.map(p => p.engineeringFeet);
-  const rawMax = Math.max(...vals);
-  const rawMin = Math.min(...vals);
-  const range  = Math.max(rawMax - rawMin, 0.5);
+  const vals    = filtered.map(p => p.engineeringFeet);
+  const rawMax  = Math.max(...vals);
+  const rawMin  = Math.min(...vals);
+  const range   = Math.max(rawMax - rawMin, 0.5);
 
-  // Y range: bars grow up from baseline; add padding above/below
-  const maxVal = rawMax + range * 0.20;
-  const minVal = Math.max(0, rawMin - range * 0.08);
+  // INVERTED Y: small rod reading (high ground) → TOP of chart
+  //             large rod reading (low ground)  → BOTTOM of chart
+  const minVal  = rawMin - range * 0.12;  // small rod, pad above
+  const maxVal  = rawMax + range * 0.20;  // large rod, pad below
 
-  // Y maps value → SVG y (large value → small y = higher up)
   const yFor = (v: number) => {
     if (maxVal === minVal) return PAD_T + PLOT_H / 2;
-    return PAD_T + PLOT_H * (maxVal - v) / (maxVal - minVal);
+    return PAD_T + PLOT_H * (v - minVal) / (maxVal - minVal);
   };
 
-  const baseY  = PAD_T + PLOT_H; // actual bottom edge of plot canvas
-  const colW   = PLOT_W / n;
-  const barW   = Math.max(6, Math.min(34, colW * 0.58));
+  const baseY   = PAD_T + PLOT_H;
+  const laserY  = PAD_T;              // laser reference line at top
+  const colW    = PLOT_W / n;
+  const dotR    = Math.max(4, Math.min(6, colW * 0.20));
 
   // Nice Y-axis ticks
   const axisTicks = (() => {
@@ -907,11 +939,11 @@ function GraphTab({ points, sets }: GraphTabProps) {
     return ticks;
   })();
 
-  // Font sizes scale with point count
-  const valFontSz = n <= 5 ? 8.5 : n <= 10 ? 7.5 : 6.5;
-  const lblFontSz = n <= 5 ? 8.5 : n <= 10 ? 7.5 : 6.5;
-  const nameFontSz = n <= 5 ? 7.5 : n <= 10 ? 6.5 : 5.5;
-  const maxNameChars = n <= 5 ? 10 : n <= 10 ? 7 : 5;
+  // Font sizes — larger than before
+  const valFontSz    = n <= 5 ? 10.5 : n <= 10 ? 9 : 7.5;
+  const lblFontSz    = n <= 5 ? 10   : n <= 10 ? 9 : 7.5;
+  const nameFontSz   = n <= 5 ? 8.5  : n <= 10 ? 7.5 : 6;
+  const maxNameChars = n <= 5 ? 10   : n <= 10 ? 7   : 5;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column' }}>
@@ -920,27 +952,27 @@ function GraphTab({ points, sets }: GraphTabProps) {
       <div style={{ backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
         {/* Card header */}
         <div style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER_S}` }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: BLUE, letterSpacing: 1.1, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: BLUE, letterSpacing: 1, textTransform: 'uppercase' as const }}>
             {t('rodReadingAnalysis')}
           </div>
           {refSetName ? (
-            <div style={{ fontSize: 10, color: TEXT_SEC, marginTop: 2 }}>{t('referenceSet')}: {refSetName}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: TEXT_SEC, marginTop: 3 }}>{t('referenceSet')}: {refSetName}</div>
           ) : null}
         </div>
 
-        {/* SVG — width=100%, no overflow, no minWidth */}
+        {/* SVG chart */}
         <div style={{ padding: '4px 0 8px' }}>
           <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
             <defs />
 
-            {/* Plot area background */}
+            {/* Plot background */}
             <rect x={PAD_L} y={PAD_T} width={PLOT_W} height={PLOT_H} fill="#FAFBFE" rx="3" />
             <rect x={PAD_L} y={PAD_T} width={PLOT_W} height={PLOT_H} fill="none" stroke="#E2E8F0" strokeWidth="0.75" rx="3" />
 
-            {/* Y-axis unit label */}
-            <text x={PAD_L - 6} y={PAD_T - 7} textAnchor="end" fontSize="7" fontWeight="700" fill="#94A3B8">ft</text>
+            {/* Y-axis unit */}
+            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="9" fontWeight="700" fill="#94A3B8">ft</text>
 
-            {/* Y-axis grid ticks */}
+            {/* Y-axis grid + tick labels */}
             {axisTicks.map((tick, i) => {
               const ty = yFor(tick);
               if (ty < PAD_T - 1 || ty > baseY + 1) return null;
@@ -948,49 +980,56 @@ function GraphTab({ points, sets }: GraphTabProps) {
                 <g key={`tk${i}`}>
                   <line x1={PAD_L} y1={ty} x2={PAD_L + PLOT_W} y2={ty}
                     stroke="#E4EAF2" strokeWidth="0.75" strokeDasharray="3,4" />
-                  <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="7.5" fontWeight="600" fill="#94A3B8">
+                  <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="9" fontWeight="600" fill="#94A3B8">
                     {tick.toFixed(2)}
                   </text>
                 </g>
               );
             })}
 
-            {/* Bars + labels */}
+            {/* Laser reference line at top (represents the laser plane) */}
+            <line x1={PAD_L} y1={laserY} x2={PAD_L + PLOT_W} y2={laserY}
+              stroke={GOLD} strokeWidth="2.5" strokeDasharray="7,4" opacity="0.90" />
+
+            {/* Points: thin grade-rod line + dot */}
             {filtered.map((pt, i) => {
               const cx   = PAD_L + colW * i + colW / 2;
-              const yTop = yFor(pt.engineeringFeet);
-              const barH = Math.max(2, baseY - yTop);
-              const bX   = cx - barW / 2;
-              // Value label: above bar, or below top if bar too short
-              const valY = yTop > PAD_T + 12 ? yTop - 4 : yTop + 9;
+              const dotY = yFor(pt.engineeringFeet);
+              const lineH = dotY - laserY - dotR;
+
+              // Value label: above dot if near bottom, else below dot
+              const nearBottom = dotY > baseY - valFontSz * 3;
+              const valY = nearBottom ? dotY - dotR - 3 : dotY + dotR + valFontSz + 1;
 
               return (
                 <g key={pt.id}>
-                  {/* Subtle vertical guide */}
+                  {/* Subtle column guide */}
                   <line x1={cx} y1={PAD_T} x2={cx} y2={baseY}
                     stroke="#EBF0F7" strokeWidth="0.5" strokeDasharray="3,4" />
 
-                  {/* Bar body — flat bottom so it firmly touches the baseline */}
-                  <rect x={bX} y={yTop + 3} width={barW} height={Math.max(1, barH - 3)}
-                    fill={BLUE_ACC} opacity="0.82" />
-                  {/* Rounded top cap */}
-                  <rect x={bX} y={yTop} width={barW} height={Math.min(6, barH)}
-                    fill={BLUE_MID} rx="3" opacity="0.90" />
+                  {/* Thin "grade rod" line from laser down to dot */}
+                  {lineH > 0 && (
+                    <line x1={cx} y1={laserY} x2={cx} y2={dotY - dotR}
+                      stroke={BLUE_ACC} strokeWidth="2" opacity="0.65" />
+                  )}
 
-                  {/* Rod reading value above bar */}
+                  {/* Measurement dot */}
+                  <circle cx={cx} cy={dotY} r={dotR} fill={BLUE_MID} opacity="0.92" />
+                  <circle cx={cx} cy={dotY} r={dotR - 1.5} fill={BLUE_ACC} opacity="0.80" />
+
+                  {/* Rod reading value */}
                   <text x={cx} y={valY} textAnchor="middle"
                     fontSize={valFontSz} fontWeight="800" fill={NAVY}>
                     {pt.engineeringFeet.toFixed(2)}
                   </text>
 
-                  {/* Point label (ID) below baseline */}
-                  <text x={cx} y={baseY + 11} textAnchor="middle"
+                  {/* Point label below baseline */}
+                  <text x={cx} y={baseY + 13} textAnchor="middle"
                     fontSize={lblFontSz} fontWeight="700" fill={TEXT_PRI}>
                     {pt.label}
                   </text>
-                  {/* Point name (optional, truncated) */}
                   {pt.pointName ? (
-                    <text x={cx} y={baseY + 11 + lblFontSz + 2} textAnchor="middle"
+                    <text x={cx} y={baseY + 13 + lblFontSz + 2} textAnchor="middle"
                       fontSize={nameFontSz} fill={TEXT_DIS}>
                       {pt.pointName.slice(0, maxNameChars)}
                     </text>
@@ -999,9 +1038,15 @@ function GraphTab({ points, sets }: GraphTabProps) {
               );
             })}
 
-            {/* Baseline */}
+            {/* Bottom baseline */}
             <line x1={PAD_L} y1={baseY} x2={PAD_L + PLOT_W} y2={baseY}
               stroke={NAVY} strokeWidth="1.5" />
+
+            {/* X-axis label: LASER */}
+            <text x={PAD_L + PLOT_W / 2} y={H - 5} textAnchor="middle"
+              fontSize="9.5" fontWeight="800" fill="#94A3B8" letterSpacing="1.5">
+              {t('laserLabel')}
+            </text>
           </svg>
         </div>
       </div>

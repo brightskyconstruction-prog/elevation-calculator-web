@@ -135,6 +135,8 @@ const en = {
   rodReadingAnalysis: 'ROD READING ANALYSIS',
   allSets:            'All Sets',
   noPointsInSetYet:   'No points saved in this set yet.',
+  moreSets:           'More Sets',
+  laserLabel:         'LASER',
 
   // ── Single Point tab ─────────────────────────────────────────────
   surveyPoints:       'Survey Points',
@@ -390,9 +392,11 @@ const es: typeof en = {
   laserElev:          'ELEV. LÁSER',
   noPointsDisplay:    'Sin Puntos para Mostrar',
   addPointsToGraph:   'Agrega puntos de levantamiento para ver el gráfico.',
-  rodReadingAnalysis: 'ANÁLISIS DE LECTURA DE VARILLA',
+  rodReadingAnalysis: 'ANÁLISIS DE LECTURAS DE MIRA',
   allSets:            'Todos los Conjuntos',
   noPointsInSetYet:   'Sin puntos guardados en este conjunto aún.',
+  moreSets:           'Más conjuntos',
+  laserLabel:         'LÁSER',
 
   // ── Single Point tab ─────────────────────────────────────────────
   surveyPoints:       'Puntos de Levantamiento',
