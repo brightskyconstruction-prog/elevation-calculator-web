@@ -260,6 +260,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [savedAt,     setSavedAt]     = useState<string | null>(null);
   const [assignedSet, setAssignedSet] = useState<string | null>(null);
   const [setAssignMethod, setSetAssignMethod] = useState<'existing' | 'new' | null>(null);
+  const [pendingNewSet, setPendingNewSet] = useState<SurveySet | null>(null);
   const [locationTxt, setLocationTxt] = useState<string | null>(null);
   const [savedLat,    setSavedLat]    = useState<number | null>(null);
   const [savedLon,    setSavedLon]    = useState<number | null>(null);
@@ -287,7 +288,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const currentLabel  = currentPoint?.label ?? nextLabel(projectId);
   const engFt         = parseFloat(engFtStr);
   const isNewPoint    = currentIdx < 0 || currentIdx >= points.length;
-  const assignedSetObj= sets.find(s => s.id === assignedSet);
+  // pendingNewSet is staged in memory; fall back to store only for existing sets
+  const assignedSetObj = pendingNewSet?.id === assignedSet
+    ? pendingNewSet
+    : sets.find(s => s.id === assignedSet);
 
   // ── Set reference point (for auto-derived BM) ─────────────────────────────
   const setReferencePoint = (() => {
@@ -386,7 +390,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null);
+    setSetWarning(false); setNewSetElevWarn(false); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -438,7 +442,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       setBmElevStr(d.bmElevStr);
       setPointName(d.pointName);
       setTakenBy(d.takenBy);
-      setAssignedSet(d.assignedSet);
+      // Restore set only if it's a real persisted set (discard any stale pending-set id)
+      const restoredSet = d.assignedSet ? sets.find(s => s.id === d.assignedSet) : null;
+      setAssignedSet(restoredSet ? d.assignedSet : null);
+      setSetAssignMethod(restoredSet ? 'existing' : null);
+      setPendingNewSet(null);
       savedNewPointRef.current = null;
       setTimeout(() => { lockRef.current = false; }, 50);
     }
@@ -476,6 +484,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     if (setAssignMethod === 'new' && showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
       setNewSetElevWarn(true);
       return;
+    }
+    // Flush pending new set to storage before persisting the point
+    if (pendingNewSet && assignedSet === pendingNewSet.id) {
+      addSet(projectId, pendingNewSet);
+      setPendingNewSet(null);
     }
 
     const bm   = autoDerivedBm != null
@@ -566,7 +579,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       datum: (!isNaN(engFt) ? (parseFloat(bmElevStr) || 0) + engFt : undefined),
       createdAt: now, updatedAt: now,
     };
-    addSet(projectId, newSet);
+    // Stage in memory only — not written to storage until Save Point
+    setPendingNewSet(newSet);
     setAssignedSet(newSet.id);
     setSetAssignMethod('new');
   };
@@ -811,6 +825,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 onClick={() => {
                   // Already selected — single-click does nothing; double-click clears
                   if (setAssignMethod === 'existing') return;
+                  setPendingNewSet(null); // discard any staged new set
                   setAssignedSet(lastUsedSet.id);
                   setSetAssignMethod('existing');
                   setSetWarning(false);
@@ -851,6 +866,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 if (setAssignMethod === 'new') {
                   setAssignedSet(null);
                   setSetAssignMethod(null);
+                  setPendingNewSet(null);
                 }
               }}
             >
@@ -1065,7 +1081,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '7px 12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.4 },
+  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
   setAssignBtnActive: { backgroundColor: NAVY, border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: BLUE, border: '3px solid transparent' } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '2px 0' },
