@@ -270,8 +270,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [setWarning,     setSetWarning]     = useState(false);
   const [newSetElevWarn, setNewSetElevWarn] = useState(false);
   const [showSetPanel,   setShowSetPanel]   = useState(false);
+  const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const viewSetBtnRef = useRef<HTMLButtonElement>(null);
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const savedNewPointRef = useRef<{
+    rodFeet: string; rodInches: number; rodFracDec: number; rodFracLbl: string;
+    engFtStr: string; bmElevStr: string; pointName: string; takenBy: string;
+    assignedSet: string | null;
+  } | null>(null);
 
   const lockRef = useRef(false);
 
@@ -393,6 +399,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setCurrentIdx(-1);
     setIsEditMode(true);
     setRodFormat('fif');
+    setCameFromNewPoint(false);
+    savedNewPointRef.current = null;
   }, [isVisible]);
 
   const goTo = (idx: number) => {
@@ -400,7 +408,35 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(false);
   };
 
-  const openNewPoint = () => { clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif'); };
+  const openNewPoint = () => {
+    clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif');
+    setCameFromNewPoint(false); savedNewPointRef.current = null;
+  };
+
+  // ── Back To Main Page: restore the new-point form the user was on before browsing ──
+  const handleBackToMain = () => {
+    setCameFromNewPoint(false);
+    setCurrentIdx(-1);
+    setIsEditMode(true);
+    setRodFormat('fif');
+    setShowSetPanel(false);
+    setDropdownRect(null);
+    if (savedNewPointRef.current) {
+      const d = savedNewPointRef.current;
+      lockRef.current = true;
+      setRodFeet(d.rodFeet);
+      setRodInches(d.rodInches);
+      setRodFracDec(d.rodFracDec);
+      setRodFracLbl(d.rodFracLbl);
+      setEngFtStr(d.engFtStr);
+      setBmElevStr(d.bmElevStr);
+      setPointName(d.pointName);
+      setTakenBy(d.takenBy);
+      setAssignedSet(d.assignedSet);
+      savedNewPointRef.current = null;
+      setTimeout(() => { lockRef.current = false; }, 50);
+    }
+  };
 
   // ── Rod format sync ────────────────────────────────────────────────────────
   const updateFromFI = (feet: string, inches: number, frac: number, fracLbl: string) => {
@@ -552,12 +588,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
             {pointName || t('pointName')}
           </button>
-          {/* View All Set Points — visible whenever a set exists (assigned or last-used) */}
-          {dropdownSetId && (
+          {/* View All Set Points OR Back To Main Page */}
+          {cameFromNewPoint ? (
+            <button style={s.backToMainBtn} onClick={handleBackToMain}>
+              {t('backToMainPage')}
+            </button>
+          ) : dropdownSetId ? (
             <button ref={viewSetBtnRef} style={s.viewSetDropBtn} onClick={toggleSetDropdown}>
               {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
             </button>
-          )}
+          ) : null}
           <div style={{ flex: 1 }} />
           {!isNewPoint && !isEditMode && (
             <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
@@ -858,15 +898,20 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               : dropdownPoints.map(pt => (
                 <div
                   key={pt.id}
-                  style={{ ...s.setPointRow, backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent' }}
+                  style={{ ...s.setPointRow, overflow: 'hidden', flexWrap: 'nowrap', backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent' }}
                   onClick={() => {
+                    // If on a brand-new unsaved point, save form state so Back can restore it
+                    if (isNewPoint && !cameFromNewPoint) {
+                      savedNewPointRef.current = { rodFeet, rodInches, rodFracDec, rodFracLbl, engFtStr, bmElevStr, pointName, takenBy, assignedSet };
+                      setCameFromNewPoint(true);
+                    }
                     const gi = points.findIndex(p => p.id === pt.id);
                     if (gi >= 0) goTo(gi);
                     setShowSetPanel(false);
                   }}
                 >
-                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 13 }}>{pt.label}</span>
-                  <span style={{ color: TEXT_SEC, fontSize: 13 }}> — {pt.pointName || t('unnamedPoint')}</span>
+                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 13, flexShrink: 0 }}>{pt.label}</span>
+                  <span style={{ color: TEXT_SEC, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
                 </div>
               ))
             }
@@ -923,6 +968,7 @@ const s: Record<string, React.CSSProperties> = {
   },
   setNavArrow:   { width: 26, height: 26, borderRadius: 5, backgroundColor: NAVY, border: 'none', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer', flexShrink: 0, padding: 0 },
   viewSetDropBtn:{ flex: 1, minWidth: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: BLUE, cursor: 'pointer', lineHeight: 1.3, textAlign: 'center' as const },
+  backToMainBtn: { flex: 1, minWidth: 0, backgroundColor: NAVY, border: 'none', borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer', lineHeight: 1.3, textAlign: 'center' as const },
   setPointRow:   { display: 'flex', alignItems: 'center', padding: '7px 10px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}` },
   navArrow: {
     width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE,
