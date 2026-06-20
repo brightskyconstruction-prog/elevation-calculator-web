@@ -374,7 +374,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setTakenBy(pt.takenBy ?? '');
     setSavedAt(pt.savedAt ?? null);
     setAssignedSet(pt.setId ?? null);
-    setSetAssignMethod(pt.setId ? null : null);   // null = loaded; badge shown separately
+    setSetAssignMethod(pt.setId ? 'existing' : null);
     setLocationTxt(pt.createdAddress ?? null);
     setSavedLat(pt.createdLatitude ?? null);
     setSavedLon(pt.createdLongitude ?? null);
@@ -472,6 +472,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     if (isNaN(eng) || eng <= 0) { alert(t('rodReadingAlert')); return; }
     if (!assignedSet) { setSetWarning(true); return; }
     setSetWarning(false);
+    // Block save if "Create New Set" is selected but no elevation entered
+    if (setAssignMethod === 'new' && showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
+      setNewSetElevWarn(true);
+      return;
+    }
 
     const bm   = autoDerivedBm != null
       ? autoDerivedBm
@@ -793,15 +798,28 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <InfoTip text={t('setInfoTip')} />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {/* Button 1: Add to Current Set — only shown when a set exists */}
             {sets.length > 0 && lastUsedSet && (
               <button
-                style={{ ...s.setAssignBtn, ...(setAssignMethod === 'existing' ? s.setAssignBtnActive : {}) }}
+                style={{
+                  ...s.setAssignBtn,
+                  ...(setAssignMethod === 'existing'
+                    ? s.setAssignBtnActive
+                    : setAssignMethod === 'new' ? s.setAssignBtnDim : {}),
+                }}
                 onClick={() => {
+                  // Already selected — single-click does nothing; double-click clears
+                  if (setAssignMethod === 'existing') return;
                   setAssignedSet(lastUsedSet.id);
                   setSetAssignMethod('existing');
                   setSetWarning(false);
+                }}
+                onDoubleClick={() => {
+                  if (setAssignMethod === 'existing') {
+                    setAssignedSet(null);
+                    setSetAssignMethod(null);
+                  }
                 }}
               >
                 {setAssignMethod === 'existing' && assignedSetObj
@@ -813,8 +831,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
             {/* Button 2: Create New Set */}
             <button
-              style={{ ...s.setAssignBtn, ...(setAssignMethod === 'new' ? s.setAssignBtnActive : {}) }}
+              style={{
+                ...s.setAssignBtn,
+                ...(setAssignMethod === 'new'
+                  ? s.setAssignBtnActive
+                  : setAssignMethod === 'existing' ? s.setAssignBtnDim : {}),
+              }}
               onClick={() => {
+                // Already selected — single-click does nothing; double-click clears
+                if (setAssignMethod === 'new') return;
                 if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
                   setNewSetElevWarn(true);
                   return;
@@ -822,38 +847,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 setNewSetElevWarn(false);
                 setShowCreate(true);
               }}
+              onDoubleClick={() => {
+                if (setAssignMethod === 'new') {
+                  setAssignedSet(null);
+                  setSetAssignMethod(null);
+                }
+              }}
             >
               {setAssignMethod === 'new' && assignedSetObj
                 ? `✓ ${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
                 : t('createNewSetBtn')
               }
             </button>
-
-            {/* Loaded / existing point: show current assignment as dismissable badge */}
-            {setAssignMethod === null && assignedSetObj && (
-              <div style={s.assignedBadge}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                  {assignedSetObj.setLabel && (
-                    <span style={s.setLblBadge}>{assignedSetObj.setLabel}</span>
-                  )}
-                  <span style={{ fontSize: 13, color: BLUE_ACC, fontWeight: 600 }}>{assignedSetObj.name}</span>
-                </div>
-                <button
-                  style={{ background: 'none', border: 'none', color: TEXT_DIS, cursor: 'pointer', fontSize: 13 }}
-                  onClick={() => setAssignedSet(null)}
-                >✕</button>
-              </div>
-            )}
-
-            {/* Remove assignment when assigned via one of the buttons */}
-            {setAssignMethod !== null && assignedSetObj && (
-              <button
-                style={s.removeAssignBtn}
-                onClick={() => { setAssignedSet(null); setSetAssignMethod(null); }}
-              >
-                ✕ {t('removeAssignment')}
-              </button>
-            )}
 
             {newSetElevWarn && <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>}
             {setWarning && <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>}
@@ -1060,9 +1065,10 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:   { width: '100%', backgroundColor: '#1B3858', border: '2px solid transparent', borderRadius: 7, padding: '10px 12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.4 },
-  setAssignBtnActive: { backgroundColor: NAVY, border: `2px solid ${GOLD}` } as React.CSSProperties,
-  removeAssignBtn:{ width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '2px 0' },
+  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '7px 12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.4 },
+  setAssignBtnActive: { backgroundColor: NAVY, border: `3px solid ${GOLD}` } as React.CSSProperties,
+  setAssignBtnDim: { backgroundColor: BLUE, border: '3px solid transparent' } as React.CSSProperties,
+  removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '2px 0' },
 
   timestampCard:{ backgroundColor: CARD, borderRadius: 8, border: `1px solid #F3F4F6`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 },
   savedAt:      { fontSize: 11, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
