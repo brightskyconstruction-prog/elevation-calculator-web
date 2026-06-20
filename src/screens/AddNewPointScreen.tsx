@@ -277,8 +277,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const engFt         = parseFloat(engFtStr);
   const isNewPoint    = currentIdx < 0 || currentIdx >= points.length;
   const assignedSetObj= sets.find(s => s.id === assignedSet);
-  // New button disabled while creating a new point OR while editing a saved one
-  const newDisabled   = isNewPoint || isEditMode;
 
   // ── Set reference point (for auto-derived BM) ─────────────────────────────
   const setReferencePoint = (() => {
@@ -358,7 +356,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(false);
   };
 
-  const handleNewPoint = () => { clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif'); };
+  const openNewPoint = () => { clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif'); };
 
   // ── Rod format sync ────────────────────────────────────────────────────────
   const updateFromFI = (feet: string, inches: number, frac: number, fracLbl: string) => {
@@ -439,12 +437,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         ...(createdAddress   != null ? { createdAddress   } : {}),
       };
       addPoint(projectId, pt);
-      const freshPoints = getPoints(projectId);
-      const savedIdx = freshPoints.findIndex(p => p.id === pt.id);
-      setCurrentIdx(savedIdx >= 0 ? savedIdx : freshPoints.length - 1);
-      setIsEditMode(false);
-      setSavedAt(iso);
       setSaveMsg(t('pointSaved'));
+      setTimeout(() => { setSaveMsg(null); openNewPoint(); }, 1200);
     } else if (currentPoint) {
       updatePoint(projectId, currentPoint.id, {
         pointName: pointName.trim() || undefined,
@@ -456,11 +450,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         ...(createdLongitude != null ? { createdLongitude } : {}),
         ...(createdAddress   != null ? { createdAddress   } : {}),
       });
-      setSavedAt(iso);
-      setIsEditMode(false);
       setSaveMsg(t('pointUpdated'));
+      setTimeout(() => { setSaveMsg(null); openNewPoint(); }, 1200);
     }
-    setTimeout(() => setSaveMsg(null), 2500);
   };
 
   const handleCompareThis = () => {
@@ -518,7 +510,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           onClick={() => goTo(currentIdx + 1)}
           disabled={isNewPoint || currentIdx >= points.length - 1}
         >›</button>
-        {/* Edit — left of New, visible after save when not editing */}
+        {/* Edit — visible after save when not editing */}
         {!isNewPoint && !isEditMode && (
           <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
         )}
@@ -526,12 +518,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {!isNewPoint && isEditMode && currentPoint && (
           <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); }} title="Undo changes">↩</button>
         )}
-        {/* New — always visible; disabled while creating or editing */}
-        <button
-          style={{ ...s.newBtn, ...(newDisabled ? s.newBtnDisabled : {}) }}
-          onClick={newDisabled ? undefined : handleNewPoint}
-          disabled={newDisabled}
-        >{t('newPoint')}</button>
       </div>
 
       {/* Scrollable content */}
@@ -569,7 +555,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                         updateFromFI(v, rodInches, rodFracDec, rodFracLbl);
                       }
                     }}
-                    onFocus={e => e.target.select()}
+                    onFocus={() => {
+                      if (rodFeet === '0') updateFromFI('', rodInches, rodFracDec, rodFracLbl);
+                    }}
                     onKeyDown={e => {
                       const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
                       if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
@@ -616,9 +604,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 )}
               </div>
               {engDisplay && (
-                <div style={s.autoGenBlock}>
-                  <span style={s.autoGenLbl}>{t('autoGenEngFt')} :</span>
-                  <span style={s.hint}>{engFtStr}′</span>
+                <div style={s.autoGenRow}>
+                  <span style={s.autoGenLbl}>{t('autoGenEngFt')}:</span>
+                  <span style={s.autoGenVal}>{engFtStr}′</span>
                 </div>
               )}
             </>
@@ -631,13 +619,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   const v = e.target.value;
                   if (v === '' || /^\d*\.?\d*$/.test(v)) updateFromEng(v);
                 }}
-                onFocus={e => e.target.select()}
+                onFocus={() => {
+                  if (engFtStr === '0' || engFtStr === '0.00' || engFtStr === '0.0000') updateFromEng('');
+                }}
                 placeholder="0.00 ft" readOnly={!isEditMode}
               />
               {fifDisplay && fifDisplay !== '—' && (
-                <div style={s.autoGenBlock}>
-                  <span style={s.autoGenLbl}>{t('autoGenFIF')} :</span>
-                  <span style={s.hint}>{fifDisplay}</span>
+                <div style={s.autoGenRow}>
+                  <span style={s.autoGenLbl}>{t('autoGenFIF')}:</span>
+                  <span style={s.autoGenVal}>{fifDisplay}</span>
                 </div>
               )}
             </>
@@ -861,11 +851,11 @@ const s: Record<string, React.CSSProperties> = {
   rodDiv:      { width: 1, backgroundColor: '#F3F4F6', flexShrink: 0 },
   clearAllBtn: { width: 40, border: 'none', borderLeft: `1px solid #F3F4F6`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: `${SURFACE}88` },
 
-  engInput:     { height: 40, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
-  hint:         { fontSize: 15, color: BLUE, textAlign: 'center', fontWeight: 700 },
-  autoGenBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  autoGenLbl:   { fontSize: 10, color: TEXT_DIS, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase' as const },
-  warnMsg:      { fontSize: 12, color: '#EF4444', fontWeight: 600, padding: '4px 0' },
+  engInput:   { height: 40, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
+  autoGenRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap' as const },
+  autoGenLbl: { fontSize: 13, color: TEXT_PRI, fontWeight: 600 },
+  autoGenVal: { fontSize: 13, color: BLUE, fontWeight: 700 },
+  warnMsg:    { fontSize: 12, color: '#EF4444', fontWeight: 600, padding: '4px 0' },
 
   autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '7px 10px', border: '1.5px solid #2A5898' },
   knownElevBox:{ border: `1.5px solid ${GOLD}`, backgroundColor: '#1A3A5C' } as React.CSSProperties,
