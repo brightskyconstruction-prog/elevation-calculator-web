@@ -30,6 +30,7 @@ interface Props {
   editPoint?:       SurveyPoint | null;
   onEditConsumed?:  () => void;
   onComparePoint?:  (fromId: string, toId: string | null) => void;
+  onDirtyChange?:   (dirty: boolean) => void;
 }
 
 type RodFormat = 'fif' | 'eng';
@@ -239,7 +240,7 @@ function InfoTip({ text }: { text: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint }: Props) {
+export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t } = useLang();
 
@@ -268,6 +269,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [saveMsg,        setSaveMsg]        = useState<string | null>(null);
   const [setWarning,     setSetWarning]     = useState(false);
   const [newSetElevWarn, setNewSetElevWarn] = useState(false);
+  const [showSetPanel,   setShowSetPanel]   = useState(false);
 
   const lockRef = useRef(false);
 
@@ -297,6 +299,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const fifDisplay = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
   const engDisplay = !isNaN(engFt) && engFt > 0 ? `${engFt.toFixed(2)} ft` : '';
+
+  // ── Dirty detection (unsaved data in edit mode) ───────────────────────────
+  const isDirty = isEditMode && (rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '');
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  // ── Set-point panel helpers ───────────────────────────────────────────────
+  const setPoints = assignedSet
+    ? points.filter(p => p.setId === assignedSet).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
+    : [];
+  const setPointIdx = currentPoint ? setPoints.findIndex(p => p.id === currentPoint.id) : -1;
+
+  const goPrevInSet = () => {
+    if (setPointIdx > 0) {
+      const gi = points.findIndex(p => p.id === setPoints[setPointIdx - 1].id);
+      if (gi >= 0) goTo(gi);
+    }
+  };
+  const goNextInSet = () => {
+    if (setPointIdx >= 0 && setPointIdx < setPoints.length - 1) {
+      const gi = points.findIndex(p => p.id === setPoints[setPointIdx + 1].id);
+      if (gi >= 0) goTo(gi);
+    }
+  };
 
   // Last used set: set associated with the most recently updated point that has a setId
   const lastUsedSet = (() => {
@@ -330,7 +355,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false);
+    setSetWarning(false); setNewSetElevWarn(false); setShowSetPanel(false);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -459,10 +484,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     if (!currentPoint || !onComparePoint) return;
     let prevId: string | null = null;
     if (currentPoint.setId) {
-      const setPoints = points
+      const sameSetPts = points
         .filter(p => p.setId === currentPoint.setId && p.id !== currentPoint.id)
         .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-      prevId = setPoints[0]?.id ?? null;
+      prevId = sameSetPts[0]?.id ?? null;
     }
     onComparePoint(currentPoint.id, prevId);
   };
@@ -493,30 +518,64 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         }}>{saveMsg}</div>
       )}
 
-      {/* Point nav header */}
-      <div style={s.pointNav}>
-        <button
-          style={{ ...s.navArrow, opacity: currentIdx <= 0 ? 0.3 : 1 }}
-          onClick={() => goTo(currentIdx - 1)} disabled={currentIdx <= 0}
-        >‹</button>
-        <div style={s.navCenter}>
+      {/* Point nav header + set panel */}
+      <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+        {/* Main row: label · point name · edit/undo */}
+        <div style={s.pointNav}>
           <span style={s.navLabel}>{currentLabel}</span>
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
             {pointName || t('pointName')}
           </button>
+          <div style={{ flex: 1 }} />
+          {!isNewPoint && !isEditMode && (
+            <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
+          )}
+          {!isNewPoint && isEditMode && currentPoint && (
+            <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); }} title="Undo changes">↩</button>
+          )}
         </div>
-        <button
-          style={{ ...s.navArrow, opacity: (isNewPoint || currentIdx >= points.length - 1) ? 0.3 : 1 }}
-          onClick={() => goTo(currentIdx + 1)}
-          disabled={isNewPoint || currentIdx >= points.length - 1}
-        >›</button>
-        {/* Edit — visible after save when not editing */}
-        {!isNewPoint && !isEditMode && (
-          <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
+        {/* View All Set Points toggle button */}
+        {assignedSetObj && (
+          <div style={{ padding: '0 10px 6px' }}>
+            <button style={s.viewSetBtn} onClick={() => setShowSetPanel(v => !v)}>
+              {showSetPanel ? '▲ ' : '▼ '}{t('viewAllSetPoints')}
+            </button>
+          </div>
         )}
-        {/* Undo — visible while editing an existing saved point */}
-        {!isNewPoint && isEditMode && currentPoint && (
-          <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); }} title="Undo changes">↩</button>
+        {/* Set points panel */}
+        {showSetPanel && assignedSet && (
+          <div style={s.setPanel}>
+            {/* Within-set navigator */}
+            <div style={s.setPanelNav}>
+              <button
+                style={{ ...s.setPanelArrow, opacity: setPointIdx <= 0 ? 0.4 : 1 }}
+                disabled={setPointIdx <= 0}
+                onClick={goPrevInSet}
+              >‹</button>
+              <span style={s.setPanelLabel}>{currentLabel}</span>
+              <button
+                style={{ ...s.setPanelArrow, opacity: (setPointIdx < 0 || setPointIdx >= setPoints.length - 1) ? 0.4 : 1 }}
+                disabled={setPointIdx < 0 || setPointIdx >= setPoints.length - 1}
+                onClick={goNextInSet}
+              >›</button>
+            </div>
+            {/* Set points list */}
+            <div style={s.setPointsList}>
+              {setPoints.length === 0
+                ? <div style={{ color: TEXT_DIS, textAlign: 'center', padding: 10, fontSize: 13 }}>{t('noSetPointsYet')}</div>
+                : setPoints.map(pt => (
+                  <div
+                    key={pt.id}
+                    style={{ ...s.setPointRow, backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent' }}
+                    onClick={() => { const gi = points.findIndex(p => p.id === pt.id); if (gi >= 0) goTo(gi); }}
+                  >
+                    <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 13 }}>{pt.label}</span>
+                    {pt.pointName && <span style={{ color: TEXT_SEC, fontSize: 13 }}> – {pt.pointName}</span>}
+                  </div>
+                ))
+              }
+            </div>
+          </div>
         )}
       </div>
 
@@ -555,8 +614,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                         updateFromFI(v, rodInches, rodFracDec, rodFracLbl);
                       }
                     }}
-                    onFocus={() => {
-                      if (rodFeet === '0') updateFromFI('', rodInches, rodFracDec, rodFracLbl);
+                    onFocus={(e) => {
+                      if (rodFeet === '0') {
+                        e.target.value = '';
+                        updateFromFI('', rodInches, rodFracDec, rodFracLbl);
+                      }
                     }}
                     onKeyDown={e => {
                       const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
@@ -619,8 +681,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   const v = e.target.value;
                   if (v === '' || /^\d*\.?\d*$/.test(v)) updateFromEng(v);
                 }}
-                onFocus={() => {
-                  if (engFtStr === '0' || engFtStr === '0.00' || engFtStr === '0.0000') updateFromEng('');
+                onFocus={(e) => {
+                  if (engFtStr !== '' && parseFloat(engFtStr) === 0) {
+                    e.target.value = '';
+                    updateFromEng('');
+                  }
                 }}
                 placeholder="0.00 ft" readOnly={!isEditMode}
               />
@@ -815,8 +880,14 @@ const s: Record<string, React.CSSProperties> = {
   pointNav: {
     display: 'flex', alignItems: 'center', gap: 6,
     backgroundColor: CARD, padding: '5px 10px',
-    borderBottom: `1px solid ${BORDER}`, flexShrink: 0,
   },
+  viewSetBtn:    { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: BLUE, cursor: 'pointer', textAlign: 'left' as const },
+  setPanel:      { borderTop: `1px solid ${BORDER}`, backgroundColor: SURFACE, padding: '8px 10px', display: 'flex', flexDirection: 'column' as const, gap: 6 },
+  setPanelNav:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  setPanelArrow: { width: 36, height: 36, borderRadius: 6, backgroundColor: NAVY, border: 'none', color: '#fff', fontSize: 22, fontWeight: 700, cursor: 'pointer' },
+  setPanelLabel: { fontSize: 15, fontWeight: 700, color: TEXT_PRI },
+  setPointsList: { maxHeight: 160, overflowY: 'auto' as const, border: `1px solid ${BORDER}`, borderRadius: 6, backgroundColor: CARD },
+  setPointRow:   { display: 'flex', alignItems: 'center', padding: '7px 10px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}` },
   navArrow: {
     width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE,
     border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center',

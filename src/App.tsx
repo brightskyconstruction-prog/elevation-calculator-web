@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSurveyStore } from './stores/surveyStore';
 import { LangProvider, useLang } from './LangContext';
 import { MainTab, SurveyPoint } from './types';
@@ -42,6 +42,19 @@ function AppInner() {
 
   const [email,        setEmail]        = useState<string>(() => readEmail() ?? '');
   const [activeTab,    setActiveTab]    = useState<MainTab>('add');
+  const addScreenDirty = useRef(false);
+
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    addScreenDirty.current = dirty;
+  }, []);
+
+  const handleTabSwitch = useCallback((tab: MainTab) => {
+    if (activeTab === 'add' && tab !== 'add' && addScreenDirty.current) {
+      if (!window.confirm(t('unsavedPointConfirm'))) return;
+      addScreenDirty.current = false;
+    }
+    setActiveTab(tab);
+  }, [activeTab, t]);
   const [editPoint,    setEditPoint]    = useState<SurveyPoint | undefined>(undefined);
   const [showSettings, setShowSettings] = useState(false);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
@@ -167,7 +180,7 @@ function AppInner() {
                 ...styles.tab,
                 ...(isActive ? styles.tabActive : {}),
               }}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSwitch(tab.id)}
             >
               {tab.label}
             </button>
@@ -185,6 +198,7 @@ function AppInner() {
             editPoint={editPoint}
             onEditConsumed={handleEditConsumed}
             onComparePoint={handleComparePoint}
+            onDirtyChange={handleDirtyChange}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
