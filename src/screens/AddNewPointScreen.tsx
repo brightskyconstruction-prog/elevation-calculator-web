@@ -259,6 +259,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [takenBy,     setTakenBy]     = useState('');
   const [savedAt,     setSavedAt]     = useState<string | null>(null);
   const [assignedSet, setAssignedSet] = useState<string | null>(null);
+  const [setAssignMethod, setSetAssignMethod] = useState<'existing' | 'new' | null>(null);
   const [locationTxt, setLocationTxt] = useState<string | null>(null);
   const [savedLat,    setSavedLat]    = useState<number | null>(null);
   const [savedLon,    setSavedLon]    = useState<number | null>(null);
@@ -373,6 +374,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setTakenBy(pt.takenBy ?? '');
     setSavedAt(pt.savedAt ?? null);
     setAssignedSet(pt.setId ?? null);
+    setSetAssignMethod(pt.setId ? null : null);   // null = loaded; badge shown separately
     setLocationTxt(pt.createdAddress ?? null);
     setSavedLat(pt.createdLatitude ?? null);
     setSavedLon(pt.createdLongitude ?? null);
@@ -384,7 +386,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setShowSetPanel(false); setDropdownRect(null);
+    setSetWarning(false); setNewSetElevWarn(false); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -561,6 +563,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     };
     addSet(projectId, newSet);
     setAssignedSet(newSet.id);
+    setSetAssignMethod('new');
   };
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -786,52 +789,75 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {/* ── Set Assignment ── */}
         <div style={{ ...s.card, ...(setWarning && !assignedSetObj ? { border: `1.5px solid #EF4444` } : {}) }}>
           <div style={s.secRow}>
-            <span style={s.secLbl}>
-              {assignedSetObj
-                ? `${currentLabel}${pointName ? ` (${pointName})` : ''} ${t('isAssignedTo')}`
-                : t('setAssignment')}
-            </span>
+            <span style={s.secLbl}>{t('setAssignment')}</span>
             <InfoTip text={t('setInfoTip')} />
           </div>
 
-          {assignedSetObj ? (
-            <div style={s.assignedBadge}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-                {assignedSetObj.setLabel && (
-                  <span style={s.setLblBadge}>{assignedSetObj.setLabel}</span>
-                )}
-                <span style={{ fontSize: 13, color: BLUE_ACC, fontWeight: 600 }}>{assignedSetObj.name}</span>
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Button 1: Add to Current Set — only shown when a set exists */}
+            {sets.length > 0 && lastUsedSet && (
               <button
-                style={{ background: 'none', border: 'none', color: TEXT_DIS, cursor: 'pointer', fontSize: 13 }}
-                onClick={() => setAssignedSet(null)}
-              >✕</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {sets.length > 0 && lastUsedSet && (
-                <button style={s.setOptBtnSec} onClick={() => { setAssignedSet(lastUsedSet.id); setSetWarning(false); }}>
-                  {`${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
-                </button>
-              )}
-              <button style={s.setOptBtnPri} onClick={() => {
+                style={{ ...s.setAssignBtn, ...(setAssignMethod === 'existing' ? s.setAssignBtnActive : {}) }}
+                onClick={() => {
+                  setAssignedSet(lastUsedSet.id);
+                  setSetAssignMethod('existing');
+                  setSetWarning(false);
+                }}
+              >
+                {setAssignMethod === 'existing' && assignedSetObj
+                  ? `✓ ${t('currentSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                  : `${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`
+                }
+              </button>
+            )}
+
+            {/* Button 2: Create New Set */}
+            <button
+              style={{ ...s.setAssignBtn, ...(setAssignMethod === 'new' ? s.setAssignBtnActive : {}) }}
+              onClick={() => {
                 if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
                   setNewSetElevWarn(true);
                   return;
                 }
                 setNewSetElevWarn(false);
                 setShowCreate(true);
-              }}>
-                {t('createNewSetBtn')}
+              }}
+            >
+              {setAssignMethod === 'new' && assignedSetObj
+                ? `✓ ${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                : t('createNewSetBtn')
+              }
+            </button>
+
+            {/* Loaded / existing point: show current assignment as dismissable badge */}
+            {setAssignMethod === null && assignedSetObj && (
+              <div style={s.assignedBadge}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                  {assignedSetObj.setLabel && (
+                    <span style={s.setLblBadge}>{assignedSetObj.setLabel}</span>
+                  )}
+                  <span style={{ fontSize: 13, color: BLUE_ACC, fontWeight: 600 }}>{assignedSetObj.name}</span>
+                </div>
+                <button
+                  style={{ background: 'none', border: 'none', color: TEXT_DIS, cursor: 'pointer', fontSize: 13 }}
+                  onClick={() => setAssignedSet(null)}
+                >✕</button>
+              </div>
+            )}
+
+            {/* Remove assignment when assigned via one of the buttons */}
+            {setAssignMethod !== null && assignedSetObj && (
+              <button
+                style={s.removeAssignBtn}
+                onClick={() => { setAssignedSet(null); setSetAssignMethod(null); }}
+              >
+                ✕ {t('removeAssignment')}
               </button>
-              {newSetElevWarn && (
-                <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>
-              )}
-              {setWarning && (
-                <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>
-              )}
-            </div>
-          )}
+            )}
+
+            {newSetElevWarn && <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>}
+            {setWarning && <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>}
+          </div>
         </div>
 
         {/* ── Save / Update / Post-save actions ── */}
@@ -1029,10 +1055,14 @@ const s: Record<string, React.CSSProperties> = {
   bmTxt:   { flex: 1, fontSize: 13, color: TEXT_PRI, lineHeight: 1.5, fontWeight: 600 },
   bmInput: { width: 92, height: 38, backgroundColor: '#FFFFFF', border: `1.5px solid #6B7280`, borderRadius: 6, textAlign: 'center', fontSize: 14, fontWeight: 700, color: TEXT_PRI, outline: 'none' },
 
-  assignedBadge:{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '8px 10px' },
-  setLblBadge:  { backgroundColor: BLUE, borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: '0.4px' },
-  setOptBtnPri: { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
-  setOptBtnSec: { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  assignedBadge:  { display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '8px 10px' },
+  setLblBadge:    { backgroundColor: BLUE, borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: '0.4px' },
+  setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  // Always-visible set assignment buttons
+  setAssignBtn:   { width: '100%', backgroundColor: '#1B3858', border: '2px solid transparent', borderRadius: 7, padding: '10px 12px', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.4 },
+  setAssignBtnActive: { backgroundColor: NAVY, border: `2px solid ${GOLD}` } as React.CSSProperties,
+  removeAssignBtn:{ width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '2px 0' },
 
   timestampCard:{ backgroundColor: CARD, borderRadius: 8, border: `1px solid #F3F4F6`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 },
   savedAt:      { fontSize: 11, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
