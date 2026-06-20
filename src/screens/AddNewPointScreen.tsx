@@ -307,6 +307,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   // ── Set-point panel helpers ───────────────────────────────────────────────
+  // setPoints: used for nav arrows (only points in the *assigned* set)
   const setPoints = assignedSet
     ? points.filter(p => p.setId === assignedSet).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
     : [];
@@ -340,6 +341,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     const mostRecent = pointsWithSet.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b));
     return sets.find(s => s.id === mostRecent.setId) ?? sets[0] ?? null;
   })();
+
+  // dropdownSetId / dropdownPoints: what the "View All Points Of This Set" dropdown shows.
+  // On a new-point page (assignedSet = null), falls back to lastUsedSet so the button
+  // is always visible as long as any set exists.
+  const dropdownSetId = assignedSet ?? (lastUsedSet?.id ?? null);
+  const dropdownPoints = dropdownSetId
+    ? points.filter(p => p.setId === dropdownSetId).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))
+    : [];
 
   // ── Load point into form ───────────────────────────────────────────────────
   const loadPoint = useCallback((pt: SurveyPoint) => {
@@ -543,8 +552,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
             {pointName || t('pointName')}
           </button>
-          {/* View All Set Points — visible whenever a set is assigned */}
-          {assignedSet && (
+          {/* View All Set Points — visible whenever a set exists (assigned or last-used) */}
+          {dropdownSetId && (
             <button ref={viewSetBtnRef} style={s.viewSetDropBtn} onClick={toggleSetDropdown}>
               {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
             </button>
@@ -823,7 +832,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
-      {showSetPanel && dropdownRect && assignedSet && (
+      {showSetPanel && dropdownRect && dropdownSetId && (
         <div
           style={{ position: 'fixed', inset: 0, zIndex: 499 }}
           onClick={() => setShowSetPanel(false)}
@@ -844,9 +853,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             }}
             onClick={e => e.stopPropagation()}
           >
-            {setPoints.length === 0
+            {dropdownPoints.length === 0
               ? <div style={{ padding: '10px', color: TEXT_DIS, fontSize: 13, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
-              : setPoints.map(pt => (
+              : dropdownPoints.map(pt => (
                 <div
                   key={pt.id}
                   style={{ ...s.setPointRow, backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent' }}
@@ -857,7 +866,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   }}
                 >
                   <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 13 }}>{pt.label}</span>
-                  {pt.pointName && <span style={{ color: TEXT_SEC, fontSize: 13 }}> – {pt.pointName}</span>}
+                  <span style={{ color: TEXT_SEC, fontSize: 13 }}> — {pt.pointName || t('unnamedPoint')}</span>
                 </div>
               ))
             }
@@ -913,7 +922,7 @@ const s: Record<string, React.CSSProperties> = {
     backgroundColor: CARD, padding: '5px 10px',
   },
   setNavArrow:   { width: 26, height: 26, borderRadius: 5, backgroundColor: NAVY, border: 'none', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer', flexShrink: 0, padding: 0 },
-  viewSetDropBtn:{ flex: 1, minWidth: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: BLUE, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
+  viewSetDropBtn:{ flex: 1, minWidth: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: BLUE, cursor: 'pointer', lineHeight: 1.3, textAlign: 'center' as const },
   setPointRow:   { display: 'flex', alignItems: 'center', padding: '7px 10px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}` },
   navArrow: {
     width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE,
