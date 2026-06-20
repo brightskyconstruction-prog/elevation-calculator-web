@@ -343,6 +343,8 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
   const [selA,           setSelA]           = useState<string | null>(fromId);
   const [selB,           setSelB]           = useState<string | null>(toId);
   const [setIdx,         setSetIdx]         = useState(0);
+  const [cardPage,       setCardPage]       = useState(0);
+  const [showSetPicker,  setShowSetPicker]  = useState(false);
 
   // Auto-load when triggered from Point+ "Compare This Reading"
   useEffect(() => {
@@ -388,6 +390,9 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
   const totalGroups = groups.length;
   const safeIdx     = Math.min(setIdx, Math.max(0, totalGroups - 1));
   const currentGroup = groups[safeIdx];
+
+  // Reset card page when the active set changes
+  useEffect(() => { setCardPage(0); }, [safeIdx]); // eslint-disable-line react-hooks/exhaustive-deps
   const canGo       = !!(tempA && tempB);
   const selCount    = [tempA, tempB].filter(Boolean).length;
 
@@ -633,7 +638,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   {/* Left arrow */}
                   <button
-                    style={{ width: 26, height: 26, borderRadius: 5, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 18, color: TEXT_PRI, cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    style={{ width: 26, height: 26, borderRadius: 5, backgroundColor: safeIdx === 0 ? SURFACE : NAVY, border: 'none', fontSize: 18, fontWeight: 800, color: safeIdx === 0 ? TEXT_DIS : '#fff', cursor: safeIdx === 0 ? 'default' : 'pointer', opacity: safeIdx === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
                     onClick={() => setSetIdx(Math.max(0, safeIdx - 1))}
                     disabled={safeIdx === 0}
                   >‹</button>
@@ -662,17 +667,9 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                     )}
                   </div>
 
-                  {/* Clear button */}
-                  {selCount > 0 && (
-                    <button
-                      onClick={() => { setTempA(null); setTempB(null); }}
-                      style={{ height: 22, padding: '0 7px', borderRadius: 4, backgroundColor: 'rgba(231,76,60,0.08)', border: `1px solid rgba(231,76,60,0.30)`, fontSize: 10, fontWeight: 700, color: RED, cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap' as const }}
-                    >{t('clearSelection')}</button>
-                  )}
-
                   {/* Right arrow */}
                   <button
-                    style={{ width: 26, height: 26, borderRadius: 5, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 18, color: TEXT_PRI, cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.25 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
+                    style={{ width: 26, height: 26, borderRadius: 5, backgroundColor: safeIdx >= totalGroups - 1 ? SURFACE : NAVY, border: 'none', fontSize: 18, fontWeight: 800, color: safeIdx >= totalGroups - 1 ? TEXT_DIS : '#fff', cursor: safeIdx >= totalGroups - 1 ? 'default' : 'pointer', opacity: safeIdx >= totalGroups - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}
                     onClick={() => setSetIdx(Math.min(totalGroups - 1, safeIdx + 1))}
                     disabled={safeIdx >= totalGroups - 1}
                   >›</button>
@@ -694,62 +691,84 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
               {/* Unified scrollable body: grid → status → buttons → ad */}
               <div style={{ flex: 1, overflowY: 'auto' }}>
-                {/* 3-column point grid */}
+                {/* 3-column point grid — fixed 2 rows × 3 cols, paginated */}
                 <div style={{ padding: '6px 6px 4px' }}>
                   {(currentGroup?.pts ?? []).length === 0 ? (
                     <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
-                      {(currentGroup?.pts ?? []).map(pt => {
-                        const isA = tempA === pt.id;
-                        const isB = tempB === pt.id;
-                        const sel = isA || isB;
-                        return (
-                          <div
-                            key={pt.id}
-                            style={{
-                              borderRadius: 8,
-                              border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
-                              backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
-                              padding: '6px 6px 5px',
-                              cursor: 'pointer',
-                              position: 'relative',
-                              userSelect: 'none' as const,
-                            }}
-                            onClick={() => handleTempSelect(pt.id)}
-                          >
-                            {/* Deselect ✕ button */}
-                            {sel && (
-                              <button
-                                onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
-                                style={{ position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0, zIndex: 1 }}
+                  ) : (() => {
+                    const allPts = currentGroup?.pts ?? [];
+                    const CARDS_PER_PAGE = 6;
+                    const totalCardPages = Math.ceil(allPts.length / CARDS_PER_PAGE);
+                    const safePage = Math.min(cardPage, Math.max(0, totalCardPages - 1));
+                    const pagePts = allPts.slice(safePage * CARDS_PER_PAGE, (safePage + 1) * CARDS_PER_PAGE);
+                    return (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5, overflow: 'hidden' }}>
+                          {pagePts.map(pt => {
+                            const isA = tempA === pt.id;
+                            const isB = tempB === pt.id;
+                            const sel = isA || isB;
+                            return (
+                              <div
+                                key={pt.id}
+                                style={{
+                                  borderRadius: 8,
+                                  border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
+                                  backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
+                                  padding: '6px 6px 5px',
+                                  cursor: 'pointer',
+                                  position: 'relative',
+                                  userSelect: 'none' as const,
+                                }}
+                                onClick={() => handleTempSelect(pt.id)}
                               >
-                                <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
-                              </button>
-                            )}
-                            {/* PT label */}
-                            <div style={{ fontSize: 13, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, paddingRight: sel ? 18 : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{pt.label}</div>
-                            {/* Point name */}
-                            {pt.pointName && (
-                              <div style={{ fontSize: 10, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, marginTop: 1 }}>{pt.pointName}</div>
-                            )}
-                            {/* Rod height */}
-                            <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                              <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerRod')}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                              <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>
-                            </div>
-                            {/* Elevation */}
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                              <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerElev')}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                              {pt.bmElevation > 0 && <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>}
-                            </div>
+                                {/* Deselect ✕ button */}
+                                {sel && (
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
+                                    style={{ position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0, zIndex: 1 }}
+                                  >
+                                    <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
+                                  </button>
+                                )}
+                                {/* PT label + name on same line */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 18 : 0, overflow: 'hidden' }}>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
+                                  {pt.pointName && (
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
+                                  )}
+                                </div>
+                                {/* Rod height */}
+                                <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                                  <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerRod')}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                  <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>
+                                </div>
+                                {/* Elevation */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                                  <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerElev')}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Card page dots */}
+                        {totalCardPages > 1 && (
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 5 }}>
+                            {Array.from({ length: totalCardPages }).map((_, pi) => (
+                              <div
+                                key={pi}
+                                style={{ height: 4, width: pi === safePage ? 10 : 4, borderRadius: 2, backgroundColor: pi === safePage ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
+                                onClick={() => setCardPage(pi)}
+                              />
+                            ))}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Status + buttons — immediately after grid, in the flow */}
@@ -759,18 +778,18 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                       {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {totalGroups > 1 && (
+                      <button
+                        style={{ width: '100%', height: 38, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 7, color: TEXT_PRI, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 4px' }}
+                        onClick={() => setShowSetPicker(true)}
+                      >{t('chooseFromAnotherSet')}</button>
+                    )}
                     <button
-                      style={{ flex: 1, height: 38, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 7, color: canGo ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.45 }}
+                      style={{ width: '100%', height: 38, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 7, color: canGo ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.45 }}
                       onClick={handleGo}
                       disabled={!canGo}
                     >{t('goBtn')}</button>
-                    {totalGroups > 1 && (
-                      <button
-                        style={{ flex: 1.4, height: 38, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 7, color: TEXT_SEC, fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '0 4px' }}
-                        onClick={() => setSetIdx((safeIdx + 1) % totalGroups)}
-                      >{t('chooseFromAnotherSet')}</button>
-                    )}
                   </div>
                 </div>
 
@@ -794,6 +813,55 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
         onSubmit={handleGoalSubmit}
         onClose={closeGoalModal}
       />
+
+      {/* Set picker bottom-sheet modal */}
+      {showSetPicker && (
+        <div
+          style={{ position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.46)', zIndex: 200, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'flex-end' }}
+          onClick={() => setShowSetPicker(false)}
+        >
+          <div
+            style={{ backgroundColor: CARD, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, maxHeight: '70vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ padding: '13px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{t('chooseFromAnotherSet')}</span>
+              <button onClick={() => setShowSetPicker(false)}
+                style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_DIS, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+              >✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {groups.map((g, gi) => {
+                const isActive = gi === safeIdx;
+                return (
+                  <div key={gi}
+                    style={{ backgroundColor: isActive ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isActive ? BLUE : BORDER}`, padding: '10px 12px', cursor: 'pointer' }}
+                    onClick={() => { setSetIdx(gi); setCardPage(0); setShowSetPicker(false); }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      {g.setLabel ? (
+                        <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '1px 6px', flexShrink: 0 }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{g.setLabel}</span>
+                        </div>
+                      ) : null}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, flex: 1 }}>{g.name}</span>
+                      {isActive && <span style={{ fontSize: 13, color: BLUE, flexShrink: 0 }}>✓</span>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {g.createdAt ? (
+                        <span style={{ fontSize: 10, color: TEXT_DIS }}>
+                          {new Date(g.createdAt).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      ) : null}
+                      <span style={{ fontSize: 10, color: TEXT_SEC, fontWeight: 600 }}>{g.pts.length} {g.pts.length === 1 ? 'pt' : 'pts'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
