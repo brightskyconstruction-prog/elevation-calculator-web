@@ -335,7 +335,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const toggleSetDropdown = () => {
     if (!showSetPanel && viewSetBtnRef.current) {
       const r = viewSetBtnRef.current.getBoundingClientRect();
-      setDropdownRect({ top: r.bottom + 2, left: r.left, width: r.width });
+      // Dropdown is at least 200 px wide so point names aren't clipped,
+      // but never bleeds off-screen on narrow phones.
+      const dropW = Math.min(Math.max(r.width, 200), window.innerWidth - 8);
+      const left  = Math.min(r.left, window.innerWidth - dropW - 4);
+      setDropdownRect({ top: r.bottom + 2, left, width: dropW });
     }
     setShowSetPanel(v => !v);
   };
@@ -967,8 +971,10 @@ const s: Record<string, React.CSSProperties> = {
     backgroundColor: CARD, padding: '5px 10px',
   },
   setNavArrow:   { width: 26, height: 26, borderRadius: 5, backgroundColor: NAVY, border: 'none', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer', flexShrink: 0, padding: 0 },
-  viewSetDropBtn:{ flex: 1, minWidth: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: BLUE, cursor: 'pointer', lineHeight: 1.3, textAlign: 'center' as const },
-  backToMainBtn: { flex: 1, minWidth: 0, backgroundColor: NAVY, border: 'none', borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer', lineHeight: 1.3, textAlign: 'center' as const },
+  // Fixed minWidth so the button can display its label in ~2 lines without
+  // fighting the adjacent flex:1 spacer div for space.
+  viewSetDropBtn:{ flexShrink: 0, minWidth: 130, maxWidth: 160, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '5px 8px', fontSize: 10, fontWeight: 700, color: BLUE, cursor: 'pointer', lineHeight: 1.35, textAlign: 'center' as const, wordBreak: 'break-word' as const },
+  backToMainBtn: { flexShrink: 0, minWidth: 130, maxWidth: 160, backgroundColor: NAVY, border: 'none', borderRadius: 5, padding: '5px 8px', fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer', lineHeight: 1.35, textAlign: 'center' as const, wordBreak: 'break-word' as const },
   setPointRow:   { display: 'flex', alignItems: 'center', padding: '7px 10px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}` },
   navArrow: {
     width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE,
