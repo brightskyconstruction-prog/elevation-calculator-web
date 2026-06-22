@@ -216,7 +216,7 @@ function AppInner() {
           <CalculatorScreen />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'slope'  ? 'flex' : 'none' }}>
-          <SlopeScreen />
+          <SlopeScreen projectId={projectId} />
         </div>
       </main>
 
