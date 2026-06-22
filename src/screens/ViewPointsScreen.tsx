@@ -1059,7 +1059,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
             <rect x={PAD_L} y={PAD_T} width={PLOT_W} height={PLOT_H} fill="none" stroke="#E2E8F0" strokeWidth="0.75" rx="3" />
 
             {/* Y-axis unit */}
-            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="9" fontWeight="700" fill="#94A3B8">ft</text>
+            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="9" fontWeight="800" fill={TEXT_SEC}>ft</text>
 
             {/* Y-axis grid + tick labels */}
             {axisTicks.map((tick, i) => {
@@ -1068,8 +1068,8 @@ function GraphTab({ points, sets }: GraphTabProps) {
               return (
                 <g key={`tk${i}`}>
                   <line x1={PAD_L} y1={ty} x2={PAD_L + PLOT_W} y2={ty}
-                    stroke="#E4EAF2" strokeWidth="0.75" strokeDasharray="3,4" />
-                  <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="9" fontWeight="600" fill="#94A3B8">
+                    stroke="#D1D8E4" strokeWidth="0.75" strokeDasharray="3,4" />
+                  <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="9.5" fontWeight="700" fill={TEXT_SEC}>
                     {tick.toFixed(2)}
                   </text>
                 </g>
@@ -1078,7 +1078,13 @@ function GraphTab({ points, sets }: GraphTabProps) {
 
             {/* Laser reference line at top (represents the laser plane) */}
             <line x1={PAD_L} y1={laserY} x2={PAD_L + PLOT_W} y2={laserY}
-              stroke={GOLD} strokeWidth="2.5" strokeDasharray="7,4" opacity="0.90" />
+              stroke={GOLD} strokeWidth="2.5" strokeDasharray="7,4" opacity="0.95" />
+
+            {/* LASER label — right side, aligned with laser line */}
+            <text x={PAD_L + PLOT_W - 3} y={laserY - 4} textAnchor="end"
+              fontSize="9" fontWeight="800" fill={GOLD_SVG} letterSpacing="1.2">
+              {t('laserLabel')}
+            </text>
 
             {/* Points: thin grade-rod line + dot */}
             {filtered.map((pt, i) => {
@@ -1094,17 +1100,17 @@ function GraphTab({ points, sets }: GraphTabProps) {
                 <g key={pt.id}>
                   {/* Subtle column guide */}
                   <line x1={cx} y1={PAD_T} x2={cx} y2={baseY}
-                    stroke="#EBF0F7" strokeWidth="0.5" strokeDasharray="3,4" />
+                    stroke="#E2E8F4" strokeWidth="0.5" strokeDasharray="3,4" />
 
-                  {/* Thin "grade rod" line from laser down to dot */}
+                  {/* Grade rod line from laser down to dot — darker, thicker */}
                   {lineH > 0 && (
                     <line x1={cx} y1={laserY} x2={cx} y2={dotY - dotR}
-                      stroke={BLUE_ACC} strokeWidth="2" opacity="0.65" />
+                      stroke={BLUE_MID} strokeWidth="2.5" opacity="0.85" />
                   )}
 
-                  {/* Measurement dot */}
-                  <circle cx={cx} cy={dotY} r={dotR} fill={BLUE_MID} opacity="0.92" />
-                  <circle cx={cx} cy={dotY} r={dotR - 1.5} fill={BLUE_ACC} opacity="0.80" />
+                  {/* Measurement dot — solid, higher contrast */}
+                  <circle cx={cx} cy={dotY} r={dotR + 0.5} fill={BLUE} opacity="1" />
+                  <circle cx={cx} cy={dotY} r={dotR - 0.5} fill={BLUE_ACC} opacity="1" />
 
                   {/* Rod reading value */}
                   <text x={cx} y={valY} textAnchor="middle"
@@ -1119,7 +1125,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
                   </text>
                   {pt.pointName ? (
                     <text x={cx} y={baseY + 13 + lblFontSz + 2} textAnchor="middle"
-                      fontSize={nameFontSz} fill={TEXT_DIS}>
+                      fontSize={nameFontSz} fontWeight="700" fill={TEXT_SEC}>
                       {pt.pointName.slice(0, maxNameChars)}
                     </text>
                   ) : null}
@@ -1130,12 +1136,6 @@ function GraphTab({ points, sets }: GraphTabProps) {
             {/* Bottom baseline */}
             <line x1={PAD_L} y1={baseY} x2={PAD_L + PLOT_W} y2={baseY}
               stroke={NAVY} strokeWidth="1.5" />
-
-            {/* X-axis label: LASER */}
-            <text x={PAD_L + PLOT_W / 2} y={H - 5} textAnchor="middle"
-              fontSize="9.5" fontWeight="800" fill="#94A3B8" letterSpacing="1.5">
-              {t('laserLabel')}
-            </text>
           </svg>
         </div>
       </div>
