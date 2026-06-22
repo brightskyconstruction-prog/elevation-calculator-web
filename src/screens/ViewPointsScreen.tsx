@@ -169,34 +169,36 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', zIndex: 250 }}>
       <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)' }} onClick={onClose} />
-      <div style={{ position: 'relative', width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '20px 20px 0 0', padding: '4px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '20px 20px 0 0', padding: '4px 16px 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* Handle */}
         <div style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: BORDER_B, marginTop: 10 }} />
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.4 }}>
-            {goalField === 'rod' ? t('goalHeightTitle') : t('goalElevTitle')}{'  ·  '}{goalPt.pointName ?? goalPt.label}
+          <span style={{ fontSize: 15, fontWeight: 800, color: NAVY, letterSpacing: 0.3 }}>
+            {goalField === 'rod' ? t('goalHeightTitle') : t('goalElevTitle')}
+            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC }}> · {goalPt.pointName ?? goalPt.label}</span>
           </span>
-          <button style={{ background: 'none', border: 'none', fontSize: 16, color: TEXT_DIS, cursor: 'pointer', padding: '0 0 0 8px' }} onClick={onClose}>✕</button>
+          <button style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_SEC, cursor: 'pointer', padding: '0 0 0 8px', lineHeight: 1 }} onClick={onClose}>✕</button>
         </div>
 
-        {/* Current value — full-width dark box, both formats */}
-        <div style={{ backgroundColor: '#1A2D35', borderRadius: 8, padding: '10px 14px' }}>
-          <span style={{ fontSize: 8, fontWeight: 800, color: 'rgba(255,255,255,0.55)', letterSpacing: 0.5, textTransform: 'uppercase' }}>
+        {/* Current value card */}
+        <div style={{ backgroundColor: '#0F2130', borderRadius: 10, padding: '10px 14px' }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.70)', letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
             {goalField === 'rod' ? t('currentRodReading') : t('currentElevation')}
           </span>
           <div style={{ display: 'flex', gap: 14, marginTop: 6, alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.4 }}>{t('goalCurrentDecFt')}</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
-                <span style={{ fontSize: 21, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{existingVal.toFixed(2)}</span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>ft</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.4 }}>{t('goalCurrentDecFt')}</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+                <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>{existingVal.toFixed(2)}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>ft</span>
               </div>
             </div>
-            <div style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.18)', alignSelf: 'stretch' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.4 }}>{t('goalCurrentFIF')}</span>
-              <span style={{ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.88)', fontFamily: 'monospace' }}>{exFIFStr}</span>
+            <div style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.22)', alignSelf: 'stretch' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.4 }}>{t('goalCurrentFIF')}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{exFIFStr}</span>
             </div>
           </div>
         </div>
@@ -204,24 +206,24 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
         {/* Format toggle */}
         <div style={{ display: 'flex', gap: 6 }}>
           <button
-            style={{ flex: 1, height: 30, backgroundColor: inputMode === 'dec' ? BLUE_ACC : 'rgba(30,87,153,0.08)', border: `1.5px solid ${inputMode === 'dec' ? BLUE_ACC : BORDER}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: inputMode === 'dec' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
+            style={{ flex: 1, height: 36, backgroundColor: inputMode === 'dec' ? BLUE_ACC : SURFACE, border: `1.5px solid ${inputMode === 'dec' ? BLUE_ACC : BORDER}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: inputMode === 'dec' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
             onClick={() => handleSwitchMode('dec')}
           >{t('goalInputDec')}</button>
           <button
-            style={{ flex: 1, height: 30, backgroundColor: inputMode === 'fif' ? BLUE_ACC : 'rgba(30,87,153,0.08)', border: `1.5px solid ${inputMode === 'fif' ? BLUE_ACC : BORDER}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: inputMode === 'fif' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
+            style={{ flex: 1, height: 36, backgroundColor: inputMode === 'fif' ? BLUE_ACC : SURFACE, border: `1.5px solid ${inputMode === 'fif' ? BLUE_ACC : BORDER}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: inputMode === 'fif' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
             onClick={() => handleSwitchMode('fif')}
           >{t('goalInputFIF')}</button>
         </div>
 
-        {/* Goal label */}
-        <span style={{ fontSize: 8, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.5, textTransform: 'uppercase', textAlign: 'center', marginBottom: -6 }}>
+        {/* Goal section label */}
+        <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.6, textTransform: 'uppercase' as const, textAlign: 'center', marginBottom: -4 }}>
           {goalField === 'rod' ? t('goalRodReading') : t('goalElevInput')}
         </span>
 
         {/* Decimal input */}
         {inputMode === 'dec' && (
           <input
-            style={{ width: '100%', height: 52, backgroundColor: '#1A2D35', borderRadius: 8, border: `2px solid ${BLUE_ACC}`, fontSize: 22, fontWeight: 700, color: '#fff', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 52, backgroundColor: '#fff', borderRadius: 8, border: `2px solid ${BLUE_ACC}`, fontSize: 24, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
             value={goalInput}
             onChange={e => {
               const v = e.target.value;
@@ -243,9 +245,9 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
           <div style={{ display: 'flex', gap: 6, width: '100%' }}>
             {/* Feet */}
             <div style={{ flex: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 8, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('feetLabel')}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('feetLabel')}</span>
               <input
-                style={{ width: '100%', height: 48, backgroundColor: '#1A2D35', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 20, fontWeight: 700, color: '#fff', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 22, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
                 type="text" inputMode="numeric" pattern="[0-9]*"
                 value={fifFeet}
                 onChange={e => {
@@ -266,9 +268,9 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
             </div>
             {/* Inches */}
             <div style={{ flex: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 8, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('inchesLabel')}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('inchesLabel')}</span>
               <select
-                style={{ width: '100%', height: 48, backgroundColor: '#1A2D35', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 18, fontWeight: 700, color: '#fff', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 20, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
                 value={fifInches}
                 onChange={e => {
                   setFifInches(e.target.value);
@@ -281,9 +283,9 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
             </div>
             {/* Fraction */}
             <div style={{ flex: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 8, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('fracLabel')}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('fracLabel')}</span>
               <select
-                style={{ width: '100%', height: 48, backgroundColor: '#1A2D35', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', outline: 'none', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 15, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
                 value={fifFrac}
                 onChange={e => {
                   setFifFrac(e.target.value);
@@ -299,9 +301,9 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
 
         {/* Live diff preview */}
         {goalDiffSigned != null && (
-          <div style={{ borderRadius: 6, padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, border: `1.5px solid ${diffBdr}`, backgroundColor: diffBg }}>
-            <span style={{ fontSize: 8, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' }}>{t('difference')}</span>
-            <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.3, textAlign: 'center', color: diffClr }}>
+          <div style={{ borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `2px solid ${diffBdr}`, backgroundColor: diffBg }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>{t('difference')}</span>
+            <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 0.3, textAlign: 'center', color: diffClr }}>
               {goalDiffSigned > 0 ? '+' : ''}{goalDiffSigned.toFixed(2)} ft{'  '}
               {goalDiffSigned >  0.00005 ? t('fillRequired') :
                goalDiffSigned < -0.00005 ? t('cutRequired') : t('atGrade')}
@@ -311,7 +313,7 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
 
         {/* Submit */}
         <button
-          style={{ height: 50, backgroundColor: canSubmit ? BLUE : SURFACE, border: 'none', borderRadius: 8, color: canSubmit ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, letterSpacing: 0.3, cursor: canSubmit ? 'pointer' : 'default', opacity: canSubmit ? 1 : 0.35 }}
+          style={{ height: 50, backgroundColor: canSubmit ? NAVY : SURFACE, border: 'none', borderRadius: 10, color: canSubmit ? '#fff' : TEXT_DIS, fontSize: 16, fontWeight: 800, letterSpacing: 0.4, cursor: canSubmit ? 'pointer' : 'default', opacity: canSubmit ? 1 : 0.35, boxShadow: canSubmit ? '0 3px 8px rgba(20,58,99,0.35)' : 'none' }}
           onClick={onSubmit}
           disabled={!canSubmit}
         >{t('setGoal')}</button>
