@@ -740,13 +740,13 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                 </div>
                                 {/* Rod height */}
                                 <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')}</span>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
                                   <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
                                   <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
                                 </div>
                                 {/* Elevation */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')}</span>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
                                   <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
                                   {pt.bmElevation > 0 && <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
@@ -754,16 +754,28 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                             );
                           })}
                         </div>
-                        {/* Card page dots */}
+                        {/* Card page navigation: arrows + dots */}
                         {totalCardPages > 1 && (
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 5 }}>
-                            {Array.from({ length: totalCardPages }).map((_, pi) => (
-                              <div
-                                key={pi}
-                                style={{ height: 4, width: pi === safePage ? 10 : 4, borderRadius: 2, backgroundColor: pi === safePage ? BLUE_ACC : BORDER, cursor: 'pointer', transition: 'width 0.15s' }}
-                                onClick={() => setCardPage(pi)}
-                              />
-                            ))}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 }}>
+                            <button
+                              disabled={safePage === 0}
+                              onClick={() => setCardPage(Math.max(0, safePage - 1))}
+                              style={{ width: 24, height: 24, borderRadius: 5, backgroundColor: safePage === 0 ? SURFACE : NAVY, border: 'none', fontSize: 15, fontWeight: 800, color: safePage === 0 ? TEXT_DIS : '#fff', cursor: safePage === 0 ? 'default' : 'pointer', opacity: safePage === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}
+                            >‹</button>
+                            <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                              {Array.from({ length: totalCardPages }).map((_, pi) => (
+                                <div
+                                  key={pi}
+                                  style={{ height: 7, width: pi === safePage ? 16 : 7, borderRadius: 4, backgroundColor: pi === safePage ? BLUE_ACC : BORDER_B, cursor: 'pointer', transition: 'width 0.15s, background-color 0.15s' }}
+                                  onClick={() => setCardPage(pi)}
+                                />
+                              ))}
+                            </div>
+                            <button
+                              disabled={safePage >= totalCardPages - 1}
+                              onClick={() => setCardPage(Math.min(totalCardPages - 1, safePage + 1))}
+                              style={{ width: 24, height: 24, borderRadius: 5, backgroundColor: safePage >= totalCardPages - 1 ? SURFACE : NAVY, border: 'none', fontSize: 15, fontWeight: 800, color: safePage >= totalCardPages - 1 ? TEXT_DIS : '#fff', cursor: safePage >= totalCardPages - 1 ? 'default' : 'pointer', opacity: safePage >= totalCardPages - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}
+                            >›</button>
                           </div>
                         )}
                       </>
@@ -781,12 +793,12 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                   <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
                     {totalGroups > 1 && (
                       <button
-                        style={{ flex: 1.4, height: 40, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 6px' }}
+                        style={{ flex: 1.4, height: 34, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', padding: '0 6px', boxShadow: '0 2px 6px rgba(20,58,99,0.35)', letterSpacing: 0.2 }}
                         onClick={() => setShowSetPicker(true)}
                       >{t('chooseFromAnotherSet')}</button>
                     )}
                     <button
-                      style={{ flex: 1, height: 40, backgroundColor: canGo ? BLUE : NAVY, border: 'none', borderRadius: 7, color: canGo ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.55 }}
+                      style={{ flex: 1, height: 34, backgroundColor: canGo ? BLUE : NAVY, border: 'none', borderRadius: 8, color: canGo ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 15, fontWeight: 800, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.5, boxShadow: canGo ? '0 2px 6px rgba(30,87,153,0.40)' : 'none' }}
                       onClick={handleGo}
                       disabled={!canGo}
                     >{t('goBtn')}</button>
