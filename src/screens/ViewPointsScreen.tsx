@@ -647,23 +647,23 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', minWidth: 0 }}>
                     {currentGroup?.setLabel ? (
                       <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '1px 6px', flexShrink: 0 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{currentGroup.setLabel}</span>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{currentGroup.setLabel}</span>
                       </div>
                     ) : null}
                     {currentGroup?.setLabel && (
-                      <span style={{ color: BORDER_B, fontSize: 11, flexShrink: 0 }}>|</span>
+                      <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
                     )}
-                    <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
                     {currentGroup?.createdAt ? (
                       <>
-                        <span style={{ color: BORDER_B, fontSize: 11, flexShrink: 0 }}>|</span>
-                        <span style={{ fontSize: 10, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
+                        <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
                           {new Date(currentGroup.createdAt).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </>
                     ) : null}
                     {totalGroups > 1 && (
-                      <span style={{ fontSize: 10, color: TEXT_DIS, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
                     )}
                   </div>
 
@@ -733,22 +733,22 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                 )}
                                 {/* PT label + name on same line */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 18 : 0, overflow: 'hidden' }}>
-                                  <span style={{ fontSize: 13, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
                                   {pt.pointName && (
-                                    <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
                                   )}
                                 </div>
                                 {/* Rod height */}
                                 <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerRod')}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                  <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
                                 </div>
                                 {/* Elevation */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 9, color: TEXT_DIS, fontWeight: 600, flexShrink: 0 }}>{t('pickerElev')}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 9, color: TEXT_DIS }}>ft</span>}
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
                               </div>
                             );
@@ -778,15 +778,15 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                       {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
                     {totalGroups > 1 && (
                       <button
-                        style={{ width: '100%', height: 38, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 7, color: TEXT_PRI, fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 4px' }}
+                        style={{ flex: 1.4, height: 40, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: '0 6px' }}
                         onClick={() => setShowSetPicker(true)}
                       >{t('chooseFromAnotherSet')}</button>
                     )}
                     <button
-                      style={{ width: '100%', height: 38, backgroundColor: canGo ? BLUE : SURFACE, border: canGo ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 7, color: canGo ? '#fff' : TEXT_DIS, fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.45 }}
+                      style={{ flex: 1, height: 40, backgroundColor: canGo ? BLUE : NAVY, border: 'none', borderRadius: 7, color: canGo ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 14, fontWeight: 700, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.55 }}
                       onClick={handleGo}
                       disabled={!canGo}
                     >{t('goBtn')}</button>
