@@ -1034,6 +1034,20 @@ function GraphTab({ points, sets }: GraphTabProps) {
   const nameFontSz   = n <= 5 ? 8.5  : n <= 10 ? 7.5 : 6;
   const maxNameChars = n <= 5 ? 10   : n <= 10 ? 7   : 5;
 
+  // Word-wrap helper: splits a name into lines of at most maxChars characters
+  const wrapName = (text: string, maxChars: number): string[] => {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let cur = '';
+    for (const word of words) {
+      if (!cur) { cur = word; }
+      else if ((cur + ' ' + word).length <= maxChars) { cur += ' ' + word; }
+      else { lines.push(cur); cur = word; }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  };
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column' }}>
       {ChipsRow}
@@ -1081,8 +1095,8 @@ function GraphTab({ points, sets }: GraphTabProps) {
               stroke={GOLD} strokeWidth="2.5" strokeDasharray="7,4" opacity="0.95" />
 
             {/* LASER label — right side, aligned with laser line */}
-            <text x={PAD_L + PLOT_W - 3} y={laserY - 4} textAnchor="end"
-              fontSize="9" fontWeight="800" fill={GOLD_SVG} letterSpacing="1.2">
+            <text x={PAD_L + PLOT_W - 3} y={laserY - 5} textAnchor="end"
+              fontSize="11.5" fontWeight="800" fill={GOLD_SVG} letterSpacing="1.5">
               {t('laserLabel')}
             </text>
 
@@ -1123,12 +1137,17 @@ function GraphTab({ points, sets }: GraphTabProps) {
                     fontSize={lblFontSz} fontWeight="700" fill={TEXT_PRI}>
                     {pt.label}
                   </text>
-                  {pt.pointName ? (
-                    <text x={cx} y={baseY + 13 + lblFontSz + 2} textAnchor="middle"
-                      fontSize={nameFontSz} fontWeight="700" fill={TEXT_SEC}>
-                      {pt.pointName.slice(0, maxNameChars)}
-                    </text>
-                  ) : null}
+                  {pt.pointName ? (() => {
+                    const nameLines = wrapName(pt.pointName, maxNameChars);
+                    const nameStartY = baseY + 13 + lblFontSz + 2;
+                    return (
+                      <text textAnchor="middle" fontSize={nameFontSz} fontWeight="700" fill={TEXT_SEC}>
+                        {nameLines.map((line, li) => (
+                          <tspan key={li} x={cx} y={nameStartY + li * (nameFontSz + 1.5)}>{line}</tspan>
+                        ))}
+                      </text>
+                    );
+                  })() : null}
                 </g>
               );
             })}
