@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useSurveyStore } from '../stores/surveyStore';
 import { SurveyPoint, SurveySet } from '../types';
 
