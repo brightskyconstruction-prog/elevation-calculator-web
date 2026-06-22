@@ -235,16 +235,16 @@ function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: ViewA
             const isCur   = idx === currentIdx;
             return (
               <div key={s.id}
-                style={{ backgroundColor: isCur ? BLUE_D : CARD, border: `1px solid ${isCur ? BLUE_A : BORDER}`, borderRadius: 7, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}
+                style={{ backgroundColor: isCur ? BLUE_D : CARD, border: `1px solid ${isCur ? BLUE_A : BORDER}`, borderRadius: 7, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
                 onClick={() => { onSelect(idx); onClose(); }}>
                 {s.setLabel && (
-                  <span style={{ backgroundColor: BLUE, borderRadius: 3, padding: '2px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: 0.4, flexShrink: 0 }}>{s.setLabel}</span>
+                  <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '3px 7px', fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: 0.4, flexShrink: 0 }}>{s.setLabel}</span>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_P, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.name}</div>
-                  <div style={{ fontSize: 10, color: TEXT_D }}>{strings[lang].svsCreated(fmtDateFull(s.createdAt, lang))} · {strings[lang].svsPts(ptCount)}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.name}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_S, marginTop: 2 }}>{strings[lang].svsCreated(fmtDateFull(s.createdAt, lang))} · {strings[lang].svsPts(ptCount)}</div>
                 </div>
-                {isCur && <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_A, flexShrink: 0 }}>✓</span>}
+                {isCur && <span style={{ fontSize: 14, fontWeight: 800, color: BLUE_A, flexShrink: 0 }}>✓</span>}
               </div>
             );
           })}
@@ -295,7 +295,7 @@ interface Props { projectId: string }
 
 export default function ViewSetsScreen({ projectId }: Props) {
   const { t, lang } = useLang();
-  const { getSets, getPoints, deleteSet } = useSurveyStore();
+  const { getSets, getPoints, deleteSet, deletePoints } = useSurveyStore();
   const sets   = getSets(projectId);
   const points = getPoints(projectId);
 
@@ -333,6 +333,9 @@ export default function ViewSetsScreen({ projectId }: Props) {
     if (!curSet) return;
     setShowManage(false);
     if (!window.confirm(strings[lang].deleteSingleSet(curSet.name))) return;
+    // Cascade: delete all points belonging to this set, then delete the set
+    const ptIds = points.filter(p => p.setId === curSet.id).map(p => p.id);
+    if (ptIds.length > 0) deletePoints(projectId, ptIds);
     deleteSet(projectId, curSet.id);
     setRawIdx(null);
   };
@@ -341,6 +344,9 @@ export default function ViewSetsScreen({ projectId }: Props) {
     setShowManage(false);
     if (sets.length === 0) return;
     if (!window.confirm(strings[lang].deleteAllSets(sets.length))) return;
+    // Cascade: delete all points for all sets first, then delete all sets
+    const allPtIds = points.map(p => p.id);
+    if (allPtIds.length > 0) deletePoints(projectId, allPtIds);
     sets.forEach(s => deleteSet(projectId, s.id));
     setRawIdx(null);
   };
