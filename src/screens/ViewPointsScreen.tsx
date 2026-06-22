@@ -712,43 +712,49 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                               <div
                                 key={pt.id}
                                 style={{
-                                  borderRadius: 8,
-                                  border: `2px solid ${isA ? BLUE : isB ? GREEN : BORDER}`,
-                                  backgroundColor: isA ? 'rgba(30,87,153,0.08)' : isB ? 'rgba(31,138,77,0.08)' : CARD,
-                                  padding: '6px 6px 5px',
+                                  borderRadius: 10,
+                                  border: `2px solid ${isA ? BLUE : isB ? GREEN : '#D1D5DB'}`,
+                                  backgroundColor: isA ? 'rgba(30,87,153,0.09)' : isB ? 'rgba(31,138,77,0.09)' : CARD,
+                                  padding: '7px 7px 6px',
                                   cursor: 'pointer',
                                   position: 'relative',
                                   userSelect: 'none' as const,
+                                  boxShadow: isA
+                                    ? '0 2px 6px rgba(30,87,153,0.18)'
+                                    : isB
+                                    ? '0 2px 6px rgba(31,138,77,0.18)'
+                                    : '0 1px 3px rgba(0,0,0,0.07)',
                                 }}
                                 onClick={() => handleTempSelect(pt.id)}
                               >
-                                {/* Deselect ✕ button */}
+                                {/* Selected role badge — top-left */}
                                 {sel && (
-                                  <button
+                                  <div style={{ position: 'absolute', top: 4, right: 4, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}
                                     onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
-                                    style={{ position: 'absolute', top: 3, right: 3, width: 16, height: 16, borderRadius: 8, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0, zIndex: 1 }}
                                   >
                                     <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
-                                  </button>
+                                  </div>
                                 )}
                                 {/* PT label + name on same line */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 18 : 0, overflow: 'hidden' }}>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: isA ? BLUE : isB ? GREEN : BLUE_ACC, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 18 : 0, overflow: 'hidden', marginBottom: 3 }}>
+                                  <span style={{ fontSize: 14, fontWeight: 900, color: isA ? BLUE : isB ? GREEN : NAVY, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
                                   {pt.pointName && (
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
                                   )}
                                 </div>
+                                {/* Divider */}
+                                <div style={{ height: 1, backgroundColor: isA ? 'rgba(30,87,153,0.15)' : isB ? 'rgba(31,138,77,0.15)' : BORDER_S, marginBottom: 4 }} />
                                 {/* Rod height */}
-                                <div style={{ marginTop: 3, display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                                  <span style={{ fontSize: 10, color: TEXT_SEC, fontWeight: 700, flexShrink: 0, letterSpacing: 0.1 }}>{t('pickerRod')} -</span>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                  <span style={{ fontSize: 10, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
                                 </div>
                                 {/* Elevation */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
-                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                  <span style={{ fontSize: 10, color: TEXT_SEC, fontWeight: 700, flexShrink: 0, letterSpacing: 0.1 }}>{t('pickerElev')} -</span>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 10, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
                               </div>
                             );
