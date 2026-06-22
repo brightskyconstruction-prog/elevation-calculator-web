@@ -147,16 +147,16 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
               return (
                 <div key={pt.id} style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <div style={{ width: 40, height: 40, backgroundColor: BLUE_D, borderRadius: 6, border: `1px solid ${BLUE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_A, letterSpacing: 0.5 }}>{pt.label}</span>
+                    <div style={{ width: 42, height: 42, backgroundColor: BLUE_D, borderRadius: 6, border: `1px solid ${BLUE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: BLUE_A, letterSpacing: 0.5 }}>{pt.label}</span>
                     </div>
                     <div style={{ flex: 1 }}>
-                      {pt.pointName && <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_P }}>{pt.pointName}</div>}
-                      {pt.takenBy   && <div style={{ fontSize: 11, color: TEXT_S }}>{pt.takenBy}</div>}
+                      {pt.pointName && <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_P }}>{pt.pointName}</div>}
+                      {pt.takenBy   && <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_S }}>{pt.takenBy}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                      <span style={{ fontSize: 10, color: TEXT_D, backgroundColor: SURFACE, borderRadius: 3, padding: '1px 5px' }}>#{idx + 1}</span>
-                      <span style={{ backgroundColor: theme.badgeBg, border: `1px solid ${theme.badgeBdr}`, borderRadius: 4, padding: '2px 5px', fontSize: 7.5, fontWeight: 800, color: theme.badgeTxt }}>{t(theme.labelKey)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, backgroundColor: SURFACE, borderRadius: 3, padding: '1px 5px' }}>#{idx + 1}</span>
+                      <span style={{ backgroundColor: theme.badgeBg, border: `1px solid ${theme.badgeBdr}`, borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: theme.badgeTxt }}>{t(theme.labelKey)}</span>
                     </div>
                   </div>
 
@@ -175,17 +175,17 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
                   </div>
 
                   {addr && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: TEXT_S }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: TEXT_P }}>
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>📍 {addr}</span>
                       {lat != null && lon != null && (
                         <a href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`} target="_blank" rel="noreferrer"
-                          style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none' }}>{t('svsMapBtn')}</a>
+                          style={{ backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 10, fontWeight: 800, textDecoration: 'none' }}>{t('svsMapBtn')}</a>
                       )}
                     </div>
                   )}
 
                   {pt.savedAt && (
-                    <div style={{ fontSize: 10, color: TEXT_D, borderTop: `1px solid ${BORDER}`, paddingTop: 5 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_S, borderTop: `1px solid ${BORDER}`, paddingTop: 5 }}>
                       {t('svsRecorded')}: {fmtTimestamp(pt.savedAt)}
                     </div>
                   )}
@@ -201,12 +201,12 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
 
 const sdS: Record<string, React.CSSProperties> = {
   stat:    { backgroundColor: SURFACE, borderRadius: 6, padding: '4px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  statLbl: { fontSize: 7, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' },
-  statVal: { fontSize: 13, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
+  statLbl: { fontSize: 9, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' },
+  statVal: { fontSize: 14, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
   cell:    { flex: 1, backgroundColor: SURFACE, borderRadius: 6, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 2 },
-  cellLbl: { fontSize: 8, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' },
-  cellVal: { fontSize: 13, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
-  cellSub: { fontSize: 10, color: TEXT_S, fontFamily: 'monospace' },
+  cellLbl: { fontSize: 10, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' },
+  cellVal: { fontSize: 15, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
+  cellSub: { fontSize: 11, fontWeight: 600, color: TEXT_P, fontFamily: 'monospace' },
 };
 
 // ─── View All Sets Modal ───────────────────────────────────────────────────────
