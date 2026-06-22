@@ -1429,11 +1429,11 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
           >
             {/* Modal header */}
             <div style={{ padding: '13px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>
                 {points.length} {t('surveyPoints')}
               </span>
               <button onClick={() => setShowAllModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_DIS, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                style={{ background: 'none', border: 'none', fontSize: 22, color: TEXT_SEC, cursor: 'pointer', lineHeight: 1, padding: 0 }}
               >✕</button>
             </div>
             {/* Modal list */}
@@ -1446,31 +1446,33 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
                 const isCur  = curIdx === i;
                 return (
                   <div key={mpt.id}
-                    style={{ backgroundColor: isCur ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isCur ? BLUE : BORDER}`, borderLeft: `3px solid ${mTheme.border}`, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ backgroundColor: isCur ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isCur ? BLUE : BORDER}`, borderLeft: `3px solid ${mTheme.border}`, padding: '9px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                     onClick={() => { setRawIdx(i); setShowAllModal(false); }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC }}>{mpt.label}</span>
-                        {mpt.pointName && <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>• {mpt.pointName}</span>}
+                      {/* Row 1: PT label + point name */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                        <span style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{mpt.label}</span>
+                        {mpt.pointName && <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>• {mpt.pointName}</span>}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' as const }}>
-                        <div style={{ borderRadius: 3, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '1px 5px' }}>
-                          <span style={{ fontSize: 7, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
+                      {/* Row 2: badges + values */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
+                        <div style={{ borderRadius: 4, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '2px 6px' }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
                         </div>
                         {mSet && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 2, backgroundColor: BLUE_DEEP, borderRadius: 3, padding: '1px 5px' }}>
-                            {mSet.setLabel && <span style={{ fontSize: 7, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
-                            <span style={{ fontSize: 7, fontWeight: 700, color: NAVY }}>{mSet.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 6px' }}>
+                            {mSet.setLabel && <span style={{ fontSize: 10, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
+                            <span style={{ fontSize: 10, fontWeight: 700, color: NAVY }}>{mSet.name}</span>
                           </div>
                         )}
-                        <span style={{ fontSize: 9, fontWeight: 600, color: TEXT_DIS, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
                         {(mpt.bmElevation ?? 0) > 0 && (
-                          <span style={{ fontSize: 9, fontWeight: 600, color: TEXT_SEC, fontFamily: 'monospace' }}>· {(mpt.bmElevation ?? 0).toFixed(2)} ft elev</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>· {(mpt.bmElevation ?? 0).toFixed(2)} ft elev</span>
                         )}
                       </div>
                     </div>
-                    {isCur && <span style={{ fontSize: 14, color: BLUE, flexShrink: 0 }}>✓</span>}
+                    {isCur && <span style={{ fontSize: 16, color: BLUE, flexShrink: 0 }}>✓</span>}
                   </div>
                 );
               })}
