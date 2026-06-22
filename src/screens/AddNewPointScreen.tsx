@@ -416,7 +416,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const goTo = (idx: number) => {
     if (idx < 0 || idx >= points.length) return;
-    setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(false); setCameFromEditMode(false);
+    setCurrentIdx(idx); loadPoint(points[idx]);
+    // If we're in the edit-from-SinglePoint flow, preserve edit mode and cameFromEditMode
+    // so the "View All" button stays hidden across arrow navigation
+    if (!cameFromEditMode) setIsEditMode(false);
   };
 
   const openNewPoint = () => {
