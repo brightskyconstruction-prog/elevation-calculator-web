@@ -614,12 +614,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
             {pointName || t('pointName')}
           </button>
-          {/* View All Set Points OR Back To Main Page */}
+          {/* View All Set Points OR Back To Main Page — hidden in edit-from-card mode */}
           {cameFromNewPoint ? (
             <button style={s.backToMainBtn} onClick={handleBackToMain}>
               {t('backToMainPage')}
             </button>
-          ) : dropdownSetId ? (
+          ) : (dropdownSetId && !editPoint) ? (
             <button ref={viewSetBtnRef} style={s.viewSetDropBtn} onClick={toggleSetDropdown}>
               {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
             </button>
