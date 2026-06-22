@@ -703,58 +703,61 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                     const pagePts = allPts.slice(safePage * CARDS_PER_PAGE, (safePage + 1) * CARDS_PER_PAGE);
                     return (
                       <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, overflow: 'hidden' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, overflow: 'hidden' }}>
                           {pagePts.map(pt => {
                             const isA = tempA === pt.id;
                             const isB = tempB === pt.id;
                             const sel = isA || isB;
+                            const selColor = isA ? BLUE : GREEN;
                             return (
                               <div
                                 key={pt.id}
                                 style={{
-                                  borderRadius: 10,
+                                  borderRadius: 9,
                                   border: `2px solid ${isA ? BLUE : isB ? GREEN : '#D1D5DB'}`,
-                                  backgroundColor: isA ? 'rgba(30,87,153,0.09)' : isB ? 'rgba(31,138,77,0.09)' : CARD,
-                                  padding: '10px 10px 9px',
+                                  backgroundColor: isA ? 'rgba(30,87,153,0.07)' : isB ? 'rgba(31,138,77,0.07)' : CARD,
+                                  padding: '7px 8px 6px',
                                   cursor: 'pointer',
                                   position: 'relative',
                                   userSelect: 'none' as const,
+                                  transition: 'border-color 0.15s, box-shadow 0.15s, background-color 0.15s',
                                   boxShadow: isA
-                                    ? '0 2px 6px rgba(30,87,153,0.18)'
+                                    ? '0 0 0 3px rgba(30,87,153,0.12), 0 2px 8px rgba(30,87,153,0.22)'
                                     : isB
-                                    ? '0 2px 6px rgba(31,138,77,0.18)'
-                                    : '0 1px 3px rgba(0,0,0,0.07)',
+                                    ? '0 0 0 3px rgba(31,138,77,0.12), 0 2px 8px rgba(31,138,77,0.22)'
+                                    : '0 1px 3px rgba(0,0,0,0.06)',
                                 }}
                                 onClick={() => handleTempSelect(pt.id)}
                               >
-                                {/* Deselect ✕ badge */}
+                                {/* Role chip — A or B */}
                                 {sel && (
-                                  <div style={{ position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: isA ? BLUE : GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}
+                                  <div
+                                    style={{ position: 'absolute', top: 5, right: 5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: selColor, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingInline: 3, zIndex: 1, boxShadow: `0 1px 4px ${isA ? 'rgba(30,87,153,0.4)' : 'rgba(31,138,77,0.4)'}` }}
                                     onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
                                   >
-                                    <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
+                                    <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{isA ? 'A ✕' : 'B ✕'}</span>
                                   </div>
                                 )}
-                                {/* PT label + name */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, paddingRight: sel ? 22 : 0, overflow: 'hidden', marginBottom: 5 }}>
-                                  <span style={{ fontSize: 16, fontWeight: 900, color: isA ? BLUE : isB ? GREEN : NAVY, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
+                                {/* PT label + name — same size */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 26 : 0, overflow: 'hidden', marginBottom: 3 }}>
+                                  <span style={{ fontSize: 15, fontWeight: 900, color: isA ? BLUE : isB ? GREEN : NAVY, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
                                   {pt.pointName && (
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
+                                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
                                   )}
                                 </div>
                                 {/* Divider */}
-                                <div style={{ height: 1, backgroundColor: isA ? 'rgba(30,87,153,0.15)' : isB ? 'rgba(31,138,77,0.15)' : BORDER_S, marginBottom: 5 }} />
-                                {/* Rod height */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, flexWrap: 'nowrap' as const, marginBottom: 2 }}>
-                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
+                                <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 3 }} />
+                                {/* Rod */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, marginBottom: 1 }}>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
                                 </div>
-                                {/* Elevation */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                {/* Elev */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
+                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
                               </div>
                             );
