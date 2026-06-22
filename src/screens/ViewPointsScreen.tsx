@@ -577,24 +577,16 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
       {showComparison && hasSelection ? (
         /* ── Comparison results view ── */
         <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* Summary card with cancel */}
-          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px 6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-              <span style={{ flex: 1, fontSize: 16, fontWeight: 700, lineHeight: 1.4, color: compColor }}>{compText}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: NAVY, border: 'none', borderRadius: 8, padding: '0 12px', height: 34, cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 6px rgba(20,58,99,0.30)' }}
-                onClick={handleSwap}
-              >
-                <span style={{ fontSize: 15, color: '#fff', fontWeight: 800, lineHeight: 1 }}>⇆</span>
-                <span style={{ fontSize: 13, color: '#fff', fontWeight: 800 }}>{t('swapPoints')}</span>
-              </button>
-              <button
-                style={{ flex: 1, height: 34, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 800, letterSpacing: 0.2, cursor: 'pointer', padding: '0 6px', boxShadow: '0 2px 6px rgba(20,58,99,0.30)' }}
-                onClick={handleCancel}
-              >{t('compareAnother')}</button>
-            </div>
+          {/* Summary card — swap left, result text right */}
+          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px 6px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <button
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: NAVY, border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 6px rgba(20,58,99,0.30)', minWidth: 62 }}
+              onClick={handleSwap}
+            >
+              <span style={{ fontSize: 17, color: '#fff', fontWeight: 800, lineHeight: 1 }}>⇆</span>
+              <span style={{ fontSize: 12, color: '#fff', fontWeight: 800, lineHeight: 1.2, textAlign: 'center' }}>{t('swapPoints')}</span>
+            </button>
+            <span style={{ flex: 1, fontSize: 16, fontWeight: 700, lineHeight: 1.4, color: compColor }}>{compText}</span>
           </div>
 
           {/* 3-column table card */}
@@ -617,6 +609,12 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 6px' }} />
             {ptB && renderRow(ptB, 'B')}
           </div>
+
+          {/* Compare Another — below table, above ad */}
+          <button
+            style={{ width: '100%', height: 36, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 800, letterSpacing: 0.2, cursor: 'pointer', boxShadow: '0 2px 6px rgba(20,58,99,0.30)' }}
+            onClick={handleCancel}
+          >{t('compareAnother')}</button>
 
           {/* Ad space */}
           <div style={{ height: 54, borderTop: `1px dashed ${BORDER_B}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
