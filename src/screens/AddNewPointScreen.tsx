@@ -264,7 +264,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [locationTxt, setLocationTxt] = useState<string | null>(null);
   const [savedLat,    setSavedLat]    = useState<number | null>(null);
   const [savedLon,    setSavedLon]    = useState<number | null>(null);
-  const [isEditMode,  setIsEditMode]  = useState(true);
+  const [isEditMode,      setIsEditMode]      = useState(true);
+  const [cameFromEditMode, setCameFromEditMode] = useState(false); // true when navigated here via Edit from SinglePoint tab
   const [showCreate,     setShowCreate]     = useState(false);
   const [showAssign,     setShowAssign]     = useState(false);
   const [showNameModal,  setShowNameModal]  = useState(false);
@@ -397,7 +398,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   useEffect(() => {
     if (!editPoint) return;
     const idx = points.findIndex(p => p.id === editPoint.id);
-    if (idx >= 0) { setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(true); }
+    if (idx >= 0) { setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(true); setCameFromEditMode(true); }
     onEditConsumed?.();
   }, [editPoint]);
 
@@ -415,12 +416,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const goTo = (idx: number) => {
     if (idx < 0 || idx >= points.length) return;
-    setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(false);
+    setCurrentIdx(idx); loadPoint(points[idx]); setIsEditMode(false); setCameFromEditMode(false);
   };
 
   const openNewPoint = () => {
     clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif');
-    setCameFromNewPoint(false); savedNewPointRef.current = null;
+    setCameFromNewPoint(false); setCameFromEditMode(false); savedNewPointRef.current = null;
   };
 
   // ── Back To Main Page: restore the new-point form the user was on before browsing ──
@@ -614,12 +615,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
             {pointName || t('pointName')}
           </button>
-          {/* View All Set Points OR Back To Main Page — hidden in edit-from-card mode */}
+          {/* View All Set Points OR Back To Main Page — hidden when navigated here via Edit from SinglePoint tab */}
           {cameFromNewPoint ? (
             <button style={s.backToMainBtn} onClick={handleBackToMain}>
               {t('backToMainPage')}
             </button>
-          ) : (dropdownSetId && !editPoint) ? (
+          ) : (dropdownSetId && !cameFromEditMode) ? (
             <button ref={viewSetBtnRef} style={s.viewSetDropBtn} onClick={toggleSetDropdown}>
               {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
             </button>
@@ -629,7 +630,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
           )}
           {!isNewPoint && isEditMode && currentPoint && (
-            <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); }}>↩</button>
+            <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); setCameFromEditMode(false); }}>↩</button>
           )}
           {/* Right arrow */}
           {!isNewPoint && setPoints.length > 0 && (
