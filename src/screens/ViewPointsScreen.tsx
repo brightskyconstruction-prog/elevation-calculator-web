@@ -716,7 +716,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                   borderRadius: 9,
                                   border: `2px solid ${isA ? BLUE : isB ? GREEN : '#D1D5DB'}`,
                                   backgroundColor: isA ? 'rgba(30,87,153,0.07)' : isB ? 'rgba(31,138,77,0.07)' : CARD,
-                                  padding: '7px 8px 6px',
+                                  padding: '5px 8px 5px',
                                   cursor: 'pointer',
                                   position: 'relative',
                                   userSelect: 'none' as const,
@@ -738,26 +738,26 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                     <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{isA ? 'A ✕' : 'B ✕'}</span>
                                   </div>
                                 )}
-                                {/* PT label + name — same size */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 26 : 0, overflow: 'hidden', marginBottom: 3 }}>
+                                {/* PT label + name */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 26 : 0, overflow: 'hidden', marginBottom: 2 }}>
                                   <span style={{ fontSize: 15, fontWeight: 900, color: isA ? BLUE : isB ? GREEN : NAVY, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
                                   {pt.pointName && (
                                     <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
                                   )}
                                 </div>
                                 {/* Divider */}
-                                <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 3 }} />
+                                <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 2 }} />
                                 {/* Rod */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, marginBottom: 1 }}>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
+                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
                                 </div>
                                 {/* Elev */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const }}>
-                                  <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
-                                  <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 11, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
+                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
                               </div>
                             );
