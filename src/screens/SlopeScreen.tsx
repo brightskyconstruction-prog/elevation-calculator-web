@@ -74,7 +74,7 @@ function fmtDateTime(ms: number) {
 
 // ─── Shared label style ───────────────────────────────────────────────────────
 const LBL: CSSProperties = {
-  fontSize: 11,
+  fontSize: 12.5,
   fontWeight: 800,
   color: TEXT_PRI,
   letterSpacing: 0.5,
@@ -292,11 +292,11 @@ function CalcHistoryModal({ calcs, onClose, onDetail, onEdit, onDelete }: {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
                     </div>
                     {/* No date — only distance and diff */}
-                    <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC, marginTop: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SEC, marginTop: 1 }}>
                       {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft
                     </div>
                   </div>
@@ -418,7 +418,7 @@ function PointSelectCard({ pt, label, onPick }: { pt: SurveyPoint | null; label:
             }
           </>
         ) : (
-          <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS, marginTop: 5 }}>{t('slopeTapSelect')}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelect')}</div>
         )}
       </div>
     </div>
@@ -623,11 +623,11 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
             </div>
             {/* Date removed — only distance and diff */}
-            <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
               {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft
             </div>
           </div>
@@ -737,7 +737,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
                 }
               </>
             ) : (
-              <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS, marginTop: 5 }}>{t('slopeTapSelectStart')}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelectStart')}</div>
             )}
           </div>
         </div>
@@ -836,8 +836,20 @@ export default function SlopeScreen({ projectId }: Props) {
   }, [sets]);
 
   const [activeTab,   setActiveTab]   = useState<SlopeSubTab>('find');
-  const [savedCalcs,  setSavedCalcs]  = useState<SavedCalc[]>([]);
+  const LS_KEY = `slope:calcs:${projectId}`;
+
+  const [savedCalcs,  setSavedCalcs]  = useState<SavedCalc[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? (JSON.parse(raw) as SavedCalc[]) : [];
+    } catch { return []; }
+  });
   const [pendingEdit, setPendingEdit] = useState<SavedCalc | null>(null);
+
+  // Persist on every change
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(savedCalcs)); } catch {}
+  }, [savedCalcs, LS_KEY]);
 
   const handleSave   = useCallback((c: SavedCalc) =>
     setSavedCalcs(prev => [c, ...prev].slice(0, MAX_HISTORY)), []);
