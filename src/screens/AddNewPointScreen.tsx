@@ -817,47 +817,54 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {/* Button 1: Add to Current Set — only shown when a set exists */}
+            {/* Option 1: Add to Current Set — radio row, only shown when a set exists */}
             {sets.length > 0 && lastUsedSet && (
               <button
                 style={{
                   ...s.setAssignBtn,
+                  display: 'flex', alignItems: 'center', gap: 10,
                   ...(setAssignMethod === 'existing'
                     ? s.setAssignBtnActive
                     : setAssignMethod === 'new' ? s.setAssignBtnDim : {}),
                 }}
                 onClick={() => {
-                  // Already selected — single-click does nothing; double-click clears
                   if (setAssignMethod === 'existing') return;
-                  setPendingNewSet(null); // discard any staged new set
+                  setPendingNewSet(null);
                   setAssignedSet(lastUsedSet.id);
                   setSetAssignMethod('existing');
                   setSetWarning(false);
                 }}
-                onDoubleClick={() => {
-                  if (setAssignMethod === 'existing') {
-                    setAssignedSet(null);
-                    setSetAssignMethod(null);
-                  }
-                }}
               >
-                {setAssignMethod === 'existing' && assignedSetObj
-                  ? `✓ ${t('currentSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
-                  : `${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`
-                }
+                {/* Radio dot */}
+                <span style={{
+                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                  border: `2px solid ${setAssignMethod === 'existing' ? GOLD : 'rgba(255,255,255,0.45)'}`,
+                  backgroundColor: setAssignMethod === 'existing' ? GOLD : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {setAssignMethod === 'existing' && (
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: NAVY, display: 'block' }} />
+                  )}
+                </span>
+                <span style={{ flex: 1, textAlign: 'left' as const }}>
+                  {setAssignMethod === 'existing' && assignedSetObj
+                    ? `${t('currentSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                    : `${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`
+                  }
+                </span>
               </button>
             )}
 
-            {/* Button 2: Create New Set */}
+            {/* Option 2: Create New Set — radio row */}
             <button
               style={{
                 ...s.setAssignBtn,
+                display: 'flex', alignItems: 'center', gap: 10,
                 ...(setAssignMethod === 'new'
                   ? s.setAssignBtnActive
                   : setAssignMethod === 'existing' ? s.setAssignBtnDim : {}),
               }}
               onClick={() => {
-                // Already selected — single-click does nothing; double-click clears
                 if (setAssignMethod === 'new') return;
                 if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
                   setNewSetElevWarn(true);
@@ -866,18 +873,24 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 setNewSetElevWarn(false);
                 setShowCreate(true);
               }}
-              onDoubleClick={() => {
-                if (setAssignMethod === 'new') {
-                  setAssignedSet(null);
-                  setSetAssignMethod(null);
-                  setPendingNewSet(null);
-                }
-              }}
             >
-              {setAssignMethod === 'new' && assignedSetObj
-                ? `✓ ${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
-                : t('createNewSetBtn')
-              }
+              {/* Radio dot */}
+              <span style={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                border: `2px solid ${setAssignMethod === 'new' ? GOLD : 'rgba(255,255,255,0.45)'}`,
+                backgroundColor: setAssignMethod === 'new' ? GOLD : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {setAssignMethod === 'new' && (
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: NAVY, display: 'block' }} />
+                )}
+              </span>
+              <span style={{ flex: 1, textAlign: 'left' as const }}>
+                {setAssignMethod === 'new' && assignedSetObj
+                  ? `${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                  : t('createNewSetBtn')
+                }
+              </span>
             </button>
 
             {newSetElevWarn && <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>}
