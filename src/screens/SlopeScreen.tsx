@@ -19,9 +19,6 @@ const CARD        = '#FFFFFF';
 const BORDER      = '#E5E7EB';
 const BORDER_B    = '#D1D5DB';
 
-// Legacy aliases kept for shared helpers
-const GREEN = GREEN_DARK;
-const RED   = RED_DARK;
 
 type SlopeSubTab = 'find' | 'profile' | 'target';
 interface Props { projectId: string }
