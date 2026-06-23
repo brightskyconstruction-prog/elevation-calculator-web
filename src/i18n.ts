@@ -286,7 +286,7 @@ const en = {
 
   // ── Slope tab ──────────────────────────────────────────────────────
   slopeTabFind:        'Find Slope',
-  slopeTabProfile:     'Profile',
+  slopeTabProfile:     'History',
   slopeTabTarget:      'Target',
   slopeFromPoint:      'From Point',
   slopeToPoint:        'To Point',
@@ -629,7 +629,7 @@ const es: typeof en = {
 
   // ── Slope tab ──────────────────────────────────────────────────────
   slopeTabFind:        'Calcular Pendiente',
-  slopeTabProfile:     'Perfil',
+  slopeTabProfile:     'Historial',
   slopeTabTarget:      'Objetivo',
   slopeFromPoint:      'Punto de Origen',
   slopeToPoint:        'Punto de Destino',
