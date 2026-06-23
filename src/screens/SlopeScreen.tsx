@@ -748,43 +748,35 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
       </div>
 
       {valid && (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-            <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px' }}>
-              <div style={{ fontSize: 9.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('slopeStartElev')}</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{startElev.toFixed(3)} {t('slopeFtUnit')}</div>
-            </div>
-            <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px' }}>
-              <div style={{ fontSize: 9.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('slopeElevChange')}</div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: rc, fontFamily: 'monospace' }}>
-                {dir === 'uphill' ? '+' : '−'}{elevChange.toFixed(3)} {t('slopeFtUnit')}
-              </div>
+        /* Single 3-column row: Start Elevation | Elev. Change | Required Elevation */
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, alignItems: 'stretch' }}>
+
+          {/* Start Elevation */}
+          <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeStartElev')}</div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.2 }}>{startElev.toFixed(3)}<span style={{ fontSize: 10, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span></div>
+          </div>
+
+          {/* Elevation Change */}
+          <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeElevChange')}</div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: rc, fontFamily: 'monospace', lineHeight: 1.2 }}>
+              {dir === 'uphill' ? '+' : '−'}{elevChange.toFixed(3)}<span style={{ fontSize: 10, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
             </div>
           </div>
-          <div style={{ backgroundColor: rc, borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: `0 3px 10px ${rc}55` }}>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.7, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t('slopeReqElev')}</div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', fontFamily: 'monospace', letterSpacing: -0.5 }}>{reqElev.toFixed(3)} {t('slopeFtUnit')}</div>
+
+          {/* Required Elevation — color-coded to match direction */}
+          <div style={{ backgroundColor: rc, borderRadius: 9, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: `0 2px 8px ${rc}44` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.80)', letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('slopeReqElev')}</div>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>{dir === 'uphill' ? '↗' : '↘'}</span>
             </div>
-            <div style={{ fontSize: 30, color: 'rgba(255,255,255,0.85)' }}>{dir === 'uphill' ? '↗' : '↘'}</div>
+            <div style={{ fontSize: 14, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1.2, marginTop: 4 }}>
+              {reqElev.toFixed(3)}<span style={{ fontSize: 10, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
+            </div>
           </div>
-          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {([
-              [t('slopeStartPoint'),  `${startPt!.label}${startPt!.pointName ? ' · ' + startPt!.pointName : ''}`],
-              [t('slopeStartElev'),   `${startElev.toFixed(3)} ft`],
-              [t('slopeTargetSlope'), `${slopeN.toFixed(2)}%`],
-              [t('slopeDistanceLbl'), `${distN.toFixed(2)} ft`],
-              [t('slopeDirection'),   dir === 'uphill' ? `↗ ${t('slopeUphill')}` : `↘ ${t('slopeDownhill')}`],
-              [t('slopeElevChange'),  `${dir === 'uphill' ? '+' : '−'}${elevChange.toFixed(3)} ft`],
-              [t('slopeReqElev'),     `${reqElev.toFixed(3)} ft`],
-            ] as [string, string][]).map(([lbl, val]) => (
-              <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_DIS }}>{lbl}</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: lbl === t('slopeReqElev') ? rc : TEXT_PRI, fontFamily: 'monospace' }}>{val}</span>
-              </div>
-            ))}
-          </div>
-        </>
+
+        </div>
       )}
 
       {showPicker && (
