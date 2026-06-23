@@ -342,6 +342,8 @@ const en = {
   slopeDistanceLbl:    'Distance',
   slopeDateTimeLbl:    'Date & Time',
   slopeRecentCalcs:    'Recent Calculations',
+  slopeClearBtn:       'Clear',
+  slopeBackBtn:        'Back',
 };
 
 const es: typeof en = {
@@ -685,6 +687,8 @@ const es: typeof en = {
   slopeDistanceLbl:    'Distancia',
   slopeDateTimeLbl:    'Fecha y Hora',
   slopeRecentCalcs:    'Cálculos Recientes',
+  slopeClearBtn:       'Limpiar',
+  slopeBackBtn:        'Atrás',
 };
 
 export const strings: Record<Lang, typeof en> = { en, es };

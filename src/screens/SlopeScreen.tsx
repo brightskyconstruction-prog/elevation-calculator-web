@@ -551,22 +551,28 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             ))}
           </div>
 
-          {/* Save button — disabled after save, re-enables on any input change */}
-          <button
-            style={{
-              height: 33,
-              backgroundColor: alreadySaved ? '#6B7280' : NAVY,
-              border: 'none', borderRadius: 8,
-              color: '#fff', fontSize: 13, fontWeight: 800,
-              cursor: alreadySaved ? 'default' : 'pointer',
-              letterSpacing: 0.3,
-              boxShadow: alreadySaved ? 'none' : '0 2px 6px rgba(20,58,99,0.25)',
-              opacity: alreadySaved ? 0.55 : 1,
-              transition: 'background-color 0.2s, opacity 0.2s',
-            }}
-            onClick={handleSave}
-            disabled={alreadySaved}
-          >{alreadySaved ? t('slopeSavedCalc') : t('slopeSaveCalc')}</button>
+          {/* Clear + Save buttons */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              style={{ flex: '0 0 auto', height: 33, paddingLeft: 16, paddingRight: 16, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 8, color: TEXT_SEC, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+              onClick={() => { setFromId(null); setToId(null); setDist(''); setSavedCombo(null); }}
+            >{t('slopeClearBtn')}</button>
+            <button
+              style={{
+                flex: 1, height: 33,
+                backgroundColor: alreadySaved ? '#6B7280' : NAVY,
+                border: 'none', borderRadius: 8,
+                color: '#fff', fontSize: 13, fontWeight: 800,
+                cursor: alreadySaved ? 'default' : 'pointer',
+                letterSpacing: 0.3,
+                boxShadow: alreadySaved ? 'none' : '0 2px 6px rgba(20,58,99,0.25)',
+                opacity: alreadySaved ? 0.55 : 1,
+                transition: 'background-color 0.2s, opacity 0.2s',
+              }}
+              onClick={handleSave}
+              disabled={alreadySaved}
+            >{alreadySaved ? t('slopeSavedCalc') : t('slopeSaveCalc')}</button>
+          </div>
         </>
       )}
 
@@ -596,7 +602,8 @@ interface HistoryTabProps {
 
 function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
   const { t } = useLang();
-  const [showAll,    setShowAll]    = useState(false);
+  // 'list' = 4-entry preview, 'all' = full-page scrollable history
+  const [view,       setView]       = useState<'list' | 'all'>('list');
   const [detailCalc, setDetailCalc] = useState<SavedCalc | null>(null);
   const [menuId,     setMenuId]     = useState<string | null>(null);
 
@@ -605,10 +612,11 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
 
   const handleEdit = (c: SavedCalc) => {
     setDetailCalc(null);
-    setShowAll(false);
+    setView('list');
     onEdit(c);
   };
 
+  // Shared entry row used in both views
   function HistoryEntry({ c }: { c: SavedCalc }) {
     const dc = dirColor(c.dir);
     const isMenu = menuId === c.id;
@@ -626,7 +634,6 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
               <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
             </div>
-            {/* Date removed — only distance and diff */}
             <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
               {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft
             </div>
@@ -648,6 +655,49 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
     );
   }
 
+  // ── Full-page "All Calculations" view ──────────────────────────────────────
+  if (view === 'all') {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#F5F4F0' }}>
+
+        {/* Page header */}
+        <div style={{ backgroundColor: NAVY, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <button
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: '2px 0', display: 'flex', alignItems: 'center', gap: 4 }}
+            onClick={() => { setMenuId(null); setView('list'); }}
+          >‹ {t('slopeBackBtn')}</button>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' as const }}>
+            {t('slopeHistoryTitle')} ({savedCalcs.length})
+          </span>
+          {/* spacer to balance the back button */}
+          <div style={{ width: 60 }} />
+        </div>
+
+        {/* Scrollable full list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {savedCalcs.length === 0 ? (
+            <div style={{ padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 13, fontWeight: 600 }}>
+              {t('slopeNoHistory')}
+            </div>
+          ) : (
+            savedCalcs.map(c => <HistoryEntry key={c.id} c={c} />)
+          )}
+        </div>
+
+        {/* Detail modal renders over the full-page view */}
+        {detailCalc && (
+          <CalcDetailModal
+            calc={detailCalc}
+            onClose={() => setDetailCalc(null)}
+            onEdit={() => handleEdit(detailCalc)}
+            onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ── Default: 4-entry preview list ─────────────────────────────────────────
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
 
@@ -660,10 +710,10 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
           {/* 4 most recent — no section header */}
           {visibleCalcs.map(c => <HistoryEntry key={c.id} c={c} />)}
 
-          {/* View All row */}
+          {/* View All navigation row */}
           <div
             style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-            onClick={() => setShowAll(true)}
+            onClick={() => { setMenuId(null); setView('all'); }}
           >
             <span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>
               {t('slopeViewAllCalcs')}{hasMore ? ` (${savedCalcs.length})` : ''}
@@ -671,17 +721,6 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
             <span style={{ fontSize: 16, color: NAVY }}>›</span>
           </div>
         </>
-      )}
-
-      {/* View All Modal */}
-      {showAll && (
-        <CalcHistoryModal
-          calcs={savedCalcs}
-          onClose={() => setShowAll(false)}
-          onDetail={c => { setShowAll(false); setDetailCalc(c); }}
-          onEdit={c => { setShowAll(false); handleEdit(c); }}
-          onDelete={id => { onDelete(id); }}
-        />
       )}
 
       {/* Detail Modal */}
