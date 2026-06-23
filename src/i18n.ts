@@ -329,6 +329,19 @@ const en = {
   slopeTapSelectStart: 'Tap to select start point…',
   slopeStartNoElev:    '⚠ No elevation data',
   slopeSelectStart:    'Select Start Point',
+  slopeHistoryBtn:     'Saved Calculations',
+  slopeViewAllCalcs:   'View All Calculations',
+  slopeHistoryTitle:   'Calculation History',
+  slopeNoHistory:      'No saved calculations yet.',
+  slopeCalcDetail:     'Calculation Summary',
+  slopeDeleteCalcConfirm: 'Delete this calculation?',
+  slopeFrom:           'From',
+  slopeTo:             'To',
+  slopeFromElev:       'From Elevation',
+  slopeToElev:         'To Elevation',
+  slopeDistanceLbl:    'Distance',
+  slopeDateTimeLbl:    'Date & Time',
+  slopeRecentCalcs:    'Recent Calculations',
 };
 
 const es: typeof en = {
@@ -659,6 +672,19 @@ const es: typeof en = {
   slopeTapSelectStart: 'Toca para seleccionar punto de inicio…',
   slopeStartNoElev:    '⚠ Sin datos de elevación',
   slopeSelectStart:    'Seleccionar Punto de Inicio',
+  slopeHistoryBtn:     'Cálculos Guardados',
+  slopeViewAllCalcs:   'Ver Todos los Cálculos',
+  slopeHistoryTitle:   'Historial de Cálculos',
+  slopeNoHistory:      'Sin cálculos guardados aún.',
+  slopeCalcDetail:     'Resumen del Cálculo',
+  slopeDeleteCalcConfirm: '¿Eliminar este cálculo?',
+  slopeFrom:           'Desde',
+  slopeTo:             'Hasta',
+  slopeFromElev:       'Elevación de Origen',
+  slopeToElev:         'Elevación de Destino',
+  slopeDistanceLbl:    'Distancia',
+  slopeDateTimeLbl:    'Fecha y Hora',
+  slopeRecentCalcs:    'Cálculos Recientes',
 };
 
 export const strings: Record<Lang, typeof en> = { en, es };

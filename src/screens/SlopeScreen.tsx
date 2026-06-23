@@ -1,24 +1,25 @@
-import { useState, useMemo, useCallback, type CSSProperties } from 'react';
+import { useState, useMemo, useCallback, type CSSProperties, type ReactNode } from 'react';
 import { useSurveyStore } from '../stores/surveyStore';
 import { useLang } from '../LangContext';
 import { SurveyPoint, SurveySet } from '../types';
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
-const NAVY        = '#143A63';
-const BLUE        = '#1E5799';
-const BLUE_ACC    = '#3B82F6';
-const BLUE_DEEP   = 'rgba(30,87,153,0.10)';
-const GOLD        = '#F4B02A';
-const GREEN_DARK  = '#1A7A3F';   // darker uphill green
-const RED_DARK    = '#B83228';   // darker downhill red
-const TEXT_PRI    = '#111827';
-const TEXT_SEC    = '#374151';
-const TEXT_DIS    = '#9CA3AF';
-const SURFACE     = '#F0EEE8';
-const CARD        = '#FFFFFF';
-const BORDER      = '#E5E7EB';
-const BORDER_B    = '#D1D5DB';
+const NAVY      = '#143A63';
+const BLUE      = '#1E5799';
+const BLUE_ACC  = '#3B82F6';
+const BLUE_DEEP = 'rgba(30,87,153,0.10)';
+const GOLD      = '#F4B02A';
+const GREEN_DARK = '#1A7A3F';
+const RED_DARK   = '#B83228';
+const TEXT_PRI  = '#111827';
+const TEXT_SEC  = '#374151';
+const TEXT_DIS  = '#9CA3AF';
+const SURFACE   = '#F0EEE8';
+const CARD      = '#FFFFFF';
+const BORDER    = '#E5E7EB';
+const BORDER_B  = '#D1D5DB';
 
+const MAX_HISTORY = 20;
 
 type SlopeSubTab = 'find' | 'profile' | 'target';
 interface Props { projectId: string }
@@ -26,13 +27,18 @@ interface Props { projectId: string }
 // ─── Saved calculation ────────────────────────────────────────────────────────
 interface SavedCalc {
   id:        string;
+  fromId:    string;
   fromLabel: string;
   fromName:  string;
+  fromElev:  number;
+  toId:      string;
   toLabel:   string;
   toName:    string;
+  toElev:    number;
   distance:  number;
   slopePct:  number;
   diff:      number;
+  ratio:     number | null;
   angle:     number;
   dir:       'uphill' | 'downhill' | 'flat';
   savedAt:   number;
@@ -57,6 +63,12 @@ function dirIcon(dir: string) {
 }
 function sign(n: number) { return n >= 0 ? '+' : ''; }
 
+function fmtDateTime(ms: number) {
+  return new Date(ms).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+}
 function fmtDate(ms: number) {
   return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -71,7 +83,294 @@ const LBL: CSSProperties = {
   marginBottom: 3,
 };
 
-// ─── Point Picker Modal ───────────────────────────────────────────────────────
+// ─── Centered modal overlay ───────────────────────────────────────────────────
+function CenteredOverlay({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' as const }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── SVG Profile Chart (shared between popup and ProfileTab) ──────────────────
+function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
+  elevA: number; elevB: number; distN: number; labelA: string; labelB: string;
+}) {
+  const result = calcSlope(elevA, elevB, distN);
+  const dc = dirColor(result.dir);
+  const W = 340, H = 180;
+  const PL = 50, PR = 14, PT = 26, PB = 36;
+  const PW = W - PL - PR;
+  const PH = H - PT - PB;
+
+  const minE   = Math.min(elevA, elevB);
+  const maxE   = Math.max(elevA, elevB);
+  const rangeE = Math.max(maxE - minE, 0.5);
+  const padE   = rangeE * 0.32;
+  const yMin   = minE - padE;
+  const yMax   = maxE + padE;
+
+  const yFor = (e: number) => PT + PH * (1 - (e - yMin) / (yMax - yMin));
+  const xA = PL, xB = PL + PW;
+  const yA = yFor(elevA), yB = yFor(elevB);
+
+  const ticks: number[] = [];
+  for (let i = 0; i <= 4; i++) ticks.push(yMin + (yMax - yMin) * (i / 4));
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+      {/* Plot area */}
+      <rect x={PL} y={PT} width={PW} height={PH} fill="#F8FAFF" rx="3" />
+      <rect x={PL} y={PT} width={PW} height={PH} fill="none" stroke="#DCE3F0" strokeWidth="0.75" rx="3" />
+
+      {/* Y-axis ticks */}
+      {ticks.map((tick, i) => {
+        const ty = yFor(tick);
+        if (ty < PT - 1 || ty > PT + PH + 1) return null;
+        return (
+          <g key={i}>
+            <line x1={PL} y1={ty} x2={PL + PW} y2={ty} stroke="#D1D8E4" strokeWidth="0.5" strokeDasharray="3,4" />
+            <text x={PL - 3} y={ty + 3.5} textAnchor="end" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(1)}</text>
+          </g>
+        );
+      })}
+
+      {/* Y-axis label */}
+      <text x={8} y={PT + PH / 2} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_DIS}
+        transform={`rotate(-90 8 ${PT + PH / 2})`}>ft</text>
+
+      {/* Ground fill */}
+      <polygon
+        points={`${xA},${yA} ${xB},${yB} ${xB},${PT + PH} ${xA},${PT + PH}`}
+        fill={`${dc}1A`}
+      />
+
+      {/* Vertical guide */}
+      {result.dir !== 'flat' && (
+        <line x1={xB} y1={yA} x2={xB} y2={yB} stroke={dc} strokeWidth="1" strokeDasharray="4,3" opacity="0.35" />
+      )}
+
+      {/* Slope line */}
+      <line x1={xA} y1={yA} x2={xB} y2={yB} stroke={dc} strokeWidth="2.5" />
+
+      {/* Point A */}
+      <circle cx={xA} cy={yA} r={5} fill={BLUE} />
+      <circle cx={xA} cy={yA} r={2.5} fill={BLUE_ACC} />
+      <text x={xA} y={yA - 9} textAnchor="middle" fontSize="9.5" fontWeight="900" fill={NAVY}>{labelA}</text>
+      <text x={xA} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{elevA.toFixed(2)}</text>
+
+      {/* Point B */}
+      <circle cx={xB} cy={yB} r={5} fill={BLUE} />
+      <circle cx={xB} cy={yB} r={2.5} fill={BLUE_ACC} />
+      <text x={xB} y={yB - 9} textAnchor="middle" fontSize="9.5" fontWeight="900" fill={NAVY}>{labelB}</text>
+      <text x={xB} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{elevB.toFixed(2)}</text>
+
+      {/* Distance label */}
+      <text x={PL + PW / 2} y={H - 1} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_DIS}>
+        {distN.toFixed(1)} ft horizontal
+      </text>
+
+      {/* Slope % mid-line */}
+      <text x={PL + PW / 2} y={(yA + yB) / 2 - 8} textAnchor="middle" fontSize="11" fontWeight="900" fill={dc}>
+        {sign(result.pct)}{result.pct.toFixed(2)}% {dirIcon(result.dir)}
+      </text>
+    </svg>
+  );
+}
+
+// ─── Calculation Detail Popup ──────────────────────────────────────────────────
+function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
+  calc: SavedCalc;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useLang();
+  const dc = dirColor(calc.dir);
+
+  function dirLabel(dir: string) {
+    if (dir === 'uphill')   return t('slopeUphill');
+    if (dir === 'downhill') return t('slopeDownhill');
+    return t('slopeFlat');
+  }
+
+  const handleDelete = () => {
+    if (window.confirm(t('slopeDeleteCalcConfirm'))) {
+      onDelete();
+    }
+  };
+
+  return (
+    <CenteredOverlay onClose={onClose}>
+      <div style={{ width: '100%', maxWidth: 430, maxHeight: '92vh', backgroundColor: CARD, borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+
+        {/* Header */}
+        <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>{t('slopeCalcDetail')}</span>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={onClose}>✕</button>
+        </div>
+
+        {/* Direction banner */}
+        <div style={{ backgroundColor: dc, padding: '7px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{dirIcon(calc.dir)} {dirLabel(calc.dir)}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{calc.fromLabel} → {calc.toLabel}</span>
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+          {/* Graph */}
+          <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '6px 4px 2px' }}>
+            <CalcProfileChart
+              elevA={calc.fromElev} elevB={calc.toElev} distN={calc.distance}
+              labelA={calc.fromLabel} labelB={calc.toLabel}
+            />
+          </div>
+
+          {/* 4 stat chips */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
+            {([
+              { lbl: t('slopeElevDiff'), val: `${sign(calc.diff)}${calc.diff.toFixed(3)}ft`, c: dc },
+              { lbl: t('slopeSlopePct'), val: `${sign(calc.slopePct)}${calc.slopePct.toFixed(2)}%`, c: dc },
+              { lbl: t('slopeRatioLbl'), val: calc.ratio != null ? `1:${calc.ratio.toFixed(1)}` : '—', c: TEXT_PRI },
+              { lbl: t('slopeAngleLbl'), val: `${calc.angle.toFixed(2)}°`, c: TEXT_PRI },
+            ]).map(({ lbl, val, c }) => (
+              <div key={lbl} style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '6px 7px' }}>
+                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{lbl}</div>
+                <div style={{ fontSize: 13, fontWeight: 900, color: c, fontFamily: 'monospace', lineHeight: 1.2 }}>{val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Data rows */}
+          <div style={{ backgroundColor: SURFACE, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 11px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {([
+              [t('slopeFrom'),       `${calc.fromLabel}${calc.fromName ? ' · ' + calc.fromName : ''}`],
+              [t('slopeFromElev'),   `${calc.fromElev.toFixed(3)} ft`],
+              [t('slopeTo'),         `${calc.toLabel}${calc.toName ? ' · ' + calc.toName : ''}`],
+              [t('slopeToElev'),     `${calc.toElev.toFixed(3)} ft`],
+              [t('slopeElevDiff'),   `${sign(calc.diff)}${calc.diff.toFixed(3)} ft`],
+              [t('slopeDistanceLbl'),`${calc.distance.toFixed(2)} ft`],
+              [t('slopeSlopePct'),   `${sign(calc.slopePct)}${calc.slopePct.toFixed(2)}%`],
+              [t('slopeRatioLbl'),   calc.ratio != null ? `1 : ${calc.ratio.toFixed(1)}` : '—'],
+              [t('slopeAngleLbl'),   `${calc.angle.toFixed(2)}°`],
+              [t('slopeDirection'),  dirLabel(calc.dir)],
+              [t('slopeDateTimeLbl'), fmtDateTime(calc.savedAt)],
+            ] as [string, string][]).map(([lbl, val]) => {
+              const hl = [t('slopeElevDiff'), t('slopeSlopePct'), t('slopeDirection')].includes(lbl);
+              return (
+                <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_DIS, flexShrink: 0 }}>{lbl}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: hl ? dc : TEXT_PRI, fontFamily: 'monospace', textAlign: 'right' as const }}>{val}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Edit / Delete actions */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 2, paddingBottom: 4 }}>
+            <button
+              style={{ flex: 1, height: 36, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              onClick={onEdit}
+            >{t('edit')}</button>
+            <button
+              style={{ flex: 1, height: 36, backgroundColor: RED_DARK, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              onClick={handleDelete}
+            >{t('delete')}</button>
+          </div>
+        </div>
+      </div>
+    </CenteredOverlay>
+  );
+}
+
+// ─── Calculation History Modal ─────────────────────────────────────────────────
+function CalcHistoryModal({ calcs, onClose, onDetail, onEdit, onDelete }: {
+  calcs: SavedCalc[];
+  onClose: () => void;
+  onDetail: (c: SavedCalc) => void;
+  onEdit: (c: SavedCalc) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { t } = useLang();
+  const [menuId, setMenuId] = useState<string | null>(null);
+
+  return (
+    <CenteredOverlay onClose={() => { setMenuId(null); onClose(); }}>
+      <div style={{ width: '100%', maxWidth: 430, maxHeight: '90vh', backgroundColor: CARD, borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+
+        {/* Header */}
+        <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{t('slopeHistoryTitle')} ({calcs.length})</span>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={onClose}>✕</button>
+        </div>
+
+        {/* List */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {calcs.length === 0 && (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: TEXT_DIS, fontSize: 13, fontWeight: 600 }}>
+              {t('slopeNoHistory')}
+            </div>
+          )}
+          {calcs.map(c => {
+            const dc = dirColor(c.dir);
+            const isMenu = menuId === c.id;
+            return (
+              <div key={c.id} style={{ position: 'relative' }}>
+                <div
+                  style={{ backgroundColor: SURFACE, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                  onClick={() => { setMenuId(null); onDetail(c); }}
+                >
+                  {/* Direction chip */}
+                  <div style={{ width: 32, height: 32, backgroundColor: dc, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 15, color: '#fff' }}>{dirIcon(c.dir)}</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
+                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC, marginTop: 1 }}>
+                      {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft · {fmtDate(c.savedAt)}
+                    </div>
+                  </div>
+                  {/* ⋮ menu button */}
+                  <button
+                    style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 18, cursor: 'pointer', padding: '2px 6px', lineHeight: 1, flexShrink: 0 }}
+                    onClick={e => { e.stopPropagation(); setMenuId(isMenu ? null : c.id); }}
+                  >⋮</button>
+                </div>
+
+                {/* Inline action menu */}
+                {isMenu && (
+                  <div style={{ position: 'absolute', right: 4, top: 40, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 4px 14px rgba(0,0,0,0.14)', zIndex: 10, minWidth: 120, overflow: 'hidden' }}>
+                    <button
+                      style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '9px 14px', fontSize: 13, fontWeight: 700, color: NAVY, background: 'none', border: 'none', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}
+                      onClick={e => { e.stopPropagation(); setMenuId(null); onEdit(c); }}
+                    >{t('edit')}</button>
+                    <button
+                      style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '9px 14px', fontSize: 13, fontWeight: 700, color: RED_DARK, background: 'none', border: 'none', cursor: 'pointer' }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setMenuId(null);
+                        if (window.confirm(t('slopeDeleteCalcConfirm'))) onDelete(c.id);
+                      }}
+                    >{t('delete')}</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </CenteredOverlay>
+  );
+}
+
+// ─── Point Picker Modal (bottom sheet) ───────────────────────────────────────
 interface PickerProps {
   points:     SurveyPoint[];
   setMap:     Record<string, SurveySet>;
@@ -106,22 +405,17 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
     >
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '16px 16px 0 0', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ alignSelf: 'center', width: 36, height: 4, backgroundColor: BORDER_B, borderRadius: 2, margin: '10px auto 0' }} />
-
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 8px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
           <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{title}</span>
           <button style={{ background: 'none', border: 'none', fontSize: 22, color: TEXT_SEC, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={onClose}>✕</button>
         </div>
-
         <div style={{ padding: '8px 12px', flexShrink: 0 }}>
           <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder={t('slopeSearchPts')}
-            autoFocus
+            value={q} onChange={e => setQ(e.target.value)}
+            placeholder={t('slopeSearchPts')} autoFocus
             style={{ width: '100%', height: 36, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 13, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
           />
         </div>
-
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
           {filtered.length === 0 && (
             <div style={{ padding: '28px 0', textAlign: 'center', color: TEXT_DIS, fontSize: 13 }}>
@@ -132,11 +426,9 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
             const setObj = pt.setId ? setMap[pt.setId] : null;
             const isSel  = pt.id === selectedId;
             return (
-              <div
-                key={pt.id}
+              <div key={pt.id}
                 style={{ backgroundColor: isSel ? BLUE_DEEP : SURFACE, border: `1px solid ${isSel ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                onClick={() => { onSelect(pt.id); onClose(); }}
-              >
+                onClick={() => { onSelect(pt.id); onClose(); }}>
                 <div style={{ width: 38, height: 38, backgroundColor: isSel ? BLUE_ACC : BLUE, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: 0.3 }}>{pt.label}</span>
                 </div>
@@ -159,7 +451,7 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
   );
 }
 
-// ─── Reusable: point selector card ───────────────────────────────────────────
+// ─── Point selector card ───────────────────────────────────────────────────────
 function PointSelectCard({ pt, label, onPick }: { pt: SurveyPoint | null; label: string; onPick: () => void }) {
   const { t } = useLang();
   const hasElev = (pt?.bmElevation ?? 0) > 0;
@@ -167,13 +459,13 @@ function PointSelectCard({ pt, label, onPick }: { pt: SurveyPoint | null; label:
     <div style={{ flex: 1 }}>
       <div style={LBL}>{label}</div>
       <div
-        style={{ backgroundColor: pt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${pt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', minHeight: 46 }}
+        style={{ backgroundColor: pt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${pt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '7px 10px', cursor: 'pointer', minHeight: 48 }}
         onClick={onPick}
       >
         {pt ? (
           <>
-            {/* Allow long names to wrap — no truncation */}
-            <div style={{ fontSize: 13, fontWeight: 900, color: BLUE_ACC, lineHeight: 1.25 }}>
+            {/* No truncation — wraps on long names */}
+            <div style={{ fontSize: 13, fontWeight: 900, color: BLUE_ACC, lineHeight: 1.3 }}>
               {pt.label}{pt.pointName ? ` · ${pt.pointName}` : ''}
             </div>
             {hasElev
@@ -182,42 +474,9 @@ function PointSelectCard({ pt, label, onPick }: { pt: SurveyPoint | null; label:
             }
           </>
         ) : (
-          <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS, marginTop: 4 }}>{t('slopeTapSelect')}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS, marginTop: 5 }}>{t('slopeTapSelect')}</div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── Saved Calculations Panel ─────────────────────────────────────────────────
-function SavedCalcsPanel({ calcs, onDelete }: { calcs: SavedCalc[]; onDelete: (id: string) => void }) {
-  const { t } = useLang();
-  if (calcs.length === 0) return null;
-  return (
-    <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-      <div style={{ padding: '7px 12px', borderBottom: `1px solid ${BORDER}`, fontSize: 11, fontWeight: 800, color: BLUE, letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
-        {t('slopeSavedHeader')} ({calcs.length})
-      </div>
-      {calcs.map((c, i) => {
-        const dc = dirColor(c.dir);
-        return (
-          <div key={c.id} style={{ padding: '8px 12px', borderBottom: i < calcs.length - 1 ? `1px solid ${BORDER}` : 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: dc }}>{dirIcon(c.dir)} {sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC }}>
-                {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft · {fmtDate(c.savedAt)}
-              </div>
-            </div>
-            <button
-              style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 16, cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }}
-              onClick={() => onDelete(c.id)}
-            >✕</button>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -239,6 +498,10 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
   const [picker, setPicker] = useState<'from' | 'to' | null>(null);
   const [justSaved, setJustSaved] = useState(false);
 
+  // History / detail modals
+  const [showHistory,  setShowHistory]  = useState(false);
+  const [detailCalc,   setDetailCalc]   = useState<SavedCalc | null>(null);
+
   const fromPt = fromId ? points.find(p => p.id === fromId) ?? null : null;
   const toPt   = toId   ? points.find(p => p.id === toId)   ?? null : null;
   const distN  = parseFloat(dist);
@@ -257,33 +520,60 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
   }, [fromId, toId]);
 
   const handleSave = useCallback(() => {
-    if (!result || !fromPt || !toPt) return;
+    if (!result || !fromPt || !toPt || !fromId || !toId) return;
     onSave({
-      id: Date.now().toString(),
+      id:        Date.now().toString(),
+      fromId,
       fromLabel: fromPt.label,
       fromName:  fromPt.pointName ?? '',
+      fromElev:  fromPt.bmElevation!,
+      toId,
       toLabel:   toPt.label,
-      toName:    toPt.pointName  ?? '',
+      toName:    toPt.pointName ?? '',
+      toElev:    toPt.bmElevation!,
       distance:  distN,
       slopePct:  result.pct,
       diff:      result.diff,
+      ratio:     result.ratio,
       angle:     result.angle,
       dir:       result.dir,
       savedAt:   Date.now(),
     });
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2500);
-  }, [result, fromPt, toPt, distN, onSave]);
+  }, [result, fromPt, toPt, fromId, toId, distN, onSave]);
 
-  // Direction label
+  // Load a saved calc back into the form for editing
+  const handleEdit = useCallback((c: SavedCalc) => {
+    setFromId(c.fromId);
+    setToId(c.toId);
+    setDist(c.distance.toString());
+    setShowHistory(false);
+    setDetailCalc(null);
+    setJustSaved(false);
+  }, []);
+
   function dirLabel(dir: string) {
     if (dir === 'uphill')   return t('slopeUphill');
     if (dir === 'downhill') return t('slopeDownhill');
     return t('slopeFlat');
   }
 
+  const recentTwo = savedCalcs.slice(0, 2);
+  const hasMore   = savedCalcs.length > 2;
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+      {/* ── Top action bar: always-visible history button ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          style={{ height: 26, padding: '0 10px', backgroundColor: NAVY, border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+          onClick={() => setShowHistory(true)}
+        >
+          {t('slopeHistoryBtn')}{savedCalcs.length > 0 ? ` (${savedCalcs.length})` : ''}
+        </button>
+      </div>
 
       {/* ── Inputs card ── */}
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -293,8 +583,7 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
           <PointSelectCard pt={fromPt} label={t('slopeFromPoint')} onPick={() => setPicker('from')} />
           <button
             style={{ width: 32, height: 32, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, marginBottom: 1 }}
-            onClick={handleSwap}
-            title={t('slopeSwapTip')}
+            onClick={handleSwap} title={t('slopeSwapTip')}
           >⇆</button>
           <PointSelectCard pt={toPt} label={t('slopeToPoint')} onPick={() => setPicker('to')} />
         </div>
@@ -304,9 +593,7 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
           <div style={LBL}>{t('slopeHorizDist')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
-              type="number"
-              inputMode="decimal"
-              value={dist}
+              type="number" inputMode="decimal" value={dist}
               onChange={e => { setDist(e.target.value); setJustSaved(false); }}
               placeholder="0.00"
               style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
@@ -324,7 +611,7 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
       {/* ── Results ── */}
       {result && (
         <>
-          {/* Direction banner — compact, darker colors */}
+          {/* Direction banner */}
           <div style={{ backgroundColor: dc, borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 16, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
               {dirIcon(result.dir)} {dirLabel(result.dir)}
@@ -334,7 +621,7 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
             </span>
           </div>
 
-          {/* 4-card single row */}
+          {/* 4-card row — improved sizing */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
             {([
               { key: 'slopeElevDiff', value: `${sign(result.diff)}${result.diff.toFixed(3)}ft`, color: dc },
@@ -342,26 +629,83 @@ function FindSlopeTab({ points, setMap, savedCalcs, onSave, onDelete }: FindSlop
               { key: 'slopeRatioLbl', value: result.ratio != null ? `1:${result.ratio.toFixed(1)}` : '—', color: TEXT_PRI },
               { key: 'slopeAngleLbl', value: `${result.angle.toFixed(2)}°`,                     color: TEXT_PRI },
             ] as const).map(({ key, value, color }) => (
-              <div key={key} style={{ backgroundColor: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '5px 6px' }}>
-                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t(key)}</div>
-                <div style={{ fontSize: 13, fontWeight: 900, color, fontFamily: 'monospace', lineHeight: 1.2 }}>{value}</div>
+              <div key={key} style={{ backgroundColor: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 8px' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t(key)}</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color, fontFamily: 'monospace', lineHeight: 1.2 }}>{value}</div>
               </div>
             ))}
           </div>
 
-          {/* Save button — directly below cards, no summary card */}
+          {/* Save button */}
           <button
-            style={{ height: 38, backgroundColor: justSaved ? GREEN_DARK : NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 800, cursor: justSaved ? 'default' : 'pointer', letterSpacing: 0.3, boxShadow: '0 2px 6px rgba(20,58,99,0.25)', transition: 'background-color 0.2s' }}
-            onClick={handleSave}
-            disabled={justSaved}
+            style={{ height: 33, backgroundColor: justSaved ? GREEN_DARK : NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 800, cursor: justSaved ? 'default' : 'pointer', letterSpacing: 0.3, boxShadow: '0 2px 6px rgba(20,58,99,0.25)', transition: 'background-color 0.2s' }}
+            onClick={handleSave} disabled={justSaved}
           >{justSaved ? t('slopeSavedCalc') : t('slopeSaveCalc')}</button>
         </>
       )}
 
-      {/* Saved history */}
-      <SavedCalcsPanel calcs={savedCalcs} onDelete={onDelete} />
+      {/* ── Inline recent history (last 2) ── */}
+      {recentTwo.length > 0 && (
+        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
+          <div style={{ padding: '6px 11px', borderBottom: `1px solid ${BORDER}`, fontSize: 10.5, fontWeight: 800, color: BLUE, letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
+            {t('slopeRecentCalcs')}
+          </div>
+          {recentTwo.map((c, i) => {
+            const dc2 = dirColor(c.dir);
+            return (
+              <div key={c.id}
+                style={{ padding: '8px 11px', borderBottom: i < recentTwo.length - 1 ? `1px solid ${BORDER}` : 'none', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                onClick={() => setDetailCalc(c)}>
+                <div style={{ width: 28, height: 28, backgroundColor: dc2, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 13, color: '#fff' }}>{dirIcon(c.dir)}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: dc2 }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: TEXT_SEC, marginTop: 1 }}>
+                    {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft · {fmtDate(c.savedAt)}
+                  </div>
+                </div>
+                <span style={{ fontSize: 13, color: TEXT_DIS }}>›</span>
+              </div>
+            );
+          })}
+          {/* View all / count */}
+          <div
+            style={{ padding: '7px 11px', backgroundColor: SURFACE, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            onClick={() => setShowHistory(true)}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: NAVY }}>
+              {hasMore
+                ? `${t('slopeViewAllCalcs')} (${savedCalcs.length})`
+                : t('slopeViewAllCalcs')}
+            </span>
+            <span style={{ fontSize: 13, color: NAVY }}>›</span>
+          </div>
+        </div>
+      )}
 
-      {/* Pickers */}
+      {/* ── Modals ── */}
+      {showHistory && (
+        <CalcHistoryModal
+          calcs={savedCalcs}
+          onClose={() => setShowHistory(false)}
+          onDetail={c => { setShowHistory(false); setDetailCalc(c); }}
+          onEdit={c => { setShowHistory(false); handleEdit(c); }}
+          onDelete={id => { onDelete(id); }}
+        />
+      )}
+      {detailCalc && (
+        <CalcDetailModal
+          calc={detailCalc}
+          onClose={() => setDetailCalc(null)}
+          onEdit={() => handleEdit(detailCalc)}
+          onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
+        />
+      )}
+
+      {/* ── Point pickers ── */}
       {picker === 'from' && (
         <PointPickerModal points={points} setMap={setMap} selectedId={fromId}
           title={t('slopeSelectFrom')}
@@ -398,69 +742,6 @@ function ProfileTab({ points, setMap }: { points: SurveyPoint[]; setMap: Record<
   const result = canChart ? calcSlope(fromPt!.bmElevation!, toPt!.bmElevation!, distN) : null;
   const dc = result ? dirColor(result.dir) : TEXT_DIS;
 
-  const ProfileChart = useCallback(() => {
-    if (!canChart || !result || !fromPt || !toPt) return null;
-
-    const elevA = fromPt.bmElevation!;
-    const elevB = toPt.bmElevation!;
-    const W = 360, H = 200;
-    const PL = 52, PR = 14, PT = 28, PB = 38;
-    const PW = W - PL - PR;
-    const PH = H - PT - PB;
-
-    const minE   = Math.min(elevA, elevB);
-    const maxE   = Math.max(elevA, elevB);
-    const rangeE = Math.max(maxE - minE, 0.5);
-    const padE   = rangeE * 0.30;
-    const yMin   = minE - padE;
-    const yMax   = maxE + padE;
-
-    const yFor = (e: number) => PT + PH * (1 - (e - yMin) / (yMax - yMin));
-    const xA = PL, xB = PL + PW;
-    const yA = yFor(elevA), yB = yFor(elevB);
-
-    const ticks: number[] = [];
-    for (let i = 0; i <= 4; i++) ticks.push(yMin + (yMax - yMin) * (i / 4));
-
-    return (
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-        <rect x={PL} y={PT} width={PW} height={PH} fill="#FAFBFE" rx="3" />
-        <rect x={PL} y={PT} width={PW} height={PH} fill="none" stroke="#E2E8F0" strokeWidth="0.75" rx="3" />
-        {ticks.map((tick, i) => {
-          const ty = yFor(tick);
-          if (ty < PT - 2 || ty > PT + PH + 2) return null;
-          return (
-            <g key={i}>
-              <line x1={PL} y1={ty} x2={PL + PW} y2={ty} stroke="#D1D8E4" strokeWidth="0.5" strokeDasharray="3,4" />
-              <text x={PL - 4} y={ty + 3.5} textAnchor="end" fontSize="8.5" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(1)}</text>
-            </g>
-          );
-        })}
-        <text x={9} y={PT + PH / 2} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_DIS}
-          transform={`rotate(-90 9 ${PT + PH / 2})`}>{t('slopeFtUnit')}</text>
-        <polygon points={`${xA},${yA} ${xB},${yB} ${xB},${PT + PH} ${xA},${PT + PH}`} fill={`${dc}18`} />
-        <line x1={xA} y1={yA} x2={xB} y2={yB} stroke={dc} strokeWidth="2.5" />
-        {result.dir !== 'flat' && (
-          <line x1={xB} y1={yA} x2={xB} y2={yB} stroke={dc} strokeWidth="1" strokeDasharray="4,3" opacity="0.4" />
-        )}
-        <circle cx={xA} cy={yA} r={5.5} fill={BLUE} />
-        <circle cx={xA} cy={yA} r={3}   fill={BLUE_ACC} />
-        <text x={xA} y={yA - 10} textAnchor="middle" fontSize="10" fontWeight="900" fill={NAVY}>{fromPt.label}</text>
-        <text x={xA} y={PT + PH + 15} textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TEXT_SEC}>{elevA.toFixed(2)}</text>
-        <circle cx={xB} cy={yB} r={5.5} fill={BLUE} />
-        <circle cx={xB} cy={yB} r={3}   fill={BLUE_ACC} />
-        <text x={xB} y={yB - 10} textAnchor="middle" fontSize="10" fontWeight="900" fill={NAVY}>{toPt.label}</text>
-        <text x={xB} y={PT + PH + 15} textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TEXT_SEC}>{elevB.toFixed(2)}</text>
-        <text x={PL + PW / 2} y={H - 2} textAnchor="middle" fontSize="8.5" fontWeight="700" fill={TEXT_DIS}>
-          {distN.toFixed(1)} {t('slopeHorizLabel')}
-        </text>
-        <text x={PL + PW / 2} y={(yA + yB) / 2 - 9} textAnchor="middle" fontSize="11" fontWeight="900" fill={dc}>
-          {sign(result.pct)}{result.pct.toFixed(2)}% {dirIcon(result.dir)}
-        </text>
-      </svg>
-    );
-  }, [canChart, result, fromPt, toPt, distN, dc, t]);
-
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -491,39 +772,37 @@ function ProfileTab({ points, setMap }: { points: SurveyPoint[]; setMap: Record<
         <div>
           <div style={LBL}>{t('slopeHorizDist')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input
-              type="number" inputMode="decimal"
-              value={dist} onChange={e => setDist(e.target.value)}
-              placeholder="0.00"
-              style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 15, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
-            />
+            <input type="number" inputMode="decimal" value={dist} onChange={e => setDist(e.target.value)} placeholder="0.00"
+              style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 15, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }} />
             <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{t('slopeFtUnit')}</span>
           </div>
         </div>
       </div>
 
-      {canChart && result ? (
+      {canChart && result && fromPt && toPt ? (
         <>
           <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-            <div style={{ padding: '8px 12px 4px', fontSize: 11, fontWeight: 800, color: BLUE, letterSpacing: 0.8, textTransform: 'uppercase' as const, borderBottom: `1px solid ${BORDER}` }}>
+            <div style={{ padding: '7px 12px 4px', fontSize: 11, fontWeight: 800, color: BLUE, letterSpacing: 0.8, textTransform: 'uppercase' as const, borderBottom: `1px solid ${BORDER}` }}>
               {t('slopeElevProfile')}
             </div>
-            <div style={{ padding: '8px 4px 4px' }}><ProfileChart /></div>
+            <div style={{ padding: '6px 4px 4px' }}>
+              <CalcProfileChart elevA={fromPt.bmElevation!} elevB={toPt.bmElevation!} distN={distN} labelA={fromPt.label} labelB={toPt.label} />
+            </div>
           </div>
 
           <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {([
-              ['From',             `${fromPt!.label}${fromPt!.pointName ? ' · ' + fromPt!.pointName : ''}`],
-              ['From Elevation',   `${fromPt!.bmElevation!.toFixed(3)} ft`],
-              ['To',               `${toPt!.label}${toPt!.pointName ? ' · ' + toPt!.pointName : ''}`],
-              ['To Elevation',     `${toPt!.bmElevation!.toFixed(3)} ft`],
-              ['Distance',         `${distN.toFixed(2)} ft`],
-              ['Elev. Difference', `${sign(result.diff)}${result.diff.toFixed(3)} ft`],
-              ['Slope',            `${sign(result.pct)}${result.pct.toFixed(2)}%`],
-              ['Angle',            `${result.angle.toFixed(2)}°`],
-              ['Direction',        result.dir.charAt(0).toUpperCase() + result.dir.slice(1)],
+              [t('slopeFrom'),       `${fromPt.label}${fromPt.pointName ? ' · ' + fromPt.pointName : ''}`],
+              [t('slopeFromElev'),   `${fromPt.bmElevation!.toFixed(3)} ft`],
+              [t('slopeTo'),         `${toPt.label}${toPt.pointName ? ' · ' + toPt.pointName : ''}`],
+              [t('slopeToElev'),     `${toPt.bmElevation!.toFixed(3)} ft`],
+              [t('slopeDistanceLbl'), `${distN.toFixed(2)} ft`],
+              [t('slopeElevDiff'),   `${sign(result.diff)}${result.diff.toFixed(3)} ft`],
+              [t('slopeSlopePct'),   `${sign(result.pct)}${result.pct.toFixed(2)}%`],
+              [t('slopeAngleLbl'),   `${result.angle.toFixed(2)}°`],
+              [t('slopeDirection'),  result.dir === 'uphill' ? t('slopeUphill') : result.dir === 'downhill' ? t('slopeDownhill') : t('slopeFlat')],
             ] as [string, string][]).map(([lbl, val]) => {
-              const hl = ['Slope', 'Elev. Difference', 'Direction'].includes(lbl);
+              const hl = [t('slopeElevDiff'), t('slopeSlopePct'), t('slopeDirection')].includes(lbl);
               return (
                 <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_DIS }}>{lbl}</span>
@@ -578,7 +857,6 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-        {/* Start point */}
         <div>
           <div style={LBL}>{t('slopeStartPoint')}</div>
           <div
@@ -596,12 +874,11 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
                 }
               </>
             ) : (
-              <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS, marginTop: 4 }}>{t('slopeTapSelectStart')}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS, marginTop: 5 }}>{t('slopeTapSelectStart')}</div>
             )}
           </div>
         </div>
 
-        {/* Target slope */}
         <div>
           <div style={LBL}>{t('slopeTargetSlope')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -611,7 +888,6 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
           </div>
         </div>
 
-        {/* Distance */}
         <div>
           <div style={LBL}>{t('slopeHorizDist')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -621,7 +897,6 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
           </div>
         </div>
 
-        {/* Direction toggle */}
         <div>
           <div style={LBL}>{t('slopeDirection')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -643,11 +918,11 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('slopeStartElev')}</div>
+              <div style={{ fontSize: 9.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('slopeStartElev')}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{startElev.toFixed(3)} {t('slopeFtUnit')}</div>
             </div>
             <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('slopeElevChange')}</div>
+              <div style={{ fontSize: 9.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('slopeElevChange')}</div>
               <div style={{ fontSize: 16, fontWeight: 900, color: rc, fontFamily: 'monospace' }}>
                 {dir === 'uphill' ? '+' : '−'}{elevChange.toFixed(3)} {t('slopeFtUnit')}
               </div>
@@ -664,13 +939,13 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {([
-              [t('slopeStartPoint'),   `${startPt!.label}${startPt!.pointName ? ' · ' + startPt!.pointName : ''}`],
-              [t('slopeStartElev'),    `${startElev.toFixed(3)} ft`],
-              [t('slopeTargetSlope'),  `${slopeN.toFixed(2)}%`],
-              ['Distance',             `${distN.toFixed(2)} ft`],
-              [t('slopeDirection'),    dir === 'uphill' ? `↗ ${t('slopeUphill')}` : `↘ ${t('slopeDownhill')}`],
-              [t('slopeElevChange'),   `${dir === 'uphill' ? '+' : '−'}${elevChange.toFixed(3)} ft`],
-              [t('slopeReqElev'),      `${reqElev.toFixed(3)} ft`],
+              [t('slopeStartPoint'),  `${startPt!.label}${startPt!.pointName ? ' · ' + startPt!.pointName : ''}`],
+              [t('slopeStartElev'),   `${startElev.toFixed(3)} ft`],
+              [t('slopeTargetSlope'), `${slopeN.toFixed(2)}%`],
+              [t('slopeDistanceLbl'), `${distN.toFixed(2)} ft`],
+              [t('slopeDirection'),   dir === 'uphill' ? `↗ ${t('slopeUphill')}` : `↘ ${t('slopeDownhill')}`],
+              [t('slopeElevChange'),  `${dir === 'uphill' ? '+' : '−'}${elevChange.toFixed(3)} ft`],
+              [t('slopeReqElev'),     `${reqElev.toFixed(3)} ft`],
             ] as [string, string][]).map(([lbl, val]) => (
               <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_DIS }}>{lbl}</span>
@@ -710,8 +985,11 @@ export default function SlopeScreen({ projectId }: Props) {
   const [activeTab,  setActiveTab]  = useState<SlopeSubTab>('find');
   const [savedCalcs, setSavedCalcs] = useState<SavedCalc[]>([]);
 
-  const handleSave   = useCallback((c: SavedCalc) => setSavedCalcs(prev => [c, ...prev]), []);
-  const handleDelete = useCallback((id: string)   => setSavedCalcs(prev => prev.filter(c => c.id !== id)), []);
+  // Cap at MAX_HISTORY, newest first
+  const handleSave   = useCallback((c: SavedCalc) =>
+    setSavedCalcs(prev => [c, ...prev].slice(0, MAX_HISTORY)), []);
+  const handleDelete = useCallback((id: string) =>
+    setSavedCalcs(prev => prev.filter(c => c.id !== id)), []);
 
   const TABS: { id: SlopeSubTab; label: string }[] = [
     { id: 'find',    label: t('slopeTabFind')    },
@@ -726,17 +1004,8 @@ export default function SlopeScreen({ projectId }: Props) {
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
-            <button
-              key={tab.id}
-              style={{
-                flex: 1, height: 34, borderRadius: 8,
-                border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
-                backgroundColor: active ? '#FFFFFF' : GOLD,
-                color: NAVY, fontSize: 13, fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-                transition: 'background-color 0.15s, border-color 0.15s',
-              }}
+            <button key={tab.id}
+              style={{ flex: 1, height: 34, borderRadius: 8, border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`, backgroundColor: active ? '#FFFFFF' : GOLD, color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none', transition: 'background-color 0.15s, border-color 0.15s' }}
               onClick={() => setActiveTab(tab.id)}
             >{tab.label}</button>
           );
