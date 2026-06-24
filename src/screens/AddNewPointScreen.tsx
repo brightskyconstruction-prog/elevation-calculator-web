@@ -828,11 +828,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     : setAssignMethod === 'new' ? s.setAssignBtnDim : {}),
                 }}
                 onClick={() => {
-                  if (setAssignMethod === 'existing') return;
-                  setPendingNewSet(null);
-                  setAssignedSet(lastUsedSet.id);
-                  setSetAssignMethod('existing');
-                  setSetWarning(false);
+                  if (setAssignMethod === 'existing') {
+                    // Single tap deselects
+                    setAssignedSet(null);
+                    setSetAssignMethod(null);
+                  } else {
+                    setPendingNewSet(null);
+                    setAssignedSet(lastUsedSet.id);
+                    setSetAssignMethod('existing');
+                    setSetWarning(false);
+                  }
                 }}
               >
                 {/* Radio dot */}
@@ -865,13 +870,19 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   : setAssignMethod === 'existing' ? s.setAssignBtnDim : {}),
               }}
               onClick={() => {
-                if (setAssignMethod === 'new') return;
-                if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
-                  setNewSetElevWarn(true);
-                  return;
+                if (setAssignMethod === 'new') {
+                  // Single tap deselects
+                  setAssignedSet(null);
+                  setSetAssignMethod(null);
+                  setPendingNewSet(null);
+                } else {
+                  if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
+                    setNewSetElevWarn(true);
+                    return;
+                  }
+                  setNewSetElevWarn(false);
+                  setShowCreate(true);
                 }
-                setNewSetElevWarn(false);
-                setShowCreate(true);
               }}
             >
               {/* Radio dot */}
