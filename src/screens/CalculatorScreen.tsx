@@ -249,7 +249,8 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
   );
 }
 
-// ─── FIF input group ─────────────────────────────────────────────────────────
+// ─── FIF input group ──────────────────────────────────────────────────────────
+// Placeholder clears immediately on focus (change 1)
 function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, setFrL, ftErr, onFtChange }: {
   ft: string; setFt: (v:string)=>void;
   inches: number; setInches: (v:number)=>void;
@@ -258,12 +259,17 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
   ftErr: string;
   onFtChange: (v:string)=>void;
 }) {
+  const [ftFocused, setFtFocused] = useState(false);
+
   return (
     <>
       <input
         style={{ height: 38, borderRadius: 4, border: `1.5px solid ${ftErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
         value={ft} onChange={e => onFtChange(e.target.value)}
-        inputMode="numeric" placeholder="Feet"
+        inputMode="numeric"
+        placeholder={ftFocused ? '' : 'Feet'}
+        onFocus={() => setFtFocused(true)}
+        onBlur={() => setFtFocused(false)}
       />
       {ftErr && <span style={{ fontSize: 7, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{ftErr}</span>}
       <select
@@ -480,6 +486,9 @@ function CalculatorView() {
   const [bFtErr, setBFtErr] = useState('');
 
   const [result,       setResult]       = useState<number | null>(null);
+  const [calcDone,     setCalcDone]     = useState(false);   // change 4: disable after calc
+  const [aEngFocused,  setAEngFocused]  = useState(false);   // change 1: placeholder on focus
+  const [bEngFocused,  setBEngFocused]  = useState(false);   // change 1: placeholder on focus
   const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(KEY_CALC, []));
   const [showAllCalcs, setShowAllCalcs] = useState(false);
 
@@ -487,23 +496,30 @@ function CalculatorView() {
     try { localStorage.setItem(KEY_CALC, JSON.stringify(history)); } catch {}
   }, [history]);
 
-  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); };
-  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); };
-  const handleAllClear = () => { clearA(); clearB(); setOp('+'); setResult(null); };
+  // Reset both result display and "already calculated" flag
+  const resetCalc = () => { setResult(null); setCalcDone(false); };
 
-  const onFtChangeA = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only'); setResult(null); };
-  const onFtChangeB = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setBFt(v); setBFtErr(''); } else setBFtErr('Whole numbers only'); setResult(null); };
+  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); };
+  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); };
+  const handleAllClear = () => { clearA(); clearB(); setOp('+'); };
+
+  // Feet text input handlers — validate whole numbers
+  const onFtChangeA = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only'); resetCalc(); };
+  const onFtChangeB = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setBFt(v); setBFtErr(''); } else setBFtErr('Whole numbers only'); resetCalc(); };
 
   const valA    = modeA === 'eng' ? parseFloat(aEng) : fifToEng(aFt, aIn, aFr);
   const valB    = modeB === 'eng' ? parseFloat(bEng) : fifToEng(bFt, bIn, bFr);
   const canCalc = !isNaN(valA) && !isNaN(valB);
+  // Button active only when inputs are valid AND result hasn't been computed yet for this combo
+  const calcEnabled = canCalc && !calcDone;
   const resultFif = result !== null ? engToFif(Math.abs(result)) : null;
 
   const handleCalculate = () => {
-    if (!canCalc) return;
+    if (!calcEnabled) return;
     const raw = op === '+' ? valA + valB : valA - valB;
     if (isNaN(raw)) return;
     setResult(raw);
+    setCalcDone(true);  // disable button until inputs change
     const item: CalcHistItem = {
       id: uid(), modeA, modeB, op,
       aFt, aIn, aFr, aFrL, aEng,
@@ -527,32 +543,63 @@ function CalculatorView() {
 
           {/* Input A */}
           <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, overflow: 'hidden' }}>
-            <ModeToggle mode={modeA} onChange={m => { setModeA(m); setResult(null); }} />
+            <ModeToggle mode={modeA} onChange={m => { setModeA(m); resetCalc(); }} />
             {modeA === 'fif' ? (
-              <FIFInputs ft={aFt} setFt={setAFt} inches={aIn} setInches={setAIn} frac={aFr} setFrac={setAFr} frL={aFrL} setFrL={setAFrL} ftErr={aFtErr} onFtChange={onFtChangeA} />
+              <FIFInputs
+                ft={aFt} setFt={setAFt}
+                inches={aIn} setInches={v => { setAIn(v); resetCalc(); }}
+                frac={aFr}   setFrac={v => { setAFr(v); resetCalc(); }}
+                frL={aFrL}   setFrL={v => { setAFrL(v); resetCalc(); }}
+                ftErr={aFtErr} onFtChange={onFtChangeA}
+              />
             ) : (
-              <input style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
-                value={aEng} onChange={e => { setAEng(e.target.value); setResult(null); }} inputMode="decimal" placeholder="Decimal Feet" />
+              <input
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                value={aEng}
+                onChange={e => { setAEng(e.target.value); resetCalc(); }}
+                inputMode="decimal"
+                placeholder={aEngFocused ? '' : 'Decimal Feet'}
+                onFocus={() => setAEngFocused(true)}
+                onBlur={() => setAEngFocused(false)}
+              />
             )}
             <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
           </div>
 
-          {/* Operator */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {(['+', '-'] as Op[]).map(o => (
-              <button key={o} style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === o ? NAVY : CARD, border: `2px solid ${op === o ? GOLD : BORDER}`, color: op === o ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
-                onClick={() => setOp(o)}>{o === '+' ? '+' : '−'}</button>
-            ))}
+          {/* Operator column — change 5: "OR" between + and − */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <button
+              style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === '+' ? NAVY : CARD, border: `2px solid ${op === '+' ? GOLD : BORDER}`, color: op === '+' ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
+              onClick={() => { setOp('+'); resetCalc(); }}
+            >+</button>
+            <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, lineHeight: 1 }}>OR</span>
+            <button
+              style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === '-' ? NAVY : CARD, border: `2px solid ${op === '-' ? GOLD : BORDER}`, color: op === '-' ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
+              onClick={() => { setOp('-'); resetCalc(); }}
+            >−</button>
           </div>
 
           {/* Input B */}
           <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, overflow: 'hidden' }}>
-            <ModeToggle mode={modeB} onChange={m => { setModeB(m); setResult(null); }} />
+            <ModeToggle mode={modeB} onChange={m => { setModeB(m); resetCalc(); }} />
             {modeB === 'fif' ? (
-              <FIFInputs ft={bFt} setFt={setBFt} inches={bIn} setInches={setBIn} frac={bFr} setFrac={setBFr} frL={bFrL} setFrL={setBFrL} ftErr={bFtErr} onFtChange={onFtChangeB} />
+              <FIFInputs
+                ft={bFt} setFt={setBFt}
+                inches={bIn} setInches={v => { setBIn(v); resetCalc(); }}
+                frac={bFr}   setFrac={v => { setBFr(v); resetCalc(); }}
+                frL={bFrL}   setFrL={v => { setBFrL(v); resetCalc(); }}
+                ftErr={bFtErr} onFtChange={onFtChangeB}
+              />
             ) : (
-              <input style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
-                value={bEng} onChange={e => { setBEng(e.target.value); setResult(null); }} inputMode="decimal" placeholder="Decimal Feet" />
+              <input
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                value={bEng}
+                onChange={e => { setBEng(e.target.value); resetCalc(); }}
+                inputMode="decimal"
+                placeholder={bEngFocused ? '' : 'Decimal Feet'}
+                onFocus={() => setBEngFocused(true)}
+                onBlur={() => setBEngFocused(false)}
+              />
             )}
             <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
           </div>
@@ -574,11 +621,25 @@ function CalculatorView() {
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons — changes 2, 3, 4: larger font, shorter height, disable after calc */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{ flex: 1, height: 45, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }} onClick={handleAllClear}>{t('allClear')}</button>
-          <button style={{ flex: 2, height: 45, backgroundColor: canCalc ? NAVY : '#4B5563', border: `2px solid ${canCalc ? GOLD : '#6B7280'}`, borderRadius: 8, color: canCalc ? '#fff' : '#D1D5DB', fontSize: 13, fontWeight: 800, letterSpacing: 1.5, cursor: canCalc ? 'pointer' : 'default' }}
-            onClick={handleCalculate} disabled={!canCalc}>{t('calculate')}</button>
+          <button
+            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 13, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            onClick={handleAllClear}
+          >{t('allClear')}</button>
+          <button
+            style={{
+              flex: 2, height: 40,
+              backgroundColor: calcEnabled ? NAVY : '#4B5563',
+              border: `2px solid ${calcEnabled ? GOLD : '#6B7280'}`,
+              borderRadius: 8,
+              color: calcEnabled ? '#fff' : '#D1D5DB',
+              fontSize: 15, fontWeight: 800, letterSpacing: 1.5,
+              cursor: calcEnabled ? 'pointer' : 'default',
+            }}
+            onClick={handleCalculate}
+            disabled={!calcEnabled}
+          >{t('calculate')}</button>
         </div>
 
         {/* Recent Calculations */}
@@ -626,21 +687,18 @@ export default function CalculatorScreen() {
           const isActive = subTab === tab.id;
           return (
             <button key={tab.id} style={{
-              // Fixed equal width — never changes between states
               flex: 1,
               height: 34,
               borderRadius: 8,
-              // Same border-width in both states (only color changes)
               border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
               backgroundColor: isActive ? '#FFFFFF' : GOLD,
               color: '#163A63',
               fontSize: 13,
-              fontWeight: 700,   // always 700 — prevents text-width reflow
+              fontWeight: 700,
               cursor: 'pointer',
               boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
-              // Only animate visual properties, never layout
               transition: 'background-color 0.15s, border-color 0.15s, box-shadow 0.15s',
             }} onClick={() => setSubTab(tab.id)}>
               {tab.label}
