@@ -569,7 +569,7 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
               <span style={{ fontSize: 14, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
             </div>
             <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
-              {c.distance.toFixed(1)} ft · Δ {sign(c.diff)}{c.diff.toFixed(3)} ft
+              {c.distance.toFixed(1)} ft · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : c.dir === 'downhill' ? '▼' : 'Δ'}</span> {sign(c.diff)}{c.diff.toFixed(3)} ft
             </div>
           </div>
           <button
@@ -679,6 +679,13 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
   const [dir,        setDir]        = useState<'uphill' | 'downhill'>('downhill');
   const [showPicker, setShowPicker] = useState(false);
 
+  const handleClear = useCallback(() => {
+    setStartId(null);
+    setSlopePct('');
+    setDistance('');
+    setDir('downhill');
+  }, []);
+
   const startPt   = startId ? points.find(p => p.id === startId) ?? null : null;
   const startElev = startPt?.bmElevation ?? 0;
   const slopeN    = parseFloat(slopePct);
@@ -695,6 +702,12 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            style={{ height: 28, paddingLeft: 12, paddingRight: 12, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 7, color: TEXT_SEC, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+            onClick={handleClear}
+          >{t('slopeClearBtn')}</button>
+        </div>
         <div>
           <div style={LBL}>{t('slopeStartPoint')}</div>
           <div
