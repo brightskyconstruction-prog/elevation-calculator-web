@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { INCHES_OPTIONS, FRACTION_OPTIONS } from '../constants';
 import { useLang } from '../LangContext';
 
@@ -296,80 +296,99 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
 // ═══════════════════════════════════════════════════════════════════════════════
 function ConverterView() {
   const { t } = useLang();
+
+  // ── Input state (each side is independent — no auto-sync) ──────────────────
   const [cFt,         setCFt]         = useState('');
   const [cIn,         setCIn]         = useState(0);
   const [cFr,         setCFr]         = useState(0);
   const [cFrL,        setCFrL]        = useState('None');
   const [cFtErr,      setCFtErr]      = useState('');
   const [cEng,        setCEng]        = useState('');
-  const [cFtFocused,  setCFtFocused]  = useState(false);   // placeholder on focus
-  const [cEngFocused, setCEngFocused] = useState(false);   // placeholder on focus
+
+  // Which side the user last edited — determines conversion direction on CONVERT
+  const [lastEdited,  setLastEdited]  = useState<'fif' | 'eng' | null>(null);
+  // Disables button after a successful conversion until an input changes
+  const [convDone,    setConvDone]    = useState(false);
+
+  // Placeholder-on-focus state
+  const [cFtFocused,  setCFtFocused]  = useState(false);
+  const [cEngFocused, setCEngFocused] = useState(false);
+
   const [convHistory, setConvHistory] = useState<ConvItem[]>(() => loadJson(KEY_CONV, []));
   const [showAllConvs,setShowAllConvs]= useState(false);
-  // Track last auto-saved key to prevent duplicate history entries
-  const lastSavedRef = useRef('');
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CONV, JSON.stringify(convHistory)); } catch {}
   }, [convHistory]);
 
-  // Auto-save to history 700ms after any valid conversion, deduped by key
-  useEffect(() => {
-    const engNum = parseFloat(cEng);
-    if (cEng === '' || isNaN(engNum)) return;
-    const key = `${cFt}:${cIn}:${cFrL}:${engNum.toFixed(2)}`;
-    if (key === lastSavedRef.current) return;
-    const timer = setTimeout(() => {
-      const ftNum = cFt !== '' ? parseInt(cFt, 10) : 0;
+  // ── Input handlers — NO cross-side updates, just track lastEdited ──────────
+  const resetConv = () => setConvDone(false);
+
+  const onCFtChange = (v: string) => {
+    if (v !== '' && !/^\d+$/.test(v)) { setCFtErr('Whole numbers only'); return; }
+    setCFt(v); setCFtErr('');
+    setLastEdited('fif'); resetConv();
+  };
+  const onSelectInches = (inches: number) => {
+    setCIn(inches); setLastEdited('fif'); resetConv();
+  };
+  const onSelectFrac = (frac: number, frL: string) => {
+    setCFr(frac); setCFrL(frL); setLastEdited('fif'); resetConv();
+  };
+  const onEngChange = (v: string) => {
+    setCEng(v); setLastEdited('eng'); resetConv();
+  };
+
+  // ── Clear buttons ─────────────────────────────────────────────────────────
+  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); if (lastEdited === 'fif') { setCEng(''); } setLastEdited(null); resetConv(); };
+  const clearEng = () => { setCEng(''); if (lastEdited === 'eng') { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); } setLastEdited(null); resetConv(); };
+  const handleAllClear = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); setLastEdited(null); resetConv(); };
+
+  // ── Validity ──────────────────────────────────────────────────────────────
+  const fifValid = cFt !== '' && !isNaN(parseFloat(cFt));
+  const engValid = cEng !== '' && !isNaN(parseFloat(cEng)) && parseFloat(cEng) >= 0;
+  const canConv  = fifValid || engValid;
+  const convEnabled = canConv && !convDone;
+
+  // ── CONVERT — manual, explicit, saves to history ───────────────────────────
+  const handleConvert = () => {
+    if (!convEnabled) return;
+
+    // Determine conversion direction: prefer the side user last edited
+    const goFifToEng = lastEdited !== 'eng' ? fifValid : !engValid;
+
+    if (goFifToEng) {
+      // FIF → Decimal
+      const engNum = fifToEng(cFt, cIn, cFr);
+      if (isNaN(engNum)) return;
+      const engStr = engNum.toFixed(2);
+      setCEng(engStr);
+      const ftNum = parseInt(cFt, 10) || 0;
       setConvHistory(prev => [{
         id: uid(), mode: 'fif_to_eng' as ConvMode,
         fifFeet: ftNum, fifInches: cIn, fifFracLbl: cFrL, engVal: engNum,
       }, ...prev].slice(0, MAX_HIST));
-      lastSavedRef.current = key;
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [cEng, cFt, cIn, cFrL]);
-
-  // Compute decimal string from current FIF values — always 2 dp
-  const engFromFIF = (ft: string, inches: number, frac: number): string => {
-    if (ft === '') return '';
-    const eng = fifToEng(ft, inches, frac);
-    return isNaN(eng) ? '' : eng.toFixed(2);
-  };
-
-  // FIF card handlers — auto-update decimal
-  const onCFtChange = (v: string) => {
-    if (v !== '' && !/^\d+$/.test(v)) { setCFtErr('Whole numbers only'); return; }
-    setCFt(v); setCFtErr('');
-    setCEng(engFromFIF(v, cIn, cFr));
-  };
-  const onSelectInches = (inches: number) => {
-    setCIn(inches);
-    setCEng(engFromFIF(cFt, inches, cFr));
-  };
-  const onSelectFrac = (frac: number, frL: string) => {
-    setCFr(frac); setCFrL(frL);
-    setCEng(engFromFIF(cFt, cIn, frac));
-  };
-
-  // Decimal card handler — auto-update FIF
-  const onEngChange = (v: string) => {
-    setCEng(v);
-    const num = parseFloat(v);
-    if (v !== '' && !isNaN(num) && num >= 0) {
-      const fif = engToFif(num);
+    } else {
+      // Decimal → FIF
+      const engNum = parseFloat(cEng);
+      if (isNaN(engNum) || engNum < 0) return;
+      const fif = engToFif(engNum);
       setCFt(String(fif.feet));
       setCIn(fif.inches);
       setCFrL(fif.fracLbl);
       setCFr(fracLblToDecimal(fif.fracLbl));
       setCFtErr('');
+      // Normalise the decimal display to 2dp
+      setCEng(engNum.toFixed(2));
+      const ftNum = fif.feet;
+      setConvHistory(prev => [{
+        id: uid(), mode: 'fif_to_eng' as ConvMode,
+        fifFeet: ftNum, fifInches: fif.inches, fifFracLbl: fif.fracLbl, engVal: engNum,
+      }, ...prev].slice(0, MAX_HIST));
     }
-  };
 
-  // Individual clears (both sides sync to empty)
-  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); lastSavedRef.current = ''; };
-  const clearEng = () => { setCEng(''); setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); lastSavedRef.current = ''; };
-  const handleAllClear = () => clearFIF();
+    setConvDone(true);
+  };
 
   const handleDeleteAllConvs = () => {
     if (!window.confirm(t('deleteConvsConfirm'))) return;
@@ -443,14 +462,15 @@ function ConverterView() {
           <button
             style={{
               flex: 2, height: 40,
-              backgroundColor: '#4B5563',
-              border: '2px solid #6B7280',
+              backgroundColor: convEnabled ? NAVY : '#4B5563',
+              border: `2px solid ${convEnabled ? GOLD : '#6B7280'}`,
               borderRadius: 8,
-              color: '#D1D5DB',
+              color: convEnabled ? '#fff' : '#D1D5DB',
               fontSize: 15, fontWeight: 800, letterSpacing: 1.5,
-              cursor: 'default',
+              cursor: convEnabled ? 'pointer' : 'default',
             }}
-            disabled
+            onClick={handleConvert}
+            disabled={!convEnabled}
           >{t('convert')}</button>
         </div>
 
