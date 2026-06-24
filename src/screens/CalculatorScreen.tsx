@@ -302,12 +302,17 @@ function ConverterView() {
   const [cFrL,        setCFrL]        = useState('None');
   const [cFtErr,      setCFtErr]      = useState('');
   const [cEng,        setCEng]        = useState('');
+  const [convDone,    setConvDone]    = useState(false);   // disable after conversion
+  const [cFtFocused,  setCFtFocused]  = useState(false);   // placeholder on focus
+  const [cEngFocused, setCEngFocused] = useState(false);   // placeholder on focus
   const [convHistory, setConvHistory] = useState<ConvItem[]>(() => loadJson(KEY_CONV, []));
   const [showAllConvs,setShowAllConvs]= useState(false);
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CONV, JSON.stringify(convHistory)); } catch {}
   }, [convHistory]);
+
+  const resetConv = () => setConvDone(false);
 
   // Compute decimal string from current FIF values
   const engFromFIF = (ft: string, inches: number, frac: number): string => {
@@ -316,24 +321,28 @@ function ConverterView() {
     return isNaN(eng) ? '' : eng.toFixed(4);
   };
 
-  // FIF card handlers — auto-update decimal
+  // FIF card handlers — auto-update decimal + reset convDone
   const onCFtChange = (v: string) => {
     if (v !== '' && !/^\d+$/.test(v)) { setCFtErr('Whole numbers only'); return; }
     setCFt(v); setCFtErr('');
     setCEng(engFromFIF(v, cIn, cFr));
+    resetConv();
   };
   const onSelectInches = (inches: number) => {
     setCIn(inches);
     setCEng(engFromFIF(cFt, inches, cFr));
+    resetConv();
   };
   const onSelectFrac = (frac: number, frL: string) => {
     setCFr(frac); setCFrL(frL);
     setCEng(engFromFIF(cFt, cIn, frac));
+    resetConv();
   };
 
-  // Decimal card handler — auto-update FIF
+  // Decimal card handler — auto-update FIF + reset convDone
   const onEngChange = (v: string) => {
     setCEng(v);
+    resetConv();
     const num = parseFloat(v);
     if (v !== '' && !isNaN(num) && num >= 0) {
       const fif = engToFif(num);
@@ -346,17 +355,18 @@ function ConverterView() {
   };
 
   // Individual clears (both sides sync to empty)
-  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); };
-  const clearEng = () => { setCEng(''); setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); };
+  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); resetConv(); };
+  const clearEng = () => { setCEng(''); setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); resetConv(); };
   const handleAllClear = () => clearFIF();
 
   const cEngVal = parseFloat(cEng);
   const cFtVal  = parseInt(cFt, 10);
   const canConv = (cEng !== '' && !isNaN(cEngVal)) || (cFt !== '' && !isNaN(cFtVal));
+  const convEnabled = canConv && !convDone;
 
   // Save to history explicitly
   const handleConvert = () => {
-    if (!canConv || cEng === '') return;
+    if (!convEnabled || cEng === '') return;
     const engNum = parseFloat(cEng);
     const ftNum  = cFt !== '' ? parseInt(cFt, 10) : 0;
     if (isNaN(engNum)) return;
@@ -364,6 +374,7 @@ function ConverterView() {
       id: uid(), mode: 'fif_to_eng' as ConvMode,
       fifFeet: ftNum, fifInches: cIn, fifFracLbl: cFrL, engVal: engNum,
     }, ...prev].slice(0, MAX_HIST));
+    setConvDone(true);
   };
 
   const handleDeleteAllConvs = () => {
@@ -384,7 +395,10 @@ function ConverterView() {
             <input
               style={{ width: '100%', height: 38, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
               value={cFt} onChange={e => onCFtChange(e.target.value)}
-              inputMode="numeric" placeholder="Feet"
+              inputMode="numeric"
+              placeholder={cFtFocused ? '' : 'Feet'}
+              onFocus={() => setCFtFocused(true)}
+              onBlur={() => setCFtFocused(false)}
             />
             {cFtErr && <span style={{ fontSize: 7, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
             <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' as const }}
@@ -414,7 +428,10 @@ function ConverterView() {
               <input
                 style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
                 value={cEng} onChange={e => onEngChange(e.target.value)}
-                inputMode="decimal" placeholder="0.0000"
+                inputMode="decimal"
+                placeholder={cEngFocused ? '' : '0.0000'}
+                onFocus={() => setCEngFocused(true)}
+                onBlur={() => setCEngFocused(false)}
               />
               <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>ft</span>
             </div>
@@ -425,17 +442,23 @@ function ConverterView() {
 
         {/* ── Action buttons ── */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button style={{ flex: 1, height: 52, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 11, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
-            onClick={handleAllClear}>{t('allClear')}</button>
-          <button style={{
-            flex: 2, height: 52,
-            backgroundColor: canConv ? NAVY : '#4B5563',
-            border: `2px solid ${canConv ? GOLD : '#6B7280'}`,
-            borderRadius: 8,
-            color: canConv ? '#fff' : '#D1D5DB',
-            fontSize: 13, fontWeight: 800, letterSpacing: 1.5,
-            cursor: canConv ? 'pointer' : 'default',
-          }} onClick={handleConvert} disabled={!canConv}>{t('convert')}</button>
+          <button
+            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 13, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            onClick={handleAllClear}
+          >{t('allClear')}</button>
+          <button
+            style={{
+              flex: 2, height: 40,
+              backgroundColor: convEnabled ? NAVY : '#4B5563',
+              border: `2px solid ${convEnabled ? GOLD : '#6B7280'}`,
+              borderRadius: 8,
+              color: convEnabled ? '#fff' : '#D1D5DB',
+              fontSize: 15, fontWeight: 800, letterSpacing: 1.5,
+              cursor: convEnabled ? 'pointer' : 'default',
+            }}
+            onClick={handleConvert}
+            disabled={!convEnabled}
+          >{t('convert')}</button>
         </div>
 
         {/* ── Recent Conversions ── */}
