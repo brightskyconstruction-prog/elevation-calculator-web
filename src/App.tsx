@@ -110,9 +110,9 @@ function AppInner() {
   const MAIN_TABS: { id: MainTab; label: string }[] = [
     { id: 'add',    label: t('tabAdd')    },
     { id: 'points', label: t('tabPoints') },
+    { id: 'slope',  label: t('tabSlope')  },
     { id: 'sets',   label: t('tabSets')   },
     { id: 'calc',   label: t('tabCalc')   },
-    { id: 'slope',  label: t('tabSlope')  },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
