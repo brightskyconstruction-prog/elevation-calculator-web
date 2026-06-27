@@ -267,7 +267,13 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: Setting
         <div style={spS.section}>
           <span style={spS.sectionLabel}>{t('settingsAccount')}</span>
           <div style={spS.emailRow}>
-            <div style={spS.emailIcon}>{email ? '@' : '👤'}</div>
+            <div style={spS.emailIcon}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6" />
+              </svg>
+            </div>
             <div style={spS.emailBlock}>
               <span style={spS.emailMeta}>{email ? t('loggedInAs') : 'Session'}</span>
               <span style={spS.emailVal}>{email || 'Guest Session'}</span>
@@ -563,7 +569,7 @@ const spS: Record<string, React.CSSProperties> = {
   sectionLabel: {
     fontSize:    11,
     fontWeight:  800,
-    color:       '#9CA3AF',
+    color:       '#1F2937',
     letterSpacing: 0.8,
     textTransform: 'uppercase' as const,
   },
@@ -598,7 +604,7 @@ const spS: Record<string, React.CSSProperties> = {
   emailMeta: {
     fontSize:  10,
     fontWeight: 700,
-    color:     '#9CA3AF',
+    color:     '#374151',
     letterSpacing: 0.3,
     textTransform: 'uppercase' as const,
   },
