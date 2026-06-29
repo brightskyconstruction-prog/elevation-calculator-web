@@ -55,6 +55,18 @@ interface SurveyState {
   // History
   addHistItem:  (item: Omit<HistItem, 'id' | 'createdAt'>) => void;
   clearHistory: () => void;
+
+  // Cloud sync
+  /** Replace all store state in-memory from cloud data (called after login). */
+  hydrate: (data: {
+    projects:        Project[];
+    points:          SurveyPoint[];
+    sets:            SurveySet[];
+    history:         HistItem[];
+    activeProjectId: string;
+  }) => void;
+  /** Clear all user data in-memory (called on logout). */
+  resetStore: () => void;
 }
 
 export const useSurveyStore = create<SurveyState>()(
@@ -162,6 +174,28 @@ export const useSurveyStore = create<SurveyState>()(
 
       clearHistory() {
         set({ history: [] });
+      },
+
+      // ── Cloud sync ────────────────────────────────────────────────────────────
+
+      hydrate(data) {
+        set({
+          projects:        data.projects,
+          points:          data.points,
+          sets:            data.sets,
+          history:         data.history,
+          activeProjectId: data.activeProjectId || DEFAULT_PROJECT_ID,
+        });
+      },
+
+      resetStore() {
+        set({
+          projects:        [],
+          points:          [],
+          sets:            [],
+          history:         [],
+          activeProjectId: DEFAULT_PROJECT_ID,
+        });
       },
     }),
     {

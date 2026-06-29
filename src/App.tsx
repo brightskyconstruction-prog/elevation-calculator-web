@@ -9,6 +9,17 @@ import CalculatorScreen   from './screens/CalculatorScreen';
 import SplashScreenWeb    from './screens/SplashScreenWeb';
 import LoginScreenWeb     from './screens/LoginScreenWeb';
 import SlopeScreen        from './screens/SlopeScreen';
+import { isFirebaseConfigured } from './firebase';
+import {
+  loadUserData,
+  saveUserData,
+  collectLocalData,
+  applyLocalData,
+  clearLocalData,
+  patchLocalStorage,
+} from './services/cloudSync';
+import { ensureUserProfile } from './services/userProfile';
+import { useProfileStore } from './stores/profileStore';
 
 // ─── Root: wraps everything in the language provider ─────────────────────────
 export default function App() {
@@ -61,8 +72,146 @@ function AppInner() {
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
 
   const { ensureDefaultProject, activeProjectId } = useSurveyStore();
+  // Stable action references — selected individually so callbacks don't
+  // recreate on every state change.
+  const hydrateStore    = useSurveyStore(s => s.hydrate);
+  const resetSurveyData = useSurveyStore(s => s.resetStore);
+
+  // Profile store — holds subscription / permission data for this session
+  const setProfile   = useProfileStore(s => s.setProfile);
+  const clearProfile = useProfileStore(s => s.clearProfile);
 
   useEffect(() => { ensureDefaultProject(); }, []);
+
+  // ── Cloud sync ──────────────────────────────────────────────────
+  // Tracks the currently-authenticated email for sync operations.
+  const syncEmailRef  = useRef<string | null>(null);
+  // Debounce timer for writes.
+  const syncTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Stable ref to scheduleSync so the patched setItem can always call latest.
+  const scheduleSyncFnRef = useRef<() => void>(() => {});
+
+  const scheduleSync = useCallback(() => {
+    if (!syncEmailRef.current) return;
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(async () => {
+      const email = syncEmailRef.current;
+      if (!email) return;
+      try {
+        const data = collectLocalData();
+        await saveUserData(email, data);
+      } catch (err) {
+        console.warn('[CloudSync] write failed:', err);
+      }
+    }, 1500);
+  }, []);
+
+  // Keep the ref in sync with latest closure.
+  scheduleSyncFnRef.current = scheduleSync;
+
+  // Patch localStorage.setItem once on mount so every write (from any screen)
+  // automatically triggers a debounced cloud sync.
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return; // no-op if Firebase not set up
+    const restore = patchLocalStorage((_key) => scheduleSyncFnRef.current());
+    return restore;
+  }, []);
+
+  // Also subscribe to Zustand mutations (catches in-memory writes that don't
+  // hit localStorage until the next Zustand persist flush).
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    return useSurveyStore.subscribe(() => {
+      scheduleSyncFnRef.current();
+    });
+  }, []);
+
+  /**
+   * Load a user's cloud data and hydrate the app.
+   * Called on login and on mount when already authenticated.
+   */
+  const loginUser = useCallback(async (userEmail: string) => {
+    syncEmailRef.current = userEmail;
+    if (!isFirebaseConfigured()) return;
+
+    try {
+      const cloudData = await loadUserData(userEmail);
+      if (!cloudData) return; // first-time user — local (empty) state is fine
+
+      // Restore all localStorage entries (calc history, conv history, slope calcs)
+      applyLocalData(cloudData);
+
+      // Hydrate the Zustand store in-memory from the survey store key
+      const surveyRaw = cloudData['elevation-calculator-v1'];
+      if (surveyRaw) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const s = (JSON.parse(surveyRaw) as any)?.state;
+          if (s) {
+            hydrateStore({
+              projects:        s.projects        ?? [],
+              points:          s.points          ?? [],
+              sets:            s.sets            ?? [],
+              history:         s.history         ?? [],
+              activeProjectId: s.activeProjectId ?? 'default-project',
+            });
+          }
+        } catch (parseErr) {
+          console.warn('[CloudSync] failed to parse survey store:', parseErr);
+        }
+      }
+    } catch (err) {
+      console.warn('[CloudSync] load failed, using local data:', err);
+    }
+
+    // Load / create the user's profile (subscription + feature flags).
+    // Non-blocking — runs in parallel with data hydration above.
+    // The profile store starts with isLoaded=false so usePermissions()
+    // returns full access until the profile arrives.
+    ensureUserProfile(userEmail).then(profile => {
+      setProfile(profile);
+    }).catch(() => {
+      // If profile fetch fails, set isLoaded=true with null so the app
+      // doesn't stay in a perpetual loading state.
+      setProfile(null);
+    });
+  }, [hydrateStore, setProfile]);
+
+  /**
+   * Flush any pending sync, clear device-local data, and reset the store.
+   * Called on logout. Cloud data is never deleted.
+   */
+  const logoutUser = useCallback(async () => {
+    const userEmail = syncEmailRef.current;
+
+    // Flush pending debounced sync immediately
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+    if (userEmail) {
+      try {
+        const data = collectLocalData();
+        await saveUserData(userEmail, data);
+      } catch (err) {
+        console.warn('[CloudSync] final flush failed:', err);
+      }
+    }
+
+    syncEmailRef.current = null;
+
+    // Clear device-local cache so next user on this device starts fresh
+    clearLocalData();
+    resetSurveyData();
+    clearProfile();
+  }, [resetSurveyData, clearProfile]);
+
+  // On mount: if the user is already authenticated, load their cloud data.
+  useEffect(() => {
+    const storedEmail = readEmail();
+    if (storedEmail) loginUser(storedEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally runs once on mount
 
   // ── Flow handlers ───────────────────────────────────────────────
   const handleSplashDone = useCallback(() => {
@@ -70,23 +219,27 @@ function AppInner() {
     else              setAppState('app');
   }, []);
 
-  const handleLogin = useCallback((e: string) => {
+  const handleLogin = useCallback(async (e: string) => {
     setEmail(e);
     setAppState('app');
-  }, []);
+    await loginUser(e);
+  }, [loginUser]);
 
   const handleGuestLogin = useCallback(() => {
     setEmail('');
     setAppState('app');
+    // Guests use local storage only — no sync
+    syncEmailRef.current = null;
   }, []);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     if (!window.confirm(t('logoutConfirm'))) return;
+    await logoutUser();
     try { localStorage.removeItem('auth:email'); } catch {}
     setEmail('');
     setAppState('login');
     setShowSettings(false);
-  }, [t]);
+  }, [t, logoutUser]);
 
   // ── Navigation ──────────────────────────────────────────────────
   const handleEditPoint = useCallback((pt: SurveyPoint) => {
