@@ -60,9 +60,9 @@ export function usePermissions(): PermissionsResult {
   const plan     = profile?.plan     ?? 'free';
 
   return {
-    can(feature: FeatureKey): boolean {
+    can(_feature: FeatureKey): boolean {
       // Currently always true. In the future:
-      // return features[feature] === true;
+      // return features[_feature] === true;
       return true;
     },
 
