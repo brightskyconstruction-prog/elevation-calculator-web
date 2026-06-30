@@ -358,7 +358,6 @@ function AppInner() {
         <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
           <ViewPointsScreen
             projectId={projectId}
-            onEditPoint={handleEditPoint}
             compareFromId={compareFromId}
             compareToId={compareToId}
           />

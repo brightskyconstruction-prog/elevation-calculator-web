@@ -28,7 +28,6 @@ const GOLD_SVG  = '#F5A623';
 // ─── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
   projectId:      string;
-  onEditPoint?:   (pt: SurveyPoint) => void;
   compareFromId?: string | null;
   compareToId?:   string | null;
 }
@@ -1487,7 +1486,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW POINTS SCREEN — gold sub-tab shell
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId, compareToId }: Props) {
+export default function ViewPointsScreen({ projectId, compareFromId, compareToId }: Props) {
   const [activeTab, setActiveTab] = useState<PointsTab>('compare');
   const [fromId,    setFromId]    = useState<string | null>(null);
   const [toId,      setToId]      = useState<string | null>(null);
