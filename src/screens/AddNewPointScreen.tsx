@@ -73,17 +73,21 @@ const mStyle: Record<string, React.CSSProperties> = {
 // ─── Create Set Modal ─────────────────────────────────────────────────────────
 interface CreateSetProps {
   open: boolean; onClose: () => void;
-  pointLabel: string; engFt: number; nextSetId: string;
+  pointLabel: string; engFt: number; fifDisplay: string; nextSetId: string;
   onCreate: (name: string) => void;
 }
-function CreateSetModal({ open, onClose, pointLabel, engFt, nextSetId, onCreate }: CreateSetProps) {
+function CreateSetModal({ open, onClose, pointLabel, engFt, fifDisplay, nextSetId, onCreate }: CreateSetProps) {
   const [name, setName] = useState('');
   const { t, lang } = useLang();
   return (
     <ModalOverlay open={open} onClose={onClose}>
       <h3 style={c.modalTitle}>{t('createSetTitle')}</h3>
       <p style={c.modalDesc}>
-        {strings[lang].willBeFirstPoint(pointLabel, isNaN(engFt) ? '—' : engFt.toFixed(2))}
+        {strings[lang].willBeFirstPoint(
+          pointLabel,
+          fifDisplay || '—',
+          isNaN(engFt) ? '—' : engFt.toFixed(2),
+        )}
       </p>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <div style={c.setIdBadge}><span style={c.setIdText}>{nextSetId}</span></div>
@@ -270,8 +274,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [showAssign,     setShowAssign]     = useState(false);
   const [showNameModal,  setShowNameModal]  = useState(false);
   const [saveMsg,        setSaveMsg]        = useState<string | null>(null);
-  const [setWarning,     setSetWarning]     = useState(false);
-  const [newSetElevWarn, setNewSetElevWarn] = useState(false);
+  const [setWarning,        setSetWarning]        = useState(false);
+  const [newSetElevWarn,    setNewSetElevWarn]    = useState(false);
+  const [rodReadingWarn,    setRodReadingWarn]    = useState(false);
   const [showSetPanel,   setShowSetPanel]   = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const viewSetBtnRef = useRef<HTMLButtonElement>(null);
@@ -311,8 +316,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const showManualBm = !setReferencePoint || currentIsSetReference;
   const isKnownElevation = currentIsSetReference && (currentPoint?.bmElevation ?? 0) > 0;
 
-  const fifDisplay = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
-  const engDisplay = !isNaN(engFt) && engFt > 0 ? `${engFt.toFixed(2)} ft` : '';
+  const fifDisplay      = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
+  const engDisplay      = !isNaN(engFt) && engFt > 0 ? `${engFt.toFixed(2)} ft` : '';
+  const hasRodReading   = !isNaN(engFt) && engFt > 0;
 
   // ── Dirty detection (unsaved data in edit mode) ───────────────────────────
   const isDirty = isEditMode && (rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '');
@@ -391,7 +397,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
+    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -463,6 +469,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodFeet(feet); setRodInches(inches); setRodFracDec(frac); setRodFracLbl(fracLbl);
     const eng = toEngFt(feet, inches, frac);
     setEngFtStr(isNaN(eng) || (feet === '' && inches === 0 && frac === 0) ? '' : eng.toFixed(2));
+    setRodReadingWarn(false);
     lockRef.current = false;
   };
 
@@ -476,6 +483,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       setRodFeet(feet); setRodInches(inches); setRodFracDec(fraction); setRodFracLbl(frLabel);
       lockRef.current = false;
     }
+    setRodReadingWarn(false);
   };
 
   // ── Save ──────────────────────────────────────────────────────────────────
@@ -484,11 +492,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     if (isNaN(eng) || eng <= 0) { alert(t('rodReadingAlert')); return; }
     if (!assignedSet) { setSetWarning(true); return; }
     setSetWarning(false);
-    // Block save if "Create New Set" is selected but no elevation entered
-    if (setAssignMethod === 'new' && showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
-      setNewSetElevWarn(true);
-      return;
-    }
     // Flush pending new set to storage before persisting the point
     if (pendingNewSet && assignedSet === pendingNewSet.id) {
       addSet(projectId, pendingNewSet);
@@ -833,6 +836,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     setAssignedSet(null);
                     setSetAssignMethod(null);
                   } else {
+                    if (!hasRodReading) { setRodReadingWarn(true); return; }
+                    setRodReadingWarn(false);
                     setPendingNewSet(null);
                     setAssignedSet(lastUsedSet.id);
                     setSetAssignMethod('existing');
@@ -876,10 +881,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   setSetAssignMethod(null);
                   setPendingNewSet(null);
                 } else {
-                  if (showManualBm && (!bmElevStr || isNaN(parseFloat(bmElevStr)) || parseFloat(bmElevStr) <= 0)) {
-                    setNewSetElevWarn(true);
-                    return;
-                  }
+                  if (!hasRodReading) { setRodReadingWarn(true); return; }
+                  setRodReadingWarn(false);
                   setNewSetElevWarn(false);
                   setShowCreate(true);
                 }
@@ -904,6 +907,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </span>
             </button>
 
+            {rodReadingWarn && <div style={s.warnMsg}>⚠ {t('rodReadingRequiredForSet')}</div>}
             {newSetElevWarn && <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>}
             {setWarning && <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>}
           </div>
@@ -1002,6 +1006,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       <CreateSetModal
         open={showCreate} onClose={() => setShowCreate(false)}
         pointLabel={currentLabel} engFt={parseFloat(engFtStr) || 0}
+        fifDisplay={fifDisplay}
         nextSetId={nextSetLabel(projectId)} onCreate={handleCreateSet}
       />
       <AssignSetModal
