@@ -27,12 +27,10 @@ const GOLD_SVG  = '#F5A623';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
-  projectId:         string;
-  onEditPoint?:      (pt: SurveyPoint) => void;
-  compareFromId?:    string | null;
-  compareToId?:      string | null;
-  /** When true, forces the Single Point sub-tab to become active */
-  showSinglePoint?:  boolean;
+  projectId:      string;
+  onEditPoint?:   (pt: SurveyPoint) => void;
+  compareFromId?: string | null;
+  compareToId?:   string | null;
 }
 
 // ─── Point type resolution ──────────────────────────────────────────────────────
@@ -1175,7 +1173,7 @@ interface SinglePointTabProps {
 }
 
 
-function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
+export function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
   const { t, lang } = useLang();
   const { deletePoint } = useSurveyStore();
 
@@ -1489,7 +1487,7 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW POINTS SCREEN — gold sub-tab shell
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId, compareToId, showSinglePoint }: Props) {
+export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId, compareToId }: Props) {
   const [activeTab, setActiveTab] = useState<PointsTab>('compare');
   const [fromId,    setFromId]    = useState<string | null>(null);
   const [toId,      setToId]      = useState<string | null>(null);
@@ -1502,11 +1500,6 @@ export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId
       setActiveTab('compare');
     }
   }, [compareFromId, compareToId]);
-
-  // Show Single Point view when triggered via ⋮ button in Point tab
-  useEffect(() => {
-    if (showSinglePoint) setActiveTab('single');
-  }, [showSinglePoint]);
 
   const { t } = useLang();
   const { getPoints, getSets } = useSurveyStore();
@@ -1558,9 +1551,6 @@ export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId
       </div>
       <div style={{ flex: 1, overflow: 'hidden', display: activeTab === 'graph' ? 'flex' : 'none', flexDirection: 'column' }}>
         <GraphTab points={points} sets={sets} />
-      </div>
-      <div style={{ flex: 1, overflow: 'hidden', display: activeTab === 'single' ? 'flex' : 'none', flexDirection: 'column' }}>
-        <SinglePointTab points={points} sets={sets} projectId={projectId} onEditPoint={onEditPoint} />
       </div>
     </div>
   );

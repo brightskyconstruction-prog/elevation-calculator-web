@@ -7,6 +7,7 @@ import {
 } from '../constants';
 import { useLang } from '../LangContext';
 import { strings } from '../i18n';
+import { SinglePointTab } from './ViewPointsScreen';
 
 // ─── Color constants ───────────────────────────────────────────────────────────
 const NAVY      = '#143A63';
@@ -24,15 +25,15 @@ const TEXT_DIS  = '#9CA3AF';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  projectId:          string;
-  isVisible?:         boolean;
-  onViewPoints?:      () => void;
-  editPoint?:         SurveyPoint | null;
-  onEditConsumed?:    () => void;
-  onComparePoint?:    (fromId: string, toId: string | null) => void;
-  onDirtyChange?:     (dirty: boolean) => void;
-  /** Opens the Single Point view (accessible via ⋮ button in the header) */
-  onShowSinglePoint?: () => void;
+  projectId:        string;
+  isVisible?:       boolean;
+  onViewPoints?:    () => void;
+  editPoint?:       SurveyPoint | null;
+  onEditConsumed?:  () => void;
+  onComparePoint?:  (fromId: string, toId: string | null) => void;
+  onDirtyChange?:   (dirty: boolean) => void;
+  /** Callback when user selects Edit on a point inside Manage Point overlay */
+  onEditPoint?:     (pt: SurveyPoint) => void;
 }
 
 type RodFormat = 'fif' | 'eng';
@@ -343,7 +344,7 @@ function InfoTip({ text }: { text: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onShowSinglePoint }: Props) {
+export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onEditPoint }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t } = useLang();
 
@@ -377,6 +378,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [newSetElevWarn,    setNewSetElevWarn]    = useState(false);
   const [rodReadingWarn,    setRodReadingWarn]    = useState(false);
   const [dupConflict,       setDupConflict]       = useState<{ name: string; label: string } | null>(null);
+  const [showManagePoint,   setShowManagePoint]   = useState(false);
   const [showSetPanel,   setShowSetPanel]   = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const viewSetBtnRef = useRef<HTMLButtonElement>(null);
@@ -717,7 +719,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, width: '100%', boxSizing: 'border-box', position: 'relative' }}>
 
       {/* Save toast */}
       {saveMsg && (
@@ -765,12 +767,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               onClick={goNextInSet}
             >›</button>
           )}
-          {/* ⋮ — opens Single Point view */}
+          {/* ⋮ — opens Manage Point overlay */}
           <button
             style={s.dotsBtn}
-            onClick={onShowSinglePoint}
-            title="View all survey points"
-            aria-label="View all survey points"
+            onClick={() => setShowManagePoint(true)}
+            title="Manage Point"
+            aria-label="Manage Point"
           >⋮</button>
         </div>
       </div>
@@ -1163,6 +1165,30 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       />
       {/* ── Duplicate point name alert dialog ── */}
       <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
+
+      {/* ── Manage Point overlay — full-screen within Point tab ── */}
+      {showManagePoint && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 50, backgroundColor: SURFACE, display: 'flex', flexDirection: 'column' }}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
+            <button
+              style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '2px 6px 2px 0', flexShrink: 0 }}
+              onClick={() => setShowManagePoint(false)}
+              aria-label="Close"
+            >←</button>
+            <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', flex: 1 }}>Manage Point</span>
+          </div>
+          {/* Content */}
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <SinglePointTab
+              points={points}
+              sets={sets}
+              projectId={projectId}
+              onEditPoint={(pt) => { setShowManagePoint(false); onEditPoint?.(pt); }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
