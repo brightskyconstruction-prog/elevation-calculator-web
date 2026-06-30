@@ -177,22 +177,37 @@ interface QuickEditProps {
   open: boolean; title: string; placeholder: string;
   value: string; onClose: () => void;
   onSave: (val: string) => void;
+  /** Optional element rendered to the right of the title (e.g. View All Set Points) */
+  headerAction?: React.ReactNode;
 }
-function QuickEditModal({ open, title, placeholder, value, onClose, onSave }: QuickEditProps) {
+function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction }: QuickEditProps) {
   const [tmp, setTmp] = useState(value);
   const { t } = useLang();
   useEffect(() => { if (open) setTmp(value); }, [open, value]);
   return (
     <ModalOverlay open={open} onClose={onClose}>
-      <h3 style={c.modalTitle}>{title}</h3>
+      {/* Header: title + optional action + ✕ close */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 2 }}>
+        <h3 style={{ ...c.modalTitle, flex: 1, textAlign: 'left', fontSize: 19, margin: 0 }}>
+          {title}
+        </h3>
+        {headerAction}
+        <button
+          style={{ background: 'none', border: 'none', color: TEXT_SEC, fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '0 2px', flexShrink: 0 }}
+          onClick={onClose}
+          aria-label="Close"
+        >✕</button>
+      </div>
       <input
-        style={{ ...c.input, borderColor: BLUE }}
+        style={{ ...c.input, borderColor: BLUE, fontSize: 16, height: 46 }}
         value={tmp} onChange={e => setTmp(e.target.value)}
         placeholder={placeholder} autoFocus
         onKeyDown={e => { if (e.key === 'Enter') { onSave(tmp.trim()); onClose(); } }}
       />
-      <button style={c.saveBtn} onClick={() => { onSave(tmp.trim()); onClose(); }}>{t('save')}</button>
-      <button style={c.cancelBtn} onClick={onClose}>{t('cancel')}</button>
+      <button
+        style={{ ...c.saveBtn, fontSize: 16, padding: '13px 0', height: 'auto' }}
+        onClick={() => { onSave(tmp.trim()); onClose(); }}
+      >{t('save')}</button>
     </ModalOverlay>
   );
 }
@@ -621,16 +636,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
             {pointName || t('pointName')}
           </button>
-          {/* View All Set Points OR Back To Main Page — hidden when navigated here via Edit from SinglePoint tab */}
-          {cameFromNewPoint ? (
+          {/* Back To Main Page — only when browsing from new-point flow */}
+          {cameFromNewPoint && (
             <button style={s.backToMainBtn} onClick={handleBackToMain}>
               {t('backToMainPage')}
             </button>
-          ) : (dropdownSetId && !cameFromEditMode) ? (
-            <button ref={viewSetBtnRef} style={s.viewSetDropBtn} onClick={toggleSetDropdown}>
-              {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
-            </button>
-          ) : null}
+          )}
           <div style={{ flex: 1 }} />
           {!isNewPoint && !isEditMode && (
             <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
@@ -1017,6 +1028,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       <QuickEditModal
         open={showNameModal} title={t('pointName')} placeholder={t('pointNamePlaceholder')}
         value={pointName} onClose={() => setShowNameModal(false)}
+        headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
+          <button
+            ref={viewSetBtnRef}
+            style={{ ...s.viewSetDropBtn, fontSize: 12, maxWidth: 140 }}
+            onClick={toggleSetDropdown}
+          >
+            {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
+          </button>
+        ) : undefined}
         onSave={v => {
           setPointName(v);
           if (currentPoint) updatePoint(projectId, currentPoint.id, { pointName: v || undefined });
