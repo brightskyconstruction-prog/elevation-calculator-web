@@ -44,14 +44,12 @@ interface ModalOverlayProps {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  /** Extra minimum height added to the sheet (e.g. to leave room for a dropdown) */
-  extraHeight?: number;
 }
-function ModalOverlay({ open, onClose, children, extraHeight = 0 }: ModalOverlayProps) {
+function ModalOverlay({ open, onClose, children }: ModalOverlayProps) {
   if (!open) return null;
   return (
     <div style={mStyle.overlay} onClick={onClose}>
-      <div style={{ ...mStyle.sheet, minHeight: extraHeight > 0 ? extraHeight : undefined }} onClick={e => e.stopPropagation()}>
+      <div style={mStyle.sheet} onClick={e => e.stopPropagation()}>
         <div style={mStyle.handle} />
         {children}
       </div>
@@ -182,14 +180,14 @@ interface QuickEditProps {
   open: boolean; title: string; placeholder: string;
   value: string; onClose: () => void;
   onSave: (val: string) => void;
-  /** Optional element rendered to the right of the title (e.g. View All Set Points) */
+  /** Optional element rendered to the right of the title (e.g. View All Set Points button) */
   headerAction?: React.ReactNode;
   /** Optional validation: return an error string to block save, or null to allow */
   validate?: (val: string) => string | null;
-  /** Extra min-height for the sheet so dropdowns fit without shifting the sheet down */
-  extraHeight?: number;
+  /** Inline content rendered directly below the title row (e.g. anchored dropdown list) */
+  dropdownContent?: React.ReactNode;
 }
-function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction, validate, extraHeight }: QuickEditProps) {
+function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction, validate, dropdownContent }: QuickEditProps) {
   const [tmp, setTmp]         = useState(value);
   const [validErr, setValidErr] = useState<string | null>(null);
   const { t } = useLang();
@@ -207,7 +205,7 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave, head
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose} extraHeight={extraHeight}>
+    <ModalOverlay open={open} onClose={onClose}>
       {/* ✕ close — top-right corner, above the title row */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2, marginTop: -4 }}>
         <button
@@ -220,13 +218,15 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave, head
           aria-label="Close"
         >✕</button>
       </div>
-      {/* Title row + optional action (e.g. View All Set Points) */}
+      {/* Title row + optional action (e.g. View All Set Points button) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 2 }}>
         <h3 style={{ ...c.modalTitle, flex: 1, textAlign: 'left', fontSize: 19, margin: 0 }}>
           {title}
         </h3>
         {headerAction}
       </div>
+      {/* Inline dropdown list — renders immediately below the title row when open */}
+      {dropdownContent}
       <input
         style={{ ...c.input, borderColor: BLUE, fontSize: 16, height: 46 }}
         value={tmp}
@@ -385,8 +385,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [showManagePoint,   setShowManagePoint]   = useState(false);
   const [showSetPanel,   setShowSetPanel]   = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
-  const viewSetBtnRef = useRef<HTMLButtonElement>(null);
-  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const savedNewPointRef = useRef<{
     rodFeet: string; rodInches: number; rodFracDec: number; rodFracLbl: string;
     engFtStr: string; bmElevStr: string; pointName: string; takenBy: string;
@@ -450,17 +448,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     }
   };
 
-  const toggleSetDropdown = () => {
-    if (!showSetPanel && viewSetBtnRef.current) {
-      const r = viewSetBtnRef.current.getBoundingClientRect();
-      // Dropdown is at least 200 px wide so point names aren't clipped,
-      // but never bleeds off-screen on narrow phones.
-      const dropW = Math.min(Math.max(r.width, 200), window.innerWidth - 8);
-      const left  = Math.min(r.left, window.innerWidth - dropW - 4);
-      setDropdownRect({ top: r.bottom + 2, left, width: dropW });
-    }
-    setShowSetPanel(v => !v);
-  };
+  const toggleSetDropdown = () => setShowSetPanel(v => !v);
 
   // Last used set: set associated with the most recently updated point that has a setId
   const lastUsedSet = (() => {
@@ -503,7 +491,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupConflict(null); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
+    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupConflict(null); setShowSetPanel(false); setSetAssignMethod(null); setPendingNewSet(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -546,7 +534,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setIsEditMode(true);
     setRodFormat('fif');
     setShowSetPanel(false);
-    setDropdownRect(null);
     if (savedNewPointRef.current) {
       const d = savedNewPointRef.current;
       lockRef.current = true;
@@ -1089,55 +1076,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
-      {showSetPanel && dropdownRect && dropdownSetId && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 499 }}
-          onClick={() => setShowSetPanel(false)}
-        >
-          <div
-            style={{
-              position: 'fixed',
-              top: dropdownRect.top,
-              left: dropdownRect.left,
-              width: dropdownRect.width,
-              backgroundColor: CARD,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 6,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-              zIndex: 500,
-              maxHeight: 260,
-              overflowY: 'auto',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {dropdownPoints.length === 0
-              ? <div style={{ padding: '10px', color: TEXT_DIS, fontSize: 15, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
-              : dropdownPoints.map(pt => (
-                <div
-                  key={pt.id}
-                  style={{ ...s.setPointRow, overflow: 'hidden', flexWrap: 'nowrap', backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent', padding: '10px 12px' }}
-                  onClick={() => {
-                    // If on a brand-new unsaved point, save form state so Back can restore it
-                    if (isNewPoint && !cameFromNewPoint) {
-                      savedNewPointRef.current = { rodFeet, rodInches, rodFracDec, rodFracLbl, engFtStr, bmElevStr, pointName, takenBy, assignedSet };
-                      setCameFromNewPoint(true);
-                    }
-                    const gi = points.findIndex(p => p.id === pt.id);
-                    if (gi >= 0) goTo(gi);
-                    // Close both the dropdown and the Point Name sheet
-                    setShowSetPanel(false);
-                    setShowNameModal(false);
-                  }}
-                >
-                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 16, flexShrink: 0 }}>{pt.label}</span>
-                  <span style={{ color: TEXT_SEC, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
-                </div>
-              ))
-            }
-          </div>
-        </div>
-      )}
-
       {/* ── Modals ── */}
       <CreateSetModal
         open={showCreate} onClose={() => setShowCreate(false)}
@@ -1153,15 +1091,49 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       <QuickEditModal
         open={showNameModal} title={t('pointName')} placeholder={t('pointNamePlaceholder')}
         value={pointName} onClose={() => { setShowNameModal(false); setShowSetPanel(false); }}
-        extraHeight={showSetPanel ? 420 : undefined}
         headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
           <button
-            ref={viewSetBtnRef}
             style={{ ...s.viewSetDropBtn, fontSize: 14, maxWidth: 220 }}
             onClick={toggleSetDropdown}
           >
             {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
           </button>
+        ) : undefined}
+        dropdownContent={(showSetPanel && dropdownSetId) ? (
+          <div style={{
+            border: `1px solid ${BORDER}`, borderRadius: 8,
+            backgroundColor: CARD, overflow: 'hidden',
+            maxHeight: 220, overflowY: 'auto',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+          }}>
+            {dropdownPoints.length === 0
+              ? <div style={{ padding: '12px', color: TEXT_DIS, fontSize: 15, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
+              : dropdownPoints.map(pt => (
+                <div
+                  key={pt.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', padding: '10px 14px',
+                    cursor: 'pointer', borderBottom: `1px solid ${BORDER}`,
+                    backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent',
+                    overflow: 'hidden',
+                  }}
+                  onClick={() => {
+                    if (isNewPoint && !cameFromNewPoint) {
+                      savedNewPointRef.current = { rodFeet, rodInches, rodFracDec, rodFracLbl, engFtStr, bmElevStr, pointName, takenBy, assignedSet };
+                      setCameFromNewPoint(true);
+                    }
+                    const gi = points.findIndex(p => p.id === pt.id);
+                    if (gi >= 0) goTo(gi);
+                    setShowSetPanel(false);
+                    setShowNameModal(false);
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 16, flexShrink: 0 }}>{pt.label}</span>
+                  <span style={{ color: TEXT_SEC, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
+                </div>
+              ))
+            }
+          </div>
         ) : undefined}
         validate={(name) => assignedSet ? checkDupName(name, assignedSet, currentPoint?.id) : null}
         onSave={v => {
