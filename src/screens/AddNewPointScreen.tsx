@@ -247,7 +247,7 @@ interface DupNameModalProps {
   onClose: () => void;
 }
 function DupNameModal({ conflict, onClose }: DupNameModalProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   if (!conflict) return null;
   return (
     <div style={{
@@ -275,7 +275,7 @@ function DupNameModal({ conflict, onClose }: DupNameModalProps) {
           {t('dupNameBody1')}
         </p>
         <p style={{ margin: 0, fontSize: 14, color: TEXT_PRI, textAlign: 'center', fontWeight: 700, lineHeight: 1.6 }}>
-          {t('dupNameAssigned')(conflict.name, conflict.label)}
+          {strings[lang].dupNameAssigned(conflict.name, conflict.label)}
         </p>
         <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.6, paddingBottom: 4 }}>
           {t('dupNameBody2')}
