@@ -64,12 +64,14 @@ function AppInner() {
       if (!window.confirm(t('unsavedPointConfirm'))) return;
       addScreenDirty.current = false;
     }
+    if (tab !== 'points') setShowSinglePoint(false);
     setActiveTab(tab);
   }, [activeTab, t]);
-  const [editPoint,    setEditPoint]    = useState<SurveyPoint | undefined>(undefined);
-  const [showSettings, setShowSettings] = useState(false);
-  const [compareFromId, setCompareFromId] = useState<string | null>(null);
-  const [compareToId,   setCompareToId]   = useState<string | null>(null);
+  const [editPoint,       setEditPoint]       = useState<SurveyPoint | undefined>(undefined);
+  const [showSettings,    setShowSettings]    = useState(false);
+  const [compareFromId,   setCompareFromId]   = useState<string | null>(null);
+  const [compareToId,     setCompareToId]     = useState<string | null>(null);
+  const [showSinglePoint, setShowSinglePoint] = useState(false);
 
   const { ensureDefaultProject, activeProjectId } = useSurveyStore();
   // Stable action references — selected individually so callbacks don't
@@ -250,6 +252,12 @@ function AppInner() {
   const handleComparePoint = useCallback((fromId: string, toId: string | null) => {
     setCompareFromId(fromId);
     setCompareToId(toId);
+    setShowSinglePoint(false);
+    setActiveTab('points');
+  }, []);
+
+  const handleShowSinglePoint = useCallback(() => {
+    setShowSinglePoint(true);
     setActiveTab('points');
   }, []);
 
@@ -352,6 +360,7 @@ function AppInner() {
             onEditConsumed={handleEditConsumed}
             onComparePoint={handleComparePoint}
             onDirtyChange={handleDirtyChange}
+            onShowSinglePoint={handleShowSinglePoint}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
@@ -360,6 +369,7 @@ function AppInner() {
             onEditPoint={handleEditPoint}
             compareFromId={compareFromId}
             compareToId={compareToId}
+            showSinglePoint={showSinglePoint}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'sets'   ? 'flex' : 'none' }}>

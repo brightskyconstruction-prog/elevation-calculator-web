@@ -24,13 +24,15 @@ const TEXT_DIS  = '#9CA3AF';
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
-  projectId:        string;
-  isVisible?:       boolean;
-  onViewPoints?:    () => void;
-  editPoint?:       SurveyPoint | null;
-  onEditConsumed?:  () => void;
-  onComparePoint?:  (fromId: string, toId: string | null) => void;
-  onDirtyChange?:   (dirty: boolean) => void;
+  projectId:          string;
+  isVisible?:         boolean;
+  onViewPoints?:      () => void;
+  editPoint?:         SurveyPoint | null;
+  onEditConsumed?:    () => void;
+  onComparePoint?:    (fromId: string, toId: string | null) => void;
+  onDirtyChange?:     (dirty: boolean) => void;
+  /** Opens the Single Point view (accessible via ⋮ button in the header) */
+  onShowSinglePoint?: () => void;
 }
 
 type RodFormat = 'fif' | 'eng';
@@ -341,7 +343,7 @@ function InfoTip({ text }: { text: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange }: Props) {
+export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onShowSinglePoint }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t } = useLang();
 
@@ -763,6 +765,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               onClick={goNextInSet}
             >›</button>
           )}
+          {/* ⋮ — opens Single Point view */}
+          <button
+            style={s.dotsBtn}
+            onClick={onShowSinglePoint}
+            title="View all survey points"
+            aria-label="View all survey points"
+          >⋮</button>
         </div>
       </div>
 
@@ -1206,6 +1215,7 @@ const s: Record<string, React.CSSProperties> = {
   newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
   editBtn:      { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer', flexShrink: 0 },
   undoBtn:      { width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, cursor: 'pointer', color: TEXT_SEC, flexShrink: 0 },
+  dotsBtn:      { width: 30, height: 30, borderRadius: '50%', backgroundColor: NAVY, border: 'none', fontSize: 18, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, letterSpacing: '-1px', padding: 0 },
 
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 8 },
   sep:     { height: 1, backgroundColor: '#F3F4F6', margin: '2px 0' },

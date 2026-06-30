@@ -27,10 +27,12 @@ const GOLD_SVG  = '#F5A623';
 
 // ─── Props ─────────────────────────────────────────────────────────────────────
 interface Props {
-  projectId:      string;
-  onEditPoint?:   (pt: SurveyPoint) => void;
-  compareFromId?: string | null;
-  compareToId?:   string | null;
+  projectId:         string;
+  onEditPoint?:      (pt: SurveyPoint) => void;
+  compareFromId?:    string | null;
+  compareToId?:      string | null;
+  /** When true, forces the Single Point sub-tab to become active */
+  showSinglePoint?:  boolean;
 }
 
 // ─── Point type resolution ──────────────────────────────────────────────────────
@@ -1487,7 +1489,7 @@ function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTab
 // ═══════════════════════════════════════════════════════════════════════════════
 // VIEW POINTS SCREEN — gold sub-tab shell
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId, compareToId }: Props) {
+export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId, compareToId, showSinglePoint }: Props) {
   const [activeTab, setActiveTab] = useState<PointsTab>('compare');
   const [fromId,    setFromId]    = useState<string | null>(null);
   const [toId,      setToId]      = useState<string | null>(null);
@@ -1501,15 +1503,20 @@ export default function ViewPointsScreen({ projectId, onEditPoint, compareFromId
     }
   }, [compareFromId, compareToId]);
 
+  // Show Single Point view when triggered via ⋮ button in Point tab
+  useEffect(() => {
+    if (showSinglePoint) setActiveTab('single');
+  }, [showSinglePoint]);
+
   const { t } = useLang();
   const { getPoints, getSets } = useSurveyStore();
   const points = getPoints(projectId);
   const sets   = getSets(projectId);
 
+  // 'single' intentionally omitted — accessed via ⋮ button in the Point⊕ tab
   const SUB_TABS: { id: PointsTab; label: string }[] = [
     { id: 'compare', label: t('comparePoints') },
     { id: 'graph',   label: t('graph')         },
-    { id: 'single',  label: t('singlePoint')   },
   ];
 
   return (
