@@ -44,12 +44,14 @@ interface ModalOverlayProps {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** Extra minimum height added to the sheet (e.g. to leave room for a dropdown) */
+  extraHeight?: number;
 }
-function ModalOverlay({ open, onClose, children }: ModalOverlayProps) {
+function ModalOverlay({ open, onClose, children, extraHeight = 0 }: ModalOverlayProps) {
   if (!open) return null;
   return (
     <div style={mStyle.overlay} onClick={onClose}>
-      <div style={mStyle.sheet} onClick={e => e.stopPropagation()}>
+      <div style={{ ...mStyle.sheet, minHeight: extraHeight > 0 ? extraHeight : undefined }} onClick={e => e.stopPropagation()}>
         <div style={mStyle.handle} />
         {children}
       </div>
@@ -184,8 +186,10 @@ interface QuickEditProps {
   headerAction?: React.ReactNode;
   /** Optional validation: return an error string to block save, or null to allow */
   validate?: (val: string) => string | null;
+  /** Extra min-height for the sheet so dropdowns fit without shifting the sheet down */
+  extraHeight?: number;
 }
-function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction, validate }: QuickEditProps) {
+function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction, validate, extraHeight }: QuickEditProps) {
   const [tmp, setTmp]         = useState(value);
   const [validErr, setValidErr] = useState<string | null>(null);
   const { t } = useLang();
@@ -203,7 +207,7 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave, head
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose}>
+    <ModalOverlay open={open} onClose={onClose} extraHeight={extraHeight}>
       {/* ✕ close — top-right corner, above the title row */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2, marginTop: -4 }}>
         <button
@@ -1101,17 +1105,17 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               borderRadius: 6,
               boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
               zIndex: 500,
-              maxHeight: 130,
+              maxHeight: 260,
               overflowY: 'auto',
             }}
             onClick={e => e.stopPropagation()}
           >
             {dropdownPoints.length === 0
-              ? <div style={{ padding: '10px', color: TEXT_DIS, fontSize: 13, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
+              ? <div style={{ padding: '10px', color: TEXT_DIS, fontSize: 15, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
               : dropdownPoints.map(pt => (
                 <div
                   key={pt.id}
-                  style={{ ...s.setPointRow, overflow: 'hidden', flexWrap: 'nowrap', backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent' }}
+                  style={{ ...s.setPointRow, overflow: 'hidden', flexWrap: 'nowrap', backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent', padding: '10px 12px' }}
                   onClick={() => {
                     // If on a brand-new unsaved point, save form state so Back can restore it
                     if (isNewPoint && !cameFromNewPoint) {
@@ -1120,11 +1124,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     }
                     const gi = points.findIndex(p => p.id === pt.id);
                     if (gi >= 0) goTo(gi);
+                    // Close both the dropdown and the Point Name sheet
                     setShowSetPanel(false);
+                    setShowNameModal(false);
                   }}
                 >
-                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 13, flexShrink: 0 }}>{pt.label}</span>
-                  <span style={{ color: TEXT_SEC, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
+                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 16, flexShrink: 0 }}>{pt.label}</span>
+                  <span style={{ color: TEXT_SEC, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
                 </div>
               ))
             }
@@ -1146,7 +1152,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       />
       <QuickEditModal
         open={showNameModal} title={t('pointName')} placeholder={t('pointNamePlaceholder')}
-        value={pointName} onClose={() => setShowNameModal(false)}
+        value={pointName} onClose={() => { setShowNameModal(false); setShowSetPanel(false); }}
+        extraHeight={showSetPanel ? 420 : undefined}
         headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
           <button
             ref={viewSetBtnRef}
