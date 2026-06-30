@@ -734,23 +734,32 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             >‹</button>
           )}
           <span style={s.navLabel}>{currentLabel}</span>
+          {/* Point Name button — shows "Unnamed Point" in read-only when no name */}
           <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
-            {pointName || t('pointName')}
+            {isNewPoint
+              ? (pointName || t('pointName'))
+              : (!isEditMode
+                  ? (pointName || t('unnamedPoint'))
+                  : (pointName || t('pointName'))
+                )
+            }
           </button>
-          {/* Back To Main Page — only when browsing from new-point flow */}
+          {/* Back → only when browsing from new-point flow */}
           {cameFromNewPoint && (
             <button style={s.backToMainBtn} onClick={handleBackToMain}>
-              {t('backToMainPage')}
+              ← {t('back')}
             </button>
           )}
           <div style={{ flex: 1 }} />
           {!isNewPoint && !isEditMode && (
-            <button style={s.editBtn} onClick={() => setIsEditMode(true)}>{t('edit')}</button>
+            <button style={s.editIconBtn} onClick={() => setIsEditMode(true)} title={t('edit')} aria-label={t('edit')}>
+              ✏
+            </button>
           )}
           {!isNewPoint && isEditMode && currentPoint && (
             <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); setCameFromEditMode(false); }}>↩</button>
           )}
-          {/* Right arrow */}
+          {/* Right arrow — same size/style as left, no extra offset */}
           {!isNewPoint && setPoints.length > 0 && (
             <button
               style={{ ...s.setNavArrow, opacity: (setPointIdx < 0 || setPointIdx >= setPoints.length - 1) ? 0.4 : 1 }}
@@ -774,7 +783,33 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {/* ── Rod Reading + Benchmark card ── */}
         <div style={s.card}>
 
-          {/* Section header row */}
+          {/* ── READ-ONLY rod display (existing saved point, not editing) ── */}
+          {!isEditMode && !isNewPoint ? (
+            <>
+              <div style={s.secRow}>
+                <span style={s.secLbl}>{t('rodReading')}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {fifDisplay ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 2px' }}>
+                    <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{t('feetInchesBtn')}</span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRI, letterSpacing: '-0.5px' }}>{fifDisplay}</span>
+                  </div>
+                ) : null}
+                {engDisplay ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 2px' }}>
+                    <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{t('engineeringFtBtn')}</span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: BLUE, letterSpacing: '-0.5px' }}>{engDisplay}</span>
+                  </div>
+                ) : null}
+                {!fifDisplay && !engDisplay && (
+                  <span style={{ fontSize: 14, color: TEXT_DIS, fontStyle: 'italic', padding: '4px 2px' }}>—</span>
+                )}
+              </div>
+            </>
+          ) : (
+          <>
+          {/* Section header row — edit mode */}
           <div style={s.secRow}>
             <span style={s.secLbl}>{t('rodReading')}</span>
             <InfoTip text={t('rodInfoTip')} />
@@ -929,6 +964,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
             </div>
           )}
+          </>
+          )} {/* end read-only / edit-mode ternary */}
         </div>
 
         {/* ── Set Assignment ── */}
@@ -1201,7 +1238,7 @@ const s: Record<string, React.CSSProperties> = {
   // flexShrink:1 + ellipsis lets it shrink gracefully on cramped rows.
   viewSetDropBtn:{ flexShrink: 1, minWidth: 90, maxWidth: 170, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 5, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: BLUE, cursor: 'pointer', whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' as const },
   // Back To Main Page: maxWidth 100 forces the label to wrap onto exactly 2 lines.
-  backToMainBtn: { flexShrink: 1, minWidth: 80, maxWidth: 100, backgroundColor: NAVY, border: 'none', borderRadius: 5, padding: '4px 6px', fontSize: 10, fontWeight: 700, color: '#fff', cursor: 'pointer', lineHeight: 1.35, textAlign: 'center' as const },
+  backToMainBtn: { flexShrink: 0, backgroundColor: NAVY, border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' as const },
   setPointRow:   { display: 'flex', alignItems: 'center', padding: '7px 10px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}` },
   navArrow: {
     width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE,
@@ -1219,6 +1256,7 @@ const s: Record<string, React.CSSProperties> = {
   newBtn:       { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 },
   newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
   editBtn:      { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer', flexShrink: 0 },
+  editIconBtn:  { width: 30, height: 30, borderRadius: 6, backgroundColor: BLUE, border: `1px solid ${BLUE_ACC}`, fontSize: 16, cursor: 'pointer', color: '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
   undoBtn:      { width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, cursor: 'pointer', color: TEXT_SEC, flexShrink: 0 },
   dotsBtn:      { width: 30, height: 30, borderRadius: '50%', backgroundColor: NAVY, border: 'none', fontSize: 18, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, letterSpacing: '-1px', padding: 0 },
 
@@ -1271,6 +1309,6 @@ const s: Record<string, React.CSSProperties> = {
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
   saveBtn:    { height: 40, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
-  compareBtn: { height: 36, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
-  slopeBtn:   { height: 36, flex: 1, minWidth: 120, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  compareBtn: { height: 44, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  slopeBtn:   { height: 44, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };
