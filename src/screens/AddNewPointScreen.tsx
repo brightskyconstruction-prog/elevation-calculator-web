@@ -321,6 +321,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [setWarning,        setSetWarning]        = useState(false);
   const [newSetElevWarn,    setNewSetElevWarn]    = useState(false);
   const [rodReadingWarn,    setRodReadingWarn]    = useState(false);
+  const [dupNameWarn,       setDupNameWarn]       = useState<string | null>(null);
   const [showSetPanel,   setShowSetPanel]   = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const viewSetBtnRef = useRef<HTMLButtonElement>(null);
@@ -441,7 +442,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
+    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupNameWarn(null); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -530,12 +531,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodReadingWarn(false);
   };
 
+  // ── Shared duplicate-name checker (used in handleSave + QuickEditModal.validate) ──
+  const checkDupName = (name: string, setId: string, selfId?: string): string | null => {
+    const norm = name.trim().toLowerCase();
+    if (!norm) return null;
+    const conflict = points.find(p =>
+      p.setId === setId &&
+      p.id !== selfId &&
+      (p.pointName ?? '').trim().toLowerCase() === norm
+    );
+    if (!conflict) return null;
+    return `Point name already exists in this set. "${name.trim()}" is already assigned to ${conflict.label}. Please choose a different name.`;
+  };
+
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     const eng = parseFloat(engFtStr);
     if (isNaN(eng) || eng <= 0) { alert(t('rodReadingAlert')); return; }
     if (!assignedSet) { setSetWarning(true); return; }
     setSetWarning(false);
+    // Duplicate point-name check
+    const nameErr = checkDupName(pointName, assignedSet, currentPoint?.id);
+    if (nameErr) { setDupNameWarn(nameErr); return; }
+    setDupNameWarn(null);
     // Flush pending new set to storage before persisting the point
     if (pendingNewSet && assignedSet === pendingNewSet.id) {
       addSet(projectId, pendingNewSet);
@@ -878,6 +896,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   } else {
                     if (!hasRodReading) { setRodReadingWarn(true); return; }
                     setRodReadingWarn(false);
+                    setDupNameWarn(null);
                     setPendingNewSet(null);
                     setAssignedSet(lastUsedSet.id);
                     setSetAssignMethod('existing');
@@ -923,6 +942,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 } else {
                   if (!hasRodReading) { setRodReadingWarn(true); return; }
                   setRodReadingWarn(false);
+                  setDupNameWarn(null);
                   setNewSetElevWarn(false);
                   setShowCreate(true);
                 }
@@ -952,6 +972,17 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             {setWarning && <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>}
           </div>
         </div>
+
+        {/* ── Duplicate name error (shown when Save is blocked by name conflict) ── */}
+        {dupNameWarn && (
+          <div style={{
+            fontSize: 13, color: '#DC2626', lineHeight: 1.45,
+            padding: '10px 14px', backgroundColor: '#FEF2F2',
+            border: '1px solid #FCA5A5', borderRadius: 8,
+          }}>
+            ⚠ {dupNameWarn}
+          </div>
+        )}
 
         {/* ── Save / Update / Post-save actions ── */}
         {(isNewPoint || isEditMode) ? (
@@ -1066,19 +1097,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
           </button>
         ) : undefined}
-        validate={(name) => {
-          if (!name || !assignedSet) return null;
-          const norm = name.toLowerCase();
-          const conflict = points.find(p =>
-            p.setId === assignedSet &&
-            p.id !== currentPoint?.id &&
-            (p.pointName ?? '').trim().toLowerCase() === norm
-          );
-          if (!conflict) return null;
-          return `Point name already exists in this set. "${name}" is already assigned to ${conflict.label}. Please choose a different name.`;
-        }}
+        validate={(name) => assignedSet ? checkDupName(name, assignedSet, currentPoint?.id) : null}
         onSave={v => {
           setPointName(v);
+          setDupNameWarn(null);
           if (currentPoint) updatePoint(projectId, currentPoint.id, { pointName: v || undefined });
         }}
       />
