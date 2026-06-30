@@ -285,6 +285,13 @@ const en = {
   compareThisReading:  'Compare This Reading',
   findSlope:           'Find Slope',
 
+  // ── Duplicate point name dialog ─────────────────────────────────────
+  dupNameTitle:        'Duplicate Point Name',
+  dupNameBody1:        'Point name already exists in this set.',
+  dupNameAssigned:     (name: string, label: string) => `"${name}" is already assigned to ${label}.`,
+  dupNameBody2:        'Please choose a different point name before saving.',
+  okBtn:               'OK',
+
   // ── Slope tab ──────────────────────────────────────────────────────
   slopeTabFind:        'Find Slope',
   slopeTabProfile:     'History',
@@ -630,6 +637,13 @@ const es: typeof en = {
   assignToSetBtn:      (name: string) => `Asignar a ${name}`,
   compareThisReading:  'Comparar Esta Lectura',
   findSlope:           'Calcular Pendiente',
+
+  // ── Duplicate point name dialog ─────────────────────────────────────
+  dupNameTitle:        'Nombre de Punto Duplicado',
+  dupNameBody1:        'El nombre del punto ya existe en este conjunto.',
+  dupNameAssigned:     (name: string, label: string) => `"${name}" ya está asignado a ${label}.`,
+  dupNameBody2:        'Por favor elige un nombre diferente antes de guardar.',
+  okBtn:               'OK',
 
   // ── Slope tab ──────────────────────────────────────────────────────
   slopeTabFind:        'Calcular Pendiente',

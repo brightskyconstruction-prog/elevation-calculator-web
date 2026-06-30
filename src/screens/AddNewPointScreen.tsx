@@ -241,6 +241,59 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave, head
   );
 }
 
+// ─── Duplicate point name alert dialog ───────────────────────────────────────
+interface DupNameModalProps {
+  conflict: { name: string; label: string } | null;
+  onClose: () => void;
+}
+function DupNameModal({ conflict, onClose }: DupNameModalProps) {
+  const { t } = useLang();
+  if (!conflict) return null;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 300,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '0 24px',
+    }}>
+      <div style={{
+        backgroundColor: CARD, borderRadius: 18,
+        padding: '28px 22px 22px',
+        maxWidth: 400, width: '100%',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.32)',
+        display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        {/* Warning icon + title */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingBottom: 4 }}>
+          <span style={{ fontSize: 34, lineHeight: 1 }}>⚠️</span>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: TEXT_PRI, textAlign: 'center' }}>
+            {t('dupNameTitle')}
+          </h3>
+        </div>
+        {/* Body lines */}
+        <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.6 }}>
+          {t('dupNameBody1')}
+        </p>
+        <p style={{ margin: 0, fontSize: 14, color: TEXT_PRI, textAlign: 'center', fontWeight: 700, lineHeight: 1.6 }}>
+          {t('dupNameAssigned')(conflict.name, conflict.label)}
+        </p>
+        <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.6, paddingBottom: 4 }}>
+          {t('dupNameBody2')}
+        </p>
+        {/* OK button */}
+        <button
+          style={{
+            height: 46, width: '100%', backgroundColor: BLUE,
+            border: 'none', borderRadius: 10,
+            color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+          }}
+          onClick={onClose}
+        >{t('okBtn')}</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Info tooltip ─────────────────────────────────────────────────────────────
 function InfoTip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -321,7 +374,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [setWarning,        setSetWarning]        = useState(false);
   const [newSetElevWarn,    setNewSetElevWarn]    = useState(false);
   const [rodReadingWarn,    setRodReadingWarn]    = useState(false);
-  const [dupNameWarn,       setDupNameWarn]       = useState<string | null>(null);
+  const [dupConflict,       setDupConflict]       = useState<{ name: string; label: string } | null>(null);
   const [showSetPanel,   setShowSetPanel]   = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const viewSetBtnRef = useRef<HTMLButtonElement>(null);
@@ -442,7 +495,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupNameWarn(null); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
+    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupConflict(null); setShowSetPanel(false); setDropdownRect(null); setSetAssignMethod(null); setPendingNewSet(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -531,15 +584,21 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodReadingWarn(false);
   };
 
-  // ── Shared duplicate-name checker (used in handleSave + QuickEditModal.validate) ──
-  const checkDupName = (name: string, setId: string, selfId?: string): string | null => {
+  // ── Duplicate-name helpers ─────────────────────────────────────────────────
+  // findDupConflict: returns the conflicting point, or null if name is unique.
+  const findDupConflict = (name: string, setId: string, selfId?: string) => {
     const norm = name.trim().toLowerCase();
     if (!norm) return null;
-    const conflict = points.find(p =>
+    return points.find(p =>
       p.setId === setId &&
       p.id !== selfId &&
       (p.pointName ?? '').trim().toLowerCase() === norm
-    );
+    ) ?? null;
+  };
+
+  // checkDupName: string-form validator used by QuickEditModal.validate prop.
+  const checkDupName = (name: string, setId: string, selfId?: string): string | null => {
+    const conflict = findDupConflict(name, setId, selfId);
     if (!conflict) return null;
     return `Point name already exists in this set. "${name.trim()}" is already assigned to ${conflict.label}. Please choose a different name.`;
   };
@@ -550,10 +609,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     if (isNaN(eng) || eng <= 0) { alert(t('rodReadingAlert')); return; }
     if (!assignedSet) { setSetWarning(true); return; }
     setSetWarning(false);
-    // Duplicate point-name check
-    const nameErr = checkDupName(pointName, assignedSet, currentPoint?.id);
-    if (nameErr) { setDupNameWarn(nameErr); return; }
-    setDupNameWarn(null);
+    // Duplicate point-name check — opens modal dialog on conflict
+    const conflictPt = findDupConflict(pointName, assignedSet, currentPoint?.id);
+    if (conflictPt) { setDupConflict({ name: pointName.trim(), label: conflictPt.label }); return; }
+    setDupConflict(null);
     // Flush pending new set to storage before persisting the point
     if (pendingNewSet && assignedSet === pendingNewSet.id) {
       addSet(projectId, pendingNewSet);
@@ -896,7 +955,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   } else {
                     if (!hasRodReading) { setRodReadingWarn(true); return; }
                     setRodReadingWarn(false);
-                    setDupNameWarn(null);
+                    setDupConflict(null);
                     setPendingNewSet(null);
                     setAssignedSet(lastUsedSet.id);
                     setSetAssignMethod('existing');
@@ -942,7 +1001,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 } else {
                   if (!hasRodReading) { setRodReadingWarn(true); return; }
                   setRodReadingWarn(false);
-                  setDupNameWarn(null);
+                  setDupConflict(null);
                   setNewSetElevWarn(false);
                   setShowCreate(true);
                 }
@@ -972,17 +1031,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             {setWarning && <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>}
           </div>
         </div>
-
-        {/* ── Duplicate name error (shown when Save is blocked by name conflict) ── */}
-        {dupNameWarn && (
-          <div style={{
-            fontSize: 13, color: '#DC2626', lineHeight: 1.45,
-            padding: '10px 14px', backgroundColor: '#FEF2F2',
-            border: '1px solid #FCA5A5', borderRadius: 8,
-          }}>
-            ⚠ {dupNameWarn}
-          </div>
-        )}
 
         {/* ── Save / Update / Post-save actions ── */}
         {(isNewPoint || isEditMode) ? (
@@ -1100,10 +1148,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         validate={(name) => assignedSet ? checkDupName(name, assignedSet, currentPoint?.id) : null}
         onSave={v => {
           setPointName(v);
-          setDupNameWarn(null);
+          setDupConflict(null);
           if (currentPoint) updatePoint(projectId, currentPoint.id, { pointName: v || undefined });
         }}
       />
+      {/* ── Duplicate point name alert dialog ── */}
+      <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
     </div>
   );
 }
