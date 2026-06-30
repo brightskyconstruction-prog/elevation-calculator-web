@@ -179,34 +179,63 @@ interface QuickEditProps {
   onSave: (val: string) => void;
   /** Optional element rendered to the right of the title (e.g. View All Set Points) */
   headerAction?: React.ReactNode;
+  /** Optional validation: return an error string to block save, or null to allow */
+  validate?: (val: string) => string | null;
 }
-function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction }: QuickEditProps) {
-  const [tmp, setTmp] = useState(value);
+function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction, validate }: QuickEditProps) {
+  const [tmp, setTmp]         = useState(value);
+  const [validErr, setValidErr] = useState<string | null>(null);
   const { t } = useLang();
-  useEffect(() => { if (open) setTmp(value); }, [open, value]);
+  useEffect(() => { if (open) { setTmp(value); setValidErr(null); } }, [open, value]);
+
+  const handleSave = () => {
+    const trimmed = tmp.trim();
+    if (validate) {
+      const err = validate(trimmed);
+      if (err) { setValidErr(err); return; }
+    }
+    setValidErr(null);
+    onSave(trimmed);
+    onClose();
+  };
+
   return (
     <ModalOverlay open={open} onClose={onClose}>
-      {/* Header: title + optional action + ✕ close */}
+      {/* ✕ close — top-right corner, above the title row */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2, marginTop: -4 }}>
+        <button
+          style={{
+            background: 'none', border: 'none', color: TEXT_PRI,
+            fontSize: 22, fontWeight: 900, lineHeight: 1,
+            cursor: 'pointer', padding: '2px 4px', flexShrink: 0,
+          }}
+          onClick={onClose}
+          aria-label="Close"
+        >✕</button>
+      </div>
+      {/* Title row + optional action (e.g. View All Set Points) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 2 }}>
         <h3 style={{ ...c.modalTitle, flex: 1, textAlign: 'left', fontSize: 19, margin: 0 }}>
           {title}
         </h3>
         {headerAction}
-        <button
-          style={{ background: 'none', border: 'none', color: TEXT_SEC, fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '0 2px', flexShrink: 0 }}
-          onClick={onClose}
-          aria-label="Close"
-        >✕</button>
       </div>
       <input
         style={{ ...c.input, borderColor: BLUE, fontSize: 16, height: 46 }}
-        value={tmp} onChange={e => setTmp(e.target.value)}
+        value={tmp}
+        onChange={e => { setTmp(e.target.value); setValidErr(null); }}
         placeholder={placeholder} autoFocus
-        onKeyDown={e => { if (e.key === 'Enter') { onSave(tmp.trim()); onClose(); } }}
+        onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
       />
+      {/* Duplicate / validation error */}
+      {validErr && (
+        <div style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.4, padding: '2px 0' }}>
+          ⚠ {validErr}
+        </div>
+      )}
       <button
         style={{ ...c.saveBtn, fontSize: 16, padding: '13px 0', height: 'auto' }}
-        onClick={() => { onSave(tmp.trim()); onClose(); }}
+        onClick={handleSave}
       >{t('save')}</button>
     </ModalOverlay>
   );
@@ -1031,12 +1060,23 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
           <button
             ref={viewSetBtnRef}
-            style={{ ...s.viewSetDropBtn, fontSize: 12, maxWidth: 140 }}
+            style={{ ...s.viewSetDropBtn, fontSize: 14, maxWidth: 220 }}
             onClick={toggleSetDropdown}
           >
             {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
           </button>
         ) : undefined}
+        validate={(name) => {
+          if (!name || !assignedSet) return null;
+          const norm = name.toLowerCase();
+          const conflict = points.find(p =>
+            p.setId === assignedSet &&
+            p.id !== currentPoint?.id &&
+            (p.pointName ?? '').trim().toLowerCase() === norm
+          );
+          if (!conflict) return null;
+          return `Point name already exists in this set. "${name}" is already assigned to ${conflict.label}. Please choose a different name.`;
+        }}
         onSave={v => {
           setPointName(v);
           if (currentPoint) updatePoint(projectId, currentPoint.id, { pointName: v || undefined });
