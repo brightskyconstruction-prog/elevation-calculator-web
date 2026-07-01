@@ -27,8 +27,8 @@ const TEXT_DIS  = '#9CA3AF';
 export interface AddNewPointScreenAPI {
   /** Current manage-overlay state */
   getManageState: () => { showManagePoint: boolean; editingFromManage: boolean };
-  /** Go back from edit form to manage overlay (Back button equivalent) */
-  goBackFromEdit:  () => void;
+  /** True when an existing point is loaded (edit OR read-only); false on blank new-point form */
+  isPointLoaded:  () => boolean;
   /** Close the manage overlay and reset form to blank new-point state */
   closeManage:     () => void;
   /** Reset form to blank new-point state (without touching manage overlay) */
@@ -409,13 +409,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     assignedSet: string | null;
   } | null>(null);
 
-  const lockRef = useRef(false);
+  const lockRef        = useRef(false);
+  const isNewPointRef  = useRef(true);  // mirror of isNewPoint for imperative API
 
   // ── Derived values ────────────────────────────────────────────────────────
   const currentPoint  = currentIdx >= 0 && currentIdx < points.length ? points[currentIdx] : null;
   const currentLabel  = currentPoint?.label ?? nextLabel(projectId);
   const engFt         = parseFloat(engFtStr);
   const isNewPoint    = currentIdx < 0 || currentIdx >= points.length;
+  // Keep ref in sync so the imperative API can read this without a stale closure.
+  isNewPointRef.current = isNewPoint;
   // pendingNewSet is staged in memory; fall back to store only for existing sets
   const assignedSetObj = pendingNewSet?.id === assignedSet
     ? pendingNewSet
@@ -538,7 +541,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     if (!imperativeRef) return;
     imperativeRef.current = {
       getManageState: () => ({ showManagePoint, editingFromManage }),
-      goBackFromEdit:  () => setEditingFromManage(false),
+      isPointLoaded:  () => !isNewPointRef.current,
       closeManage:     () => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); },
       reset:           () => openNewPoint(),
     };
@@ -556,34 +559,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const openNewPoint = () => {
     clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif');
     setCameFromNewPoint(false); setCameFromEditMode(false); setEditingFromManage(false); savedNewPointRef.current = null;
-  };
-
-  // ── Back To Main Page: restore the new-point form the user was on before browsing ──
-  const handleBackToMain = () => {
-    setCameFromNewPoint(false);
-    setCurrentIdx(-1);
-    setIsEditMode(true);
-    setRodFormat('fif');
-    setShowSetPanel(false);
-    if (savedNewPointRef.current) {
-      const d = savedNewPointRef.current;
-      lockRef.current = true;
-      setRodFeet(d.rodFeet);
-      setRodInches(d.rodInches);
-      setRodFracDec(d.rodFracDec);
-      setRodFracLbl(d.rodFracLbl);
-      setEngFtStr(d.engFtStr);
-      setBmElevStr(d.bmElevStr);
-      setPointName(d.pointName);
-      setTakenBy(d.takenBy);
-      // Restore set only if it's a real persisted set (discard any stale pending-set id)
-      const restoredSet = d.assignedSet ? sets.find(s => s.id === d.assignedSet) : null;
-      setAssignedSet(restoredSet ? d.assignedSet : null);
-      setSetAssignMethod(restoredSet ? 'existing' : null);
-      setPendingNewSet(null);
-      savedNewPointRef.current = null;
-      setTimeout(() => { lockRef.current = false; }, 50);
-    }
   };
 
   // ── Rod format sync ────────────────────────────────────────────────────────
@@ -789,15 +764,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               {pointName || t('pointName')}
             </button>
           )}
-          {/* Back → only when browsing from new-point flow */}
-          {cameFromNewPoint && (
-            <button style={s.backToMainBtn} onClick={handleBackToMain}>
-              ← {t('back')}
-            </button>
-          )}
-          {/* Back → only when a point was opened via Edit from Manage Point overlay (read-only or edit) */}
-          {editingFromManage && !isNewPoint && (
-            <button style={s.backToMainBtn} onClick={() => setEditingFromManage(false)}>
+          {/* Back → shown when viewing/editing an existing point (either flow).
+               Always navigates to the blank new-point state. */}
+          {(cameFromNewPoint || (editingFromManage && !isNewPoint)) && (
+            <button style={s.backToMainBtn} onClick={openNewPoint}>
               ← {t('back')}
             </button>
           )}

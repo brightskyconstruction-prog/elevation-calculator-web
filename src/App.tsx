@@ -66,7 +66,6 @@ function AppInner() {
 
   const [email,        setEmail]        = useState<string>(() => readEmail() ?? '');
   const [activeTab,    setActiveTab]    = useState<MainTab>('add');
-  const [showExitDialog, setShowExitDialog] = useState(false);
   const addScreenDirty = useRef(false);
 
   // ── Global back-navigation refs ─────────────────────────────────────────────
@@ -166,6 +165,7 @@ function AppInner() {
   // stale-closure issue despite the empty dependency array.
   useEffect(() => {
     window.__elevHandleBack = () => {
+      // 1. Settings panel open → close it.
       if (showSettingsRef.current) {
         setShowSettings(false);
         return;
@@ -174,15 +174,20 @@ function AppInner() {
       const screen = addScreenRef.current;
       const ms = screen?.getManageState() ?? { editingFromManage: false, showManagePoint: false };
 
-      if (ms.editingFromManage) {
-        screen?.goBackFromEdit();
-      } else if (ms.showManagePoint) {
+      if (ms.showManagePoint) {
+        // 2. Manage overlay open → close it and show blank new-point form.
         screen?.closeManage();
       } else if (activeTabRef.current !== 'add') {
+        // 3. On any tab other than Point ⊕ → navigate back to Point ⊕ tab.
         setActiveTab('add');
-      } else {
-        setShowExitDialog(true);
+      } else if (screen?.isPointLoaded()) {
+        // 4. On the Point ⊕ tab but viewing / editing an existing point
+        //    (edit mode OR read-only) → return to blank new-point form.
+        screen?.reset();
       }
+      // 5. On the Point ⊕ tab with a blank new-point form (the home state)
+      //    → do nothing.  The exit dialog has been removed; the Points tab
+      //    is the application home screen.
     };
 
     return () => { window.__elevHandleBack = undefined; };
@@ -469,44 +474,8 @@ function AppInner() {
         />
       )}
 
-      {/* ── Exit confirmation dialog ─────────────────────────────── */}
-      {showExitDialog && (
-        <div style={exitDlg.overlay}>
-          <div style={exitDlg.dialog} role="dialog" aria-modal="true">
-            <h2 style={exitDlg.title}>{t('exitAppTitle')}</h2>
-            <p style={exitDlg.message}>{t('exitAppMessage')}</p>
-            <div style={exitDlg.buttons}>
-              <button
-                style={exitDlg.cancelBtn}
-                onClick={() => setShowExitDialog(false)}
-              >{t('exitAppCancel')}</button>
-              <button
-                style={exitDlg.exitBtn}
-                onClick={() => {
-                  // Permanently disable the back-guard so subsequent history
-                  // traversal doesn't re-trigger the dialog (set BEFORE any
-                  // async navigation so the popstate that history.go fires is
-                  // already suppressed).
-                  window.__elevDead = true;
-
-                  setShowExitDialog(false);
-
-                  // Try to close the window — works for installed PWAs and
-                  // windows opened by script; no-op in regular browser tabs.
-                  window.close();
-
-                  // Navigate back as far as this tab's history allows.
-                  // __elevDead suppresses any popstate events fired during
-                  // traversal, so the browser navigates away without re-showing
-                  // the dialog. On Android this closes the tab/PWA; on desktop
-                  // the user may need one final Back press.
-                  window.history.go(-window.history.length);
-                }}
-              >{t('exitAppConfirm')}</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Exit dialog removed — the Point ⊕ tab is now the home screen.
+           Back from the blank new-point form does nothing. */}
     </div>
   );
 }
@@ -935,68 +904,3 @@ const spS: Record<string, React.CSSProperties> = {
   },
 };
 
-// ─── Exit dialog styles ───────────────────────────────────────────────────────
-const exitDlg: Record<string, React.CSSProperties> = {
-  overlay: {
-    position:        'fixed',
-    inset:           0,
-    backgroundColor: 'rgba(0,0,0,0.60)',
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
-    zIndex:          9999,
-    padding:         '0 24px',
-  },
-  dialog: {
-    width:           '100%',
-    maxWidth:        340,
-    backgroundColor: '#FFFFFF',
-    borderRadius:    16,
-    padding:         '24px 20px 20px',
-    display:         'flex',
-    flexDirection:   'column',
-    gap:             12,
-    boxShadow:       '0 8px 32px rgba(0,0,0,0.25)',
-  },
-  title: {
-    margin:      0,
-    fontSize:    18,
-    fontWeight:  800,
-    color:       '#111827',
-    textAlign:   'center' as const,
-  },
-  message: {
-    margin:      0,
-    fontSize:    14,
-    color:       '#374151',
-    textAlign:   'center' as const,
-    lineHeight:  1.5,
-  },
-  buttons: {
-    display:    'flex',
-    gap:        10,
-    marginTop:  4,
-  },
-  cancelBtn: {
-    flex:            1,
-    height:          46,
-    borderRadius:    10,
-    backgroundColor: '#F0EEE8',
-    border:          '1.5px solid #E5E7EB',
-    color:           '#374151',
-    fontSize:        15,
-    fontWeight:      700,
-    cursor:          'pointer',
-  },
-  exitBtn: {
-    flex:            1,
-    height:          46,
-    borderRadius:    10,
-    backgroundColor: 'rgba(192,57,43,0.10)',
-    border:          '1.5px solid rgba(192,57,43,0.35)',
-    color:           '#C0392B',
-    fontSize:        15,
-    fontWeight:      800,
-    cursor:          'pointer',
-  },
-};
