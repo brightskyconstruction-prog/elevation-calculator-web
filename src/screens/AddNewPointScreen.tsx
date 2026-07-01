@@ -395,6 +395,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   } | null>(null);
 
   const lockRef = useRef(false);
+  // Tracks whether we pushed browser-history entries for the Manage Point flow,
+  // so popstate can distinguish our entries from unrelated back-navigation.
+  const manageFlowRef = useRef(false);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const currentPoint  = currentIdx >= 0 && currentIdx < points.length ? points[currentIdx] : null;
@@ -517,6 +520,38 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEditingFromManage(false);
     savedNewPointRef.current = null;
   }, [isVisible]);
+
+  // ── Browser/device Back button: restore correct state for Manage Point flow ──
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const ns = (e.state as { ns?: string } | null)?.ns;
+      if (ns === 'manage') {
+        // Came back (or forward) to the Manage overlay state — show the overlay
+        manageFlowRef.current = true;
+        setEditingFromManage(false);
+        setShowManagePoint(true);
+      } else if (ns === 'edit-manage') {
+        // Came forward to the edit-from-manage state (e.g. browser Forward button)
+        setEditingFromManage(true);
+      } else if (manageFlowRef.current) {
+        // Popped past the 'manage' entry entirely — close overlay and reset to new point
+        manageFlowRef.current = false;
+        setShowManagePoint(false);
+        setEditingFromManage(false);
+        setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif');
+        setCameFromNewPoint(false); setCameFromEditMode(false);
+        setRodFeet(''); setRodInches(0); setRodFracDec(0); setRodFracLbl('0/0');
+        setEngFtStr(''); setBmElevStr(''); setPointName(''); setTakenBy(''); setSavedAt(null);
+        setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
+        setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false);
+        setDupConflict(null); setShowSetPanel(false); setSetAssignMethod(null); setPendingNewSet(null);
+        savedNewPointRef.current = null;
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const goTo = (idx: number) => {
     if (idx < 0 || idx >= points.length) return;
@@ -770,7 +805,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           )}
           {/* Back → only when a point was opened via Edit from Manage Point overlay (read-only or edit) */}
           {editingFromManage && !isNewPoint && (
-            <button style={s.backToMainBtn} onClick={() => setEditingFromManage(false)}>
+            <button style={s.backToMainBtn} onClick={() => history.back()}>
               ← {t('back')}
             </button>
           )}
@@ -795,7 +830,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {isNewPoint && (
             <button
               style={s.dotsBtn}
-              onClick={() => setShowManagePoint(true)}
+              onClick={() => {
+                history.pushState({ ns: 'manage' }, '');
+                manageFlowRef.current = true;
+                setShowManagePoint(true);
+              }}
               title="Manage Point"
               aria-label="Manage Point"
             >⋮</button>
@@ -1258,7 +1297,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
             <button
               style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '2px 6px 2px 0', flexShrink: 0 }}
-              onClick={() => { setShowManagePoint(false); setEditingFromManage(false); }}
+              onClick={() => history.back()}
               aria-label="Close"
             >←</button>
             <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', flex: 1 }}>Manage Point</span>
@@ -1271,6 +1310,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               projectId={projectId}
               onEditPoint={(pt) => {
                 // Load point directly into the form without routing through App,
+                // push a history entry so browser Back returns to this overlay,
                 // then hide the overlay (keeping it mounted to preserve state)
                 const gi = points.findIndex(p => p.id === pt.id);
                 if (gi >= 0) {
@@ -1279,6 +1319,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   setIsEditMode(true);
                   setCameFromEditMode(true);
                 }
+                history.pushState({ ns: 'edit-manage' }, '');
                 setEditingFromManage(true);
               }}
             />
