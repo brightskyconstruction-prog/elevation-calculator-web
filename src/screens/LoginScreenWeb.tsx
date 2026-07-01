@@ -56,22 +56,38 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
   // ── Keyboard-aware layout via visualViewport API ──────────────────────────
   // When the soft keyboard opens, the visual viewport shrinks. We update the
   // container's height and vertical offset to always match the visible area.
-  // This keeps both buttons in view without the user needing to scroll.
+  // Because the root uses flex-start + card margins for centering, all overflow
+  // goes to the bottom — scrollTop = scrollHeight always reveals both buttons.
   useEffect(() => {
     const vvp = window.visualViewport;
     if (!vvp) return;
 
     let raf = 0;
+    let prevHeight = vvp.height;
+
     const sync = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const el = rootRef.current;
         if (!el) return;
+
+        const newHeight = vvp.height;
+        const keyboardOpened = newHeight < prevHeight - 100;
+
         // offsetTop: visual viewport's position relative to the layout viewport.
-        // For position:fixed elements this is what shifts "top" when browser
-        // chrome (URL bar) slides in/out or the keyboard pushes the viewport up.
-        el.style.height = `${vvp.height}px`;
+        // For position:fixed elements this shifts "top" when the keyboard opens
+        // or the browser chrome (URL bar) slides in/out.
+        el.style.height = `${newHeight}px`;
         el.style.top    = `${vvp.offsetTop}px`;
+        prevHeight = newHeight;
+
+        // Auto-scroll to bottom when keyboard opens so both buttons are visible.
+        // A second rAF lets the height update paint first.
+        if (keyboardOpened) {
+          requestAnimationFrame(() => {
+            if (rootRef.current) rootRef.current.scrollTop = rootRef.current.scrollHeight;
+          });
+        }
       });
     };
 
@@ -86,12 +102,13 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
     };
   }, []);
 
-  // When keyboard opens, scroll container bottom so the guest button stays visible
+  // Fallback scroll on focus (covers edge cases where visualViewport fires
+  // before the keyboard has fully appeared and height hasn't changed yet).
   const handleInputFocus = useCallback(() => {
     setTimeout(() => {
       const el = rootRef.current;
       if (el) el.scrollTop = el.scrollHeight;
-    }, 320); // allow keyboard animation to settle
+    }, 350);
   }, []);
 
   const handleInputBlur = useCallback(() => {
@@ -235,7 +252,7 @@ const styles: Record<string, React.CSSProperties> = {
     display:       'flex',
     flexDirection: 'column',
     alignItems:    'center',
-    justifyContent:'center',
+    justifyContent:'flex-start',
     padding:       '12px 16px',
     overflowY:     'auto',
     boxSizing:     'border-box',
@@ -263,6 +280,11 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex:          1,
     overflow:        'hidden',
     paddingBottom:   20,
+    // Centers the card within the flex-start root. When the keyboard opens
+    // and the container shrinks, marginTop compresses first — all overflow
+    // goes to the bottom, which is fully scrollable.
+    marginTop:       'auto',
+    marginBottom:    'auto',
   },
   topAccent: {
     height:     5,

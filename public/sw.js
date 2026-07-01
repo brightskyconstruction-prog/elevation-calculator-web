@@ -11,9 +11,7 @@ const CACHE_NAME = 'elev-calc-v1';
 const PRECACHE = [
   '/',
   '/index.html',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png',
+  '/rod.png',
 ];
 
 // ── Install: pre-cache the app shell ─────────────────────────────────────────
