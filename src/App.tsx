@@ -284,8 +284,11 @@ function AppInner() {
 
   const handleLogin = useCallback(async (e: string) => {
     setEmail(e);
-    setAppState('app');
+    // Load cloud data BEFORE transitioning to the app so the UI never
+    // renders with an empty store. loginUser catches all errors internally
+    // and always resolves, so setAppState('app') is always reached.
     await loginUser(e);
+    setAppState('app');
   }, [loginUser]);
 
   const handleGuestLogin = useCallback(() => {
