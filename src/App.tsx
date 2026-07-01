@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSurveyStore } from './stores/surveyStore';
 import { LangProvider, useLang } from './LangContext';
 import { MainTab, SurveyPoint } from './types';
-import AddNewPointScreen  from './screens/AddNewPointScreen';
+import AddNewPointScreen, { type AddNewPointScreenAPI } from './screens/AddNewPointScreen';
 import ViewPointsScreen   from './screens/ViewPointsScreen';
 import ViewSetsScreen     from './screens/ViewSetsScreen';
 import CalculatorScreen   from './screens/CalculatorScreen';
@@ -53,7 +53,22 @@ function AppInner() {
 
   const [email,        setEmail]        = useState<string>(() => readEmail() ?? '');
   const [activeTab,    setActiveTab]    = useState<MainTab>('add');
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const addScreenDirty = useRef(false);
+
+  // ── Global back-navigation refs ─────────────────────────────────────────────
+  // Imperative handle into AddNewPointScreen so the global handler can close
+  // the Manage Point overlay or reset the form without lifting those states.
+  const addScreenRef   = useRef<AddNewPointScreenAPI | null>(null);
+  // Always-current copy of activeTab for use inside the mount-time popstate handler.
+  const activeTabRef   = useRef<MainTab>('add');
+  // Tracks whether the Settings panel is open.
+  const showSettingsRef = useRef(false);
+  // When true, the next popstate is the user confirming exit — don't re-push.
+  const exitingRef     = useRef(false);
+
+  // Keep refs in sync with state
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
   const handleDirtyChange = useCallback((dirty: boolean) => {
     addScreenDirty.current = dirty;
@@ -68,6 +83,7 @@ function AppInner() {
   }, [activeTab, t]);
   const [editPoint,     setEditPoint]     = useState<SurveyPoint | undefined>(undefined);
   const [showSettings,  setShowSettings]  = useState(false);
+  useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
   const [slopeFromId,   setSlopeFromId]   = useState<string | null>(null);
@@ -126,6 +142,52 @@ function AppInner() {
     return useSurveyStore.subscribe(() => {
       scheduleSyncFnRef.current();
     });
+  }, []);
+
+  // ── Global back-navigation: intercept every device/browser Back press ────────
+  useEffect(() => {
+    // Push a one-time blocker so the first Back press fires popstate instead of
+    // immediately navigating away from the app.
+    history.pushState(null, '');
+
+    const handlePopState = () => {
+      // If the user confirmed "Exit", let the browser navigate back naturally.
+      if (exitingRef.current) {
+        exitingRef.current = false;
+        return;
+      }
+
+      // Re-push the blocker so subsequent Back presses keep firing popstate.
+      history.pushState(null, '');
+
+      // Dismiss the Settings panel first if it's open.
+      if (showSettingsRef.current) {
+        setShowSettings(false);
+        return;
+      }
+
+      const screen = addScreenRef.current;
+      const ms = screen?.getManageState() ?? { editingFromManage: false, showManagePoint: false };
+
+      if (ms.editingFromManage) {
+        // Inside the "edit from Manage Point" form → go back to Manage overlay
+        screen?.goBackFromEdit();
+      } else if (ms.showManagePoint) {
+        // Manage Point overlay open → close it, reset form to blank new-point
+        screen?.closeManage();
+      } else if (activeTabRef.current !== 'add') {
+        // On any non-home tab → switch to Point ⊕ (home)
+        // isVisible effect in AddNewPointScreen will blank the form automatically
+        setActiveTab('add');
+      } else {
+        // Already on the blank New Point screen → offer to exit
+        setShowExitDialog(true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -362,6 +424,7 @@ function AppInner() {
             onDirtyChange={handleDirtyChange}
             onEditPoint={handleEditPoint}
             onFindSlope={handleFindSlope}
+            imperativeRef={addScreenRef}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
@@ -402,6 +465,30 @@ function AppInner() {
           onClose={() => setShowSettings(false)}
           t={t}
         />
+      )}
+
+      {/* ── Exit confirmation dialog ─────────────────────────────── */}
+      {showExitDialog && (
+        <div style={exitDlg.overlay}>
+          <div style={exitDlg.dialog} role="dialog" aria-modal="true">
+            <h2 style={exitDlg.title}>{t('exitAppTitle')}</h2>
+            <p style={exitDlg.message}>{t('exitAppMessage')}</p>
+            <div style={exitDlg.buttons}>
+              <button
+                style={exitDlg.cancelBtn}
+                onClick={() => setShowExitDialog(false)}
+              >{t('exitAppCancel')}</button>
+              <button
+                style={exitDlg.exitBtn}
+                onClick={() => {
+                  setShowExitDialog(false);
+                  exitingRef.current = true;
+                  history.go(-1); // pop the blocker → browser exits the PWA/tab
+                }}
+              >{t('exitAppConfirm')}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -828,5 +915,71 @@ const spS: Record<string, React.CSSProperties> = {
     backgroundColor: NAVY2,
     color:           '#FFFFFF',
     fontWeight:      800,
+  },
+};
+
+// ─── Exit dialog styles ───────────────────────────────────────────────────────
+const exitDlg: Record<string, React.CSSProperties> = {
+  overlay: {
+    position:        'fixed',
+    inset:           0,
+    backgroundColor: 'rgba(0,0,0,0.60)',
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'center',
+    zIndex:          9999,
+    padding:         '0 24px',
+  },
+  dialog: {
+    width:           '100%',
+    maxWidth:        340,
+    backgroundColor: '#FFFFFF',
+    borderRadius:    16,
+    padding:         '24px 20px 20px',
+    display:         'flex',
+    flexDirection:   'column',
+    gap:             12,
+    boxShadow:       '0 8px 32px rgba(0,0,0,0.25)',
+  },
+  title: {
+    margin:      0,
+    fontSize:    18,
+    fontWeight:  800,
+    color:       '#111827',
+    textAlign:   'center' as const,
+  },
+  message: {
+    margin:      0,
+    fontSize:    14,
+    color:       '#374151',
+    textAlign:   'center' as const,
+    lineHeight:  1.5,
+  },
+  buttons: {
+    display:    'flex',
+    gap:        10,
+    marginTop:  4,
+  },
+  cancelBtn: {
+    flex:            1,
+    height:          46,
+    borderRadius:    10,
+    backgroundColor: '#F0EEE8',
+    border:          '1.5px solid #E5E7EB',
+    color:           '#374151',
+    fontSize:        15,
+    fontWeight:      700,
+    cursor:          'pointer',
+  },
+  exitBtn: {
+    flex:            1,
+    height:          46,
+    borderRadius:    10,
+    backgroundColor: 'rgba(192,57,43,0.10)',
+    border:          '1.5px solid rgba(192,57,43,0.35)',
+    color:           '#C0392B',
+    fontSize:        15,
+    fontWeight:      800,
+    cursor:          'pointer',
   },
 };
