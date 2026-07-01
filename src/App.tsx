@@ -64,8 +64,9 @@ function AppInner() {
   const activeTabRef   = useRef<MainTab>('add');
   // Tracks whether the Settings panel is open.
   const showSettingsRef = useRef(false);
-  // When true, the next popstate is the user confirming exit — don't re-push.
-  const exitingRef     = useRef(false);
+  // Holds a function that removes the popstate listener; called on Exit so
+  // subsequent history traversal doesn't re-trigger our handler.
+  const removeBackListenerRef = useRef<(() => void) | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
@@ -146,27 +147,25 @@ function AppInner() {
 
   // ── Global back-navigation: intercept every device/browser Back press ────────
   useEffect(() => {
-    // Push a blocker with an explicit state object and full URL.
-    // Using null state or an empty URL string is silently ignored on some
-    // Android Chrome versions, causing the first Back press to exit the app
-    // without firing popstate at all.
     const pushBlocker = () =>
       window.history.pushState(
-        { _eac: 1 },          // non-null state — required by some mobile browsers
-        document.title,        // title (ignored by browsers but required parameter)
-        window.location.href,  // explicit URL (same page, no navigation)
+        { _eac: 1 },           // non-null state object — required by some Android Chrome builds
+        document.title,         // title parameter (ignored by browsers but must be a string)
+        window.location.href,   // explicit current URL (no navigation, just a new history entry)
       );
 
-    pushBlocker(); // Initial entry so the very first Back fires popstate
+    // Push TWO blockers on mount.
+    //
+    // Why two? A single blocker is vulnerable to rapid double-tap of the Back
+    // button: the first tap consumes the blocker while the second tap hits
+    // [initial] directly and closes the tab before our popstate handler ever runs.
+    // With two blockers, both taps pop app-owned entries, both fire popstate,
+    // and our handler catches them both.
+    pushBlocker();
+    pushBlocker();
 
     const handlePopState = () => {
-      // Exit button already set the flag — let the browser navigate naturally.
-      if (exitingRef.current) {
-        exitingRef.current = false;
-        return;
-      }
-
-      // Re-push immediately so every subsequent Back press also fires popstate.
+      // Re-push a blocker immediately so the NEXT Back press is also intercepted.
       pushBlocker();
 
       // Dismiss the Settings panel first if it's open.
@@ -186,7 +185,6 @@ function AppInner() {
         screen?.closeManage();
       } else if (activeTabRef.current !== 'add') {
         // On any non-home tab → switch to Point ⊕ (home)
-        // isVisible effect in AddNewPointScreen will blank the form automatically
         setActiveTab('add');
       } else {
         // Already on the blank New Point screen → offer to exit
@@ -195,7 +193,16 @@ function AppInner() {
     };
 
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+
+    // Store the cleanup so the Exit button can tear down the listener before
+    // navigating backwards (preventing the handler from re-triggering the dialog).
+    const cleanup = () => {
+      window.removeEventListener('popstate', handlePopState);
+      removeBackListenerRef.current = null;
+    };
+    removeBackListenerRef.current = cleanup;
+
+    return cleanup;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -490,14 +497,23 @@ function AppInner() {
               <button
                 style={exitDlg.exitBtn}
                 onClick={() => {
-                  // Set flag FIRST so the popstate fired by go(-1) is skipped.
-                  exitingRef.current = true;
+                  // 1. Remove the popstate listener FIRST (synchronous).
+                  //    Without this, every history.go fires popstate → handler
+                  //    re-pushes a blocker → shows the dialog again forever.
+                  removeBackListenerRef.current?.();
+
                   setShowExitDialog(false);
-                  // Pop the blocker entry — popstate fires, handler sees the flag and bails.
-                  // Stack is now [initial]. The next Back press exits naturally.
-                  history.go(-1);
-                  // On PWA / WebView this closes the app immediately; harmless in browser.
+
+                  // 2. Attempt to close the window (works for installed PWAs and
+                  //    windows opened via window.open(); silently ignored in browser tabs).
                   window.close();
+
+                  // 3. Go back as far as possible in this tab's history.
+                  //    history.length includes every entry (pre-app pages + our blockers).
+                  //    Going back that many steps lands on / before the first entry;
+                  //    on Android Chrome this closes the tab, on desktop the user
+                  //    may need one final Back press to dismiss the (now-blank) tab.
+                  window.history.go(-window.history.length);
                 }}
               >{t('exitAppConfirm')}</button>
             </div>
