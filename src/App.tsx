@@ -146,19 +146,28 @@ function AppInner() {
 
   // ── Global back-navigation: intercept every device/browser Back press ────────
   useEffect(() => {
-    // Push a one-time blocker so the first Back press fires popstate instead of
-    // immediately navigating away from the app.
-    history.pushState(null, '');
+    // Push a blocker with an explicit state object and full URL.
+    // Using null state or an empty URL string is silently ignored on some
+    // Android Chrome versions, causing the first Back press to exit the app
+    // without firing popstate at all.
+    const pushBlocker = () =>
+      window.history.pushState(
+        { _eac: 1 },          // non-null state — required by some mobile browsers
+        document.title,        // title (ignored by browsers but required parameter)
+        window.location.href,  // explicit URL (same page, no navigation)
+      );
+
+    pushBlocker(); // Initial entry so the very first Back fires popstate
 
     const handlePopState = () => {
-      // If the user confirmed "Exit", let the browser navigate back naturally.
+      // Exit button already set the flag — let the browser navigate naturally.
       if (exitingRef.current) {
         exitingRef.current = false;
         return;
       }
 
-      // Re-push the blocker so subsequent Back presses keep firing popstate.
-      history.pushState(null, '');
+      // Re-push immediately so every subsequent Back press also fires popstate.
+      pushBlocker();
 
       // Dismiss the Settings panel first if it's open.
       if (showSettingsRef.current) {
@@ -481,9 +490,14 @@ function AppInner() {
               <button
                 style={exitDlg.exitBtn}
                 onClick={() => {
-                  setShowExitDialog(false);
+                  // Set flag FIRST so the popstate fired by go(-1) is skipped.
                   exitingRef.current = true;
-                  history.go(-1); // pop the blocker → browser exits the PWA/tab
+                  setShowExitDialog(false);
+                  // Pop the blocker entry — popstate fires, handler sees the flag and bails.
+                  // Stack is now [initial]. The next Back press exits naturally.
+                  history.go(-1);
+                  // On PWA / WebView this closes the app immediately; harmless in browser.
+                  window.close();
                 }}
               >{t('exitAppConfirm')}</button>
             </div>
