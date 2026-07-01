@@ -385,6 +385,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [rodReadingWarn,    setRodReadingWarn]    = useState(false);
   const [dupConflict,       setDupConflict]       = useState<{ name: string; label: string } | null>(null);
   const [showManagePoint,   setShowManagePoint]   = useState(false);
+  const [editingFromManage, setEditingFromManage] = useState(false); // true = overlay mounted but hidden while editing a point from it
   const [showSetPanel,   setShowSetPanel]   = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const savedNewPointRef = useRef<{
@@ -513,6 +514,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setIsEditMode(true);
     setRodFormat('fif');
     setCameFromNewPoint(false);
+    setEditingFromManage(false);
     savedNewPointRef.current = null;
   }, [isVisible]);
 
@@ -526,7 +528,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const openNewPoint = () => {
     clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif');
-    setCameFromNewPoint(false); setCameFromEditMode(false); savedNewPointRef.current = null;
+    setCameFromNewPoint(false); setCameFromEditMode(false); setEditingFromManage(false); savedNewPointRef.current = null;
   };
 
   // ── Back To Main Page: restore the new-point form the user was on before browsing ──
@@ -763,6 +765,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {/* Back → only when browsing from new-point flow */}
           {cameFromNewPoint && (
             <button style={s.backToMainBtn} onClick={handleBackToMain}>
+              ← {t('back')}
+            </button>
+          )}
+          {/* Back → only when editing a point opened via Edit from Manage Point overlay */}
+          {editingFromManage && !isNewPoint && isEditMode && (
+            <button style={s.backToMainBtn} onClick={() => setEditingFromManage(false)}>
               ← {t('back')}
             </button>
           )}
@@ -1238,14 +1246,19 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       {/* ── Duplicate point name alert dialog ── */}
       <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
 
-      {/* ── Manage Point overlay — full-screen within Point tab ── */}
-      {showManagePoint && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 50, backgroundColor: SURFACE, display: 'flex', flexDirection: 'column' }}>
+      {/* ── Manage Point overlay — kept mounted (display toggle) to preserve SinglePointTab state ── */}
+      {(showManagePoint || editingFromManage) && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 50, backgroundColor: SURFACE,
+          // Hidden while user is editing the point, but kept in DOM so search/page/scroll are preserved
+          display: editingFromManage ? 'none' : 'flex',
+          flexDirection: 'column',
+        }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
             <button
               style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '2px 6px 2px 0', flexShrink: 0 }}
-              onClick={() => setShowManagePoint(false)}
+              onClick={() => { setShowManagePoint(false); setEditingFromManage(false); }}
               aria-label="Close"
             >←</button>
             <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', flex: 1 }}>Manage Point</span>
@@ -1256,7 +1269,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               points={points}
               sets={sets}
               projectId={projectId}
-              onEditPoint={(pt) => { setShowManagePoint(false); onEditPoint?.(pt); }}
+              onEditPoint={(pt) => {
+                // Load point directly into the form without routing through App,
+                // then hide the overlay (keeping it mounted to preserve state)
+                const gi = points.findIndex(p => p.id === pt.id);
+                if (gi >= 0) {
+                  setCurrentIdx(gi);
+                  loadPoint(points[gi]);
+                  setIsEditMode(true);
+                  setCameFromEditMode(true);
+                }
+                setEditingFromManage(true);
+              }}
             />
           </div>
         </div>
