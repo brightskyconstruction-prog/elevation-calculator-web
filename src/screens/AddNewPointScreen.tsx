@@ -768,8 +768,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               ← {t('back')}
             </button>
           )}
-          {/* Back → only when editing a point opened via Edit from Manage Point overlay */}
-          {editingFromManage && !isNewPoint && isEditMode && (
+          {/* Back → only when a point was opened via Edit from Manage Point overlay (read-only or edit) */}
+          {editingFromManage && !isNewPoint && (
             <button style={s.backToMainBtn} onClick={() => setEditingFromManage(false)}>
               ← {t('back')}
             </button>
