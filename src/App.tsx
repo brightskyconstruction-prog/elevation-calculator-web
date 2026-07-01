@@ -21,6 +21,19 @@ import {
 import { ensureUserProfile } from './services/userProfile';
 import { useProfileStore } from './stores/profileStore';
 
+// Global bridge between the synchronous back-guard in index.html and React.
+// The inline script in index.html pushes history entries and registers the
+// popstate listener before React mounts (eliminating timing gaps on Android).
+// AppInner populates these so the pre-existing listener can call React state.
+declare global {
+  interface Window {
+    /** Navigation logic; set by AppInner's useEffect. */
+    __elevHandleBack?: () => void;
+    /** Permanently disable re-interception once the user confirms Exit. */
+    __elevDead?: boolean;
+  }
+}
+
 // ─── Root: wraps everything in the language provider ─────────────────────────
 export default function App() {
   return (
@@ -59,14 +72,11 @@ function AppInner() {
   // ── Global back-navigation refs ─────────────────────────────────────────────
   // Imperative handle into AddNewPointScreen so the global handler can close
   // the Manage Point overlay or reset the form without lifting those states.
-  const addScreenRef   = useRef<AddNewPointScreenAPI | null>(null);
-  // Always-current copy of activeTab for use inside the mount-time popstate handler.
-  const activeTabRef   = useRef<MainTab>('add');
+  const addScreenRef    = useRef<AddNewPointScreenAPI | null>(null);
+  // Always-current copy of activeTab for use inside the mount-time handler.
+  const activeTabRef    = useRef<MainTab>('add');
   // Tracks whether the Settings panel is open.
   const showSettingsRef = useRef(false);
-  // Holds a function that removes the popstate listener; called on Exit so
-  // subsequent history traversal doesn't re-trigger our handler.
-  const removeBackListenerRef = useRef<(() => void) | null>(null);
 
   // Keep refs in sync with state
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
@@ -145,30 +155,17 @@ function AppInner() {
     });
   }, []);
 
-  // ── Global back-navigation: intercept every device/browser Back press ────────
+  // ── Global back-navigation: wire React logic into the index.html guard ───────
+  //
+  // The popstate listener and initial history pushes live in index.html and run
+  // synchronously before React loads — eliminating the timing gap that caused
+  // the handler to be unregistered when a Back press happened during startup.
+  //
+  // This effect only sets window.__elevHandleBack so the pre-existing listener
+  // can call React state setters. All refs are always-current so there is no
+  // stale-closure issue despite the empty dependency array.
   useEffect(() => {
-    const pushBlocker = () =>
-      window.history.pushState(
-        { _eac: 1 },           // non-null state object — required by some Android Chrome builds
-        document.title,         // title parameter (ignored by browsers but must be a string)
-        window.location.href,   // explicit current URL (no navigation, just a new history entry)
-      );
-
-    // Push TWO blockers on mount.
-    //
-    // Why two? A single blocker is vulnerable to rapid double-tap of the Back
-    // button: the first tap consumes the blocker while the second tap hits
-    // [initial] directly and closes the tab before our popstate handler ever runs.
-    // With two blockers, both taps pop app-owned entries, both fire popstate,
-    // and our handler catches them both.
-    pushBlocker();
-    pushBlocker();
-
-    const handlePopState = () => {
-      // Re-push a blocker immediately so the NEXT Back press is also intercepted.
-      pushBlocker();
-
-      // Dismiss the Settings panel first if it's open.
+    window.__elevHandleBack = () => {
       if (showSettingsRef.current) {
         setShowSettings(false);
         return;
@@ -178,31 +175,17 @@ function AppInner() {
       const ms = screen?.getManageState() ?? { editingFromManage: false, showManagePoint: false };
 
       if (ms.editingFromManage) {
-        // Inside the "edit from Manage Point" form → go back to Manage overlay
         screen?.goBackFromEdit();
       } else if (ms.showManagePoint) {
-        // Manage Point overlay open → close it, reset form to blank new-point
         screen?.closeManage();
       } else if (activeTabRef.current !== 'add') {
-        // On any non-home tab → switch to Point ⊕ (home)
         setActiveTab('add');
       } else {
-        // Already on the blank New Point screen → offer to exit
         setShowExitDialog(true);
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
-
-    // Store the cleanup so the Exit button can tear down the listener before
-    // navigating backwards (preventing the handler from re-triggering the dialog).
-    const cleanup = () => {
-      window.removeEventListener('popstate', handlePopState);
-      removeBackListenerRef.current = null;
-    };
-    removeBackListenerRef.current = cleanup;
-
-    return cleanup;
+    return () => { window.__elevHandleBack = undefined; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -497,22 +480,23 @@ function AppInner() {
               <button
                 style={exitDlg.exitBtn}
                 onClick={() => {
-                  // 1. Remove the popstate listener FIRST (synchronous).
-                  //    Without this, every history.go fires popstate → handler
-                  //    re-pushes a blocker → shows the dialog again forever.
-                  removeBackListenerRef.current?.();
+                  // Permanently disable the back-guard so subsequent history
+                  // traversal doesn't re-trigger the dialog (set BEFORE any
+                  // async navigation so the popstate that history.go fires is
+                  // already suppressed).
+                  window.__elevDead = true;
 
                   setShowExitDialog(false);
 
-                  // 2. Attempt to close the window (works for installed PWAs and
-                  //    windows opened via window.open(); silently ignored in browser tabs).
+                  // Try to close the window — works for installed PWAs and
+                  // windows opened by script; no-op in regular browser tabs.
                   window.close();
 
-                  // 3. Go back as far as possible in this tab's history.
-                  //    history.length includes every entry (pre-app pages + our blockers).
-                  //    Going back that many steps lands on / before the first entry;
-                  //    on Android Chrome this closes the tab, on desktop the user
-                  //    may need one final Back press to dismiss the (now-blank) tab.
+                  // Navigate back as far as this tab's history allows.
+                  // __elevDead suppresses any popstate events fired during
+                  // traversal, so the browser navigates away without re-showing
+                  // the dialog. On Android this closes the tab/PWA; on desktop
+                  // the user may need one final Back press.
                   window.history.go(-window.history.length);
                 }}
               >{t('exitAppConfirm')}</button>

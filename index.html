@@ -35,6 +35,43 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Back-button guard — SYNCHRONOUS, runs before React loads.
+
+      Doing this inside React's useEffect creates a ~50-100 ms gap between
+      page load and listener registration. On Android Chrome a Back press
+      during that window fires popstate with no handler and exits the app.
+
+      By pushing guard entries and registering the listener here they are in
+      place the instant the HTML is parsed — zero timing gap.
+
+      React wires in the navigation logic via window.__elevHandleBack once it
+      mounts. The Exit button sets window.__elevDead = true so subsequent Back
+      presses navigate away naturally without re-showing the dialog.
+    -->
+    <script>
+      (function () {
+        var S = { _eac: 1 };
+        var U = location.href;
+
+        window.__elevDead = false;
+
+        // Two guards: a rapid double-tap of Back would consume a single entry
+        // before our popstate handler re-arms, letting the second tap exit.
+        history.pushState(S, '', U);
+        history.pushState(S, '', U);
+
+        window.addEventListener('popstate', function () {
+          if (window.__elevDead) return;   // user confirmed exit — let browser navigate away
+          history.pushState(S, '', U);     // re-arm for the next Back press
+          if (typeof window.__elevHandleBack === 'function') {
+            window.__elevHandleBack();     // delegate all routing logic to React
+          }
+        });
+      })();
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
