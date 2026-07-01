@@ -350,7 +350,7 @@ function InfoTip({ text }: { text: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onEditPoint, onFindSlope }: Props) {
+export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onFindSlope }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t } = useLang();
 
