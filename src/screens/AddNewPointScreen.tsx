@@ -823,6 +823,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 {!fifDisplay && !engDisplay && (
                   <span style={{ fontSize: 14, color: TEXT_DIS, fontStyle: 'italic', padding: '2px 0' }}>—</span>
                 )}
+                {/* ── Elevation rows (read-only only) ── */}
+                {setReferencePoint && (setReferencePoint.bmElevation ?? 0) > 0 && (
+                  <>
+                    {/* Thin separator before elevation section */}
+                    <div style={{ height: 1, backgroundColor: BORDER, margin: '4px 0 2px' }} />
+                    {/* Point Elevation — the set reference point's known elevation */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
+                      <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('pointElevation')}</span>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRI, letterSpacing: '-0.5px' }}>
+                        {setReferencePoint.bmElevation.toFixed(2)} ft
+                      </span>
+                    </div>
+                    {/* Derived Benchmark — live-calculated for non-reference points */}
+                    {autoDerivedBm != null && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
+                        <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('derivedBenchmark')}</span>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: BLUE, letterSpacing: '-0.5px' }}>
+                          {autoDerivedBm.toFixed(2)} ft
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </>
           ) : (
@@ -1351,6 +1374,6 @@ const s: Record<string, React.CSSProperties> = {
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
   saveBtn:    { height: 40, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
-  compareBtn: { height: 44, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
-  slopeBtn:   { height: 44, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  compareBtn: { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  slopeBtn:   { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };
