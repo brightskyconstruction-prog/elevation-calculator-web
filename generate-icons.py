@@ -40,16 +40,19 @@ def make_icon(rod: Image.Image, size: int) -> Image.Image:
     icon = Image.new("RGBA", (size, size), (*NAVY, 255))
 
     # --- yellow border ---
-    border  = max(4, round(size * 0.08))   # 8 % of icon size, minimum 4 px
+    # 13 % inset from each edge → visible blue margin between icon edge and
+    # the yellow frame, giving a cleaner, more balanced appearance.
+    border  = max(6, round(size * 0.13))
+    stroke  = max(3, round(size * 0.025))  # ~2.5 % stroke width
     draw    = ImageDraw.Draw(icon)
     draw.rectangle(
         [border, border, size - border - 1, size - border - 1],
         outline=(*YELLOW, 255),
-        width=max(2, round(size * 0.02)),  # border stroke ~2 % of size
+        width=stroke,
     )
 
     # --- rod image ---
-    inner_pad  = border + max(2, round(size * 0.04))   # extra 4 % inside border
+    inner_pad  = border + stroke + max(2, round(size * 0.02))  # tight padding inside border
     inner_size = size - inner_pad * 2
 
     rod_copy = rod.copy()

@@ -277,6 +277,10 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex:          1,
     overflow:        'hidden',
     paddingBottom:   20,
+    // flex-shrink:0 prevents the flex parent (root) from compressing the card
+    // when the visual viewport shrinks with the keyboard open.
+    // Without this, flex-shrink:1 (the default) would squeeze the card to fit.
+    flexShrink:      0,
     // Smooth upward slide when keyboard opens (translateY applied by JS).
     // will-change hints to the browser to composite this layer for GPU accel.
     transition:      'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
