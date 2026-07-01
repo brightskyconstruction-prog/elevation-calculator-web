@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLang } from '../LangContext';
 
 interface Props {
@@ -52,70 +52,69 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
   const [loading, setLoading] = useState(false);
   const inputRef  = useRef<HTMLInputElement>(null);
   const rootRef   = useRef<HTMLDivElement>(null);
+  const cardRef   = useRef<HTMLDivElement>(null);
 
   // ── Keyboard-aware layout via visualViewport API ──────────────────────────
-  // When the soft keyboard opens, the visual viewport shrinks. We update the
-  // container's height and vertical offset to always match the visible area.
-  // Because the root uses flex-start + card margins for centering, all overflow
-  // goes to the bottom — scrollTop = scrollHeight always reveals both buttons.
+  // Strategy: the root div tracks the visual viewport (position:fixed,
+  // height = vvp.height, top = vvp.offsetTop). Flexbox centers the card
+  // inside that container. When the keyboard shrinks the viewport and the
+  // card no longer fits, we apply a CSS translateY to the card so its
+  // BOTTOM edge stays inside the visible area — keeping both buttons
+  // fully visible at all times.
+  //
+  // This is a pure transform approach: nothing is resized or compressed.
+  // The CSS transition on the card produces the smooth upward slide.
   useEffect(() => {
     const vvp = window.visualViewport;
     if (!vvp) return;
 
     let raf = 0;
-    let prevHeight = vvp.height;
 
     const sync = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const el = rootRef.current;
-        if (!el) return;
+        const root = rootRef.current;
+        const card = cardRef.current;
+        if (!root || !card) return;
 
-        const newHeight = vvp.height;
-        const keyboardOpened = newHeight < prevHeight - 100;
+        const vh = vvp.height;
 
-        // offsetTop: visual viewport's position relative to the layout viewport.
-        // For position:fixed elements this shifts "top" when the keyboard opens
-        // or the browser chrome (URL bar) slides in/out.
-        el.style.height = `${newHeight}px`;
-        el.style.top    = `${vvp.offsetTop}px`;
-        prevHeight = newHeight;
+        // Make root cover exactly the visual viewport
+        root.style.height = `${vh}px`;
+        root.style.top    = `${vvp.offsetTop}px`;
 
-        // Auto-scroll to bottom when keyboard opens so both buttons are visible.
-        // A second rAF lets the height update paint first.
-        if (keyboardOpened) {
-          requestAnimationFrame(() => {
-            if (rootRef.current) rootRef.current.scrollTop = rootRef.current.scrollHeight;
-          });
+        // Compute how far to translate the card.
+        // With justify-content:center the card is naturally centered in `vh`.
+        // When card fits (cardH + 2×PAD ≤ vh) no translation is needed —
+        // flex already places it correctly.
+        // When card is taller than the available viewport we translate it
+        // upward so its bottom aligns with (vh − PAD), ensuring both buttons
+        // are always in the visible area.
+        const PAD   = 16;
+        const cardH = card.offsetHeight;
+
+        if (cardH + PAD * 2 <= vh) {
+          // Card fits — let flex centering do the work
+          card.style.transform = 'translateY(0px)';
+        } else {
+          // translateY = desired_bottom − natural_bottom
+          //            = (vh − PAD) − (vh/2 + cardH/2)
+          //            = vh/2 − PAD − cardH/2   (always negative → moves up)
+          const ty = Math.round(vh / 2 - PAD - cardH / 2);
+          card.style.transform = `translateY(${ty}px)`;
         }
       });
     };
 
     vvp.addEventListener('resize', sync);
     vvp.addEventListener('scroll', sync);
-    sync(); // initial sync
+    sync(); // initial sync on mount
 
     return () => {
       cancelAnimationFrame(raf);
       vvp.removeEventListener('resize', sync);
       vvp.removeEventListener('scroll', sync);
     };
-  }, []);
-
-  // Fallback scroll on focus (covers edge cases where visualViewport fires
-  // before the keyboard has fully appeared and height hasn't changed yet).
-  const handleInputFocus = useCallback(() => {
-    setTimeout(() => {
-      const el = rootRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-    }, 350);
-  }, []);
-
-  const handleInputBlur = useCallback(() => {
-    setTimeout(() => {
-      const el = rootRef.current;
-      if (el) el.scrollTop = 0;
-    }, 100);
   }, []);
 
   const handleSubmit = () => {
@@ -142,7 +141,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
       {/* Fixed gradient background — covers the full viewport at all times */}
       <div style={styles.bg} />
 
-      <div style={styles.card}>
+      <div ref={cardRef} style={styles.card}>
         {/* Gold top accent bar */}
         <div style={styles.topAccent} />
 
@@ -193,8 +192,6 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
               placeholder={t('emailPlaceholder')}
               onChange={e => { setEmail(e.target.value); if (error) setError(''); }}
               onKeyDown={handleKey}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
               autoComplete="email"
             />
           </div>
@@ -241,8 +238,9 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles: Record<string, React.CSSProperties> = {
-  // Root: position:fixed so the visualViewport JS can set height/top directly.
-  // overflow-y:auto allows scrolling if the card ever exceeds the visible area.
+  // Root: position:fixed, tracks the visual viewport via JS (height + top are
+  // overridden by the visualViewport sync). overflow:hidden prevents scrollbars
+  // — the card translates instead of the container scrolling.
   root: {
     position:      'fixed',
     top:           0,
@@ -252,9 +250,9 @@ const styles: Record<string, React.CSSProperties> = {
     display:       'flex',
     flexDirection: 'column',
     alignItems:    'center',
-    justifyContent:'flex-start',
+    justifyContent:'center',   // card centers naturally when keyboard is closed
     padding:       '12px 16px',
-    overflowY:     'auto',
+    overflow:      'hidden',   // no scrollbars — card translates instead
     boxSizing:     'border-box',
   },
   // Background: also fixed so it always fills the viewport even when root
@@ -274,17 +272,15 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow:       '0 12px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
     display:         'flex',
     flexDirection:   'column',
-    // Reduced gap (was 18) — tightens all inter-section spacing uniformly
     gap:             12,
     position:        'relative',
     zIndex:          1,
     overflow:        'hidden',
     paddingBottom:   20,
-    // Centers the card within the flex-start root. When the keyboard opens
-    // and the container shrinks, marginTop compresses first — all overflow
-    // goes to the bottom, which is fully scrollable.
-    marginTop:       'auto',
-    marginBottom:    'auto',
+    // Smooth upward slide when keyboard opens (translateY applied by JS).
+    // will-change hints to the browser to composite this layer for GPU accel.
+    transition:      'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+    willChange:      'transform',
   },
   topAccent: {
     height:     5,
@@ -478,11 +474,16 @@ const styles: Record<string, React.CSSProperties> = {
     transition:    'background-color 0.15s, opacity 0.15s',
   },
   footer: {
-    position:  'relative',
+    // Absolute so it doesn't participate in flex centering (which would throw
+    // off the card-centering math). Sits at the bottom of the visual viewport.
+    // Naturally hidden by overflow:hidden when the keyboard pushes it out.
+    position:  'absolute',
+    bottom:    10,
+    left:      0,
+    right:     0,
     zIndex:    1,
-    margin:    '12px 0 0',
     fontSize:  11,
     color:     'rgba(255,255,255,0.50)',
-    textAlign: 'center',
+    textAlign: 'center' as const,
   },
 };
