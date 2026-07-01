@@ -24,7 +24,12 @@ const HISTORY_VISIBLE = 4; // cards shown on History tab before "View All"
 
 // 'profile' key retained for tab ID — its label now reads "History"
 type SlopeSubTab = 'find' | 'profile' | 'target';
-interface Props { projectId: string }
+interface Props {
+  projectId:   string;
+  initFromId?: string | null;
+  initToId?:   string | null;
+  onInitConsumed?: () => void;
+}
 
 // ─── Saved calculation ────────────────────────────────────────────────────────
 interface SavedCalc {
@@ -366,9 +371,13 @@ interface FindSlopeProps {
   onSave:     (c: SavedCalc) => void;
   pendingEdit: SavedCalc | null;
   onPendingEditConsumed: () => void;
+  /** Pre-populate from a Point Details "Find Slope" tap */
+  pendingFromId?: string | null;
+  pendingToId?:   string | null;
+  onPendingFromToConsumed?: () => void;
 }
 
-function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsumed }: FindSlopeProps) {
+function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsumed, pendingFromId, pendingToId, onPendingFromToConsumed }: FindSlopeProps) {
   const { t } = useLang();
   const [fromId, setFromId] = useState<string | null>(null);
   const [toId,   setToId]   = useState<string | null>(null);
@@ -390,6 +399,18 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
       onPendingEditConsumed();
     }
   }, [pendingEdit, onPendingEditConsumed]);
+
+  // Load from/to pre-population triggered by "Find Slope" button on Point Details
+  useEffect(() => {
+    if (pendingFromId) {
+      setFromId(pendingFromId);
+      setToId(pendingToId ?? null);
+      setDist('');
+      setSavedCombo(null);
+      onPendingFromToConsumed?.();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingFromId, pendingToId]);
 
   const fromPt = fromId ? points.find(p => p.id === fromId) ?? null : null;
   const toPt   = toId   ? points.find(p => p.id === toId)   ?? null : null;
@@ -801,7 +822,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 }
 
 // ─── Main SlopeScreen ─────────────────────────────────────────────────────────
-export default function SlopeScreen({ projectId }: Props) {
+export default function SlopeScreen({ projectId, initFromId, initToId, onInitConsumed }: Props) {
   const { t } = useLang();
   const { getPoints, getSets } = useSurveyStore();
   const points = getPoints(projectId);
@@ -822,7 +843,20 @@ export default function SlopeScreen({ projectId }: Props) {
       return raw ? (JSON.parse(raw) as SavedCalc[]) : [];
     } catch { return []; }
   });
-  const [pendingEdit, setPendingEdit] = useState<SavedCalc | null>(null);
+  const [pendingEdit,   setPendingEdit]   = useState<SavedCalc | null>(null);
+  const [pendingFromId, setPendingFromId] = useState<string | null>(null);
+  const [pendingToId,   setPendingToId]   = useState<string | null>(null);
+
+  // React to initFromId prop (set by App when "Find Slope" is tapped on Point Details)
+  useEffect(() => {
+    if (initFromId) {
+      setPendingFromId(initFromId);
+      setPendingToId(initToId ?? null);
+      setActiveTab('find');
+      onInitConsumed?.();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initFromId, initToId]);
 
   // Persist on every change
   useEffect(() => {
@@ -867,6 +901,9 @@ export default function SlopeScreen({ projectId }: Props) {
           onSave={handleSave}
           pendingEdit={pendingEdit}
           onPendingEditConsumed={() => setPendingEdit(null)}
+          pendingFromId={pendingFromId}
+          pendingToId={pendingToId}
+          onPendingFromToConsumed={() => { setPendingFromId(null); setPendingToId(null); }}
         />
       </div>
       <div style={{ flex: 1, overflow: 'hidden', display: activeTab === 'profile' ? 'flex' : 'none', flexDirection: 'column' as const }}>

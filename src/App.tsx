@@ -70,6 +70,8 @@ function AppInner() {
   const [showSettings,  setShowSettings]  = useState(false);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
+  const [slopeFromId,   setSlopeFromId]   = useState<string | null>(null);
+  const [slopeToId,     setSlopeToId]     = useState<string | null>(null);
 
   const { ensureDefaultProject, activeProjectId } = useSurveyStore();
   // Stable action references — selected individually so callbacks don't
@@ -253,6 +255,12 @@ function AppInner() {
     setActiveTab('points');
   }, []);
 
+  const handleFindSlope = useCallback((fromId: string, toId: string | null) => {
+    setSlopeFromId(fromId);
+    setSlopeToId(toId);
+    setActiveTab('slope');
+  }, []);
+
   const handleEditConsumed = useCallback(() => {
     setEditPoint(undefined);
   }, []);
@@ -353,6 +361,7 @@ function AppInner() {
             onComparePoint={handleComparePoint}
             onDirtyChange={handleDirtyChange}
             onEditPoint={handleEditPoint}
+            onFindSlope={handleFindSlope}
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'points' ? 'flex' : 'none' }}>
@@ -369,7 +378,12 @@ function AppInner() {
           <CalculatorScreen />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'slope'  ? 'flex' : 'none' }}>
-          <SlopeScreen projectId={projectId} />
+          <SlopeScreen
+            projectId={projectId}
+            initFromId={slopeFromId}
+            initToId={slopeToId}
+            onInitConsumed={() => { setSlopeFromId(null); setSlopeToId(null); }}
+          />
         </div>
       </main>
 

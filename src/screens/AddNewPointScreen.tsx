@@ -34,6 +34,8 @@ interface Props {
   onDirtyChange?:   (dirty: boolean) => void;
   /** Callback when user selects Edit on a point inside Manage Point overlay */
   onEditPoint?:     (pt: SurveyPoint) => void;
+  /** Callback: open Slope tab with fromId pre-populated */
+  onFindSlope?:     (fromId: string, toId: string | null) => void;
 }
 
 type RodFormat = 'fif' | 'eng';
@@ -348,7 +350,7 @@ function InfoTip({ text }: { text: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onEditPoint }: Props) {
+export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onEditPoint, onFindSlope }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t } = useLang();
 
@@ -694,6 +696,20 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     onComparePoint(currentPoint.id, prevId);
   };
 
+  const handleFindSlope = () => {
+    if (!currentPoint || !onFindSlope) return;
+    // Find the immediately preceding point in the set (by createdAt order)
+    let prevId: string | null = null;
+    if (currentPoint.setId) {
+      const setOrdered = points
+        .filter(p => p.setId === currentPoint.setId)
+        .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+      const idx = setOrdered.findIndex(p => p.id === currentPoint.id);
+      if (idx > 0) prevId = setOrdered[idx - 1].id;
+    }
+    onFindSlope(currentPoint.id, prevId);
+  };
+
   const handleCreateSet = (name: string) => {
     const now = Date.now();
     const label = nextSetLabel(projectId);
@@ -734,16 +750,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             >‹</button>
           )}
           <span style={s.navLabel}>{currentLabel}</span>
-          {/* Point Name button — shows "Unnamed Point" in read-only when no name */}
-          <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
-            {isNewPoint
-              ? (pointName || t('pointName'))
-              : (!isEditMode
-                  ? (pointName || t('unnamedPoint'))
-                  : (pointName || t('pointName'))
-                )
-            }
-          </button>
+          {/* Point Name — read-only span when viewing, button when editing/new */}
+          {(!isEditMode && !isNewPoint) ? (
+            <span style={s.inlineLbl}>
+              {pointName || t('unnamedPoint')}
+            </span>
+          ) : (
+            <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
+              {pointName || t('pointName')}
+            </button>
+          )}
           {/* Back → only when browsing from new-point flow */}
           {cameFromNewPoint && (
             <button style={s.backToMainBtn} onClick={handleBackToMain}>
@@ -767,13 +783,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               onClick={goNextInSet}
             >›</button>
           )}
-          {/* ⋮ — opens Manage Point overlay */}
-          <button
-            style={s.dotsBtn}
-            onClick={() => setShowManagePoint(true)}
-            title="Manage Point"
-            aria-label="Manage Point"
-          >⋮</button>
+          {/* ⋮ — only on new-point creation page, opens Manage Point overlay */}
+          {isNewPoint && (
+            <button
+              style={s.dotsBtn}
+              onClick={() => setShowManagePoint(true)}
+              title="Manage Point"
+              aria-label="Manage Point"
+            >⋮</button>
+          )}
         </div>
       </div>
 
@@ -781,29 +799,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 80 }}>
 
         {/* ── Rod Reading + Benchmark card ── */}
-        <div style={s.card}>
+        <div style={{ ...s.card, ...(!isEditMode && !isNewPoint ? { gap: 4, padding: '8px 10px' } : {}) }}>
 
           {/* ── READ-ONLY rod display (existing saved point, not editing) ── */}
           {!isEditMode && !isNewPoint ? (
             <>
-              <div style={s.secRow}>
+              <div style={{ ...s.secRow, marginBottom: 0 }}>
                 <span style={s.secLbl}>{t('rodReading')}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {fifDisplay ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 2px' }}>
-                    <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{t('feetInchesBtn')}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
+                    <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('feetInchesBtn')}</span>
                     <span style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRI, letterSpacing: '-0.5px' }}>{fifDisplay}</span>
                   </div>
                 ) : null}
                 {engDisplay ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 2px' }}>
-                    <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{t('engineeringFtBtn')}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
+                    <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('engineeringFtBtn')}</span>
                     <span style={{ fontSize: 22, fontWeight: 800, color: BLUE, letterSpacing: '-0.5px' }}>{engDisplay}</span>
                   </div>
                 ) : null}
                 {!fifDisplay && !engDisplay && (
-                  <span style={{ fontSize: 14, color: TEXT_DIS, fontStyle: 'italic', padding: '4px 2px' }}>—</span>
+                  <span style={{ fontSize: 14, color: TEXT_DIS, fontStyle: 'italic', padding: '2px 0' }}>—</span>
                 )}
               </div>
             </>
@@ -969,6 +987,20 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         </div>
 
         {/* ── Set Assignment ── */}
+        {/* Read-only: simple label + set name. Edit mode: full radio card. */}
+        {!isEditMode && !isNewPoint ? (
+          <div style={s.card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>{t('assignedSetLabel')}</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: assignedSetObj ? TEXT_PRI : TEXT_DIS }}>
+                {assignedSetObj
+                  ? [assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')
+                  : '—'
+                }
+              </span>
+            </div>
+          </div>
+        ) : (
         <div style={{ ...s.card, ...(setWarning && !assignedSetObj ? { border: `1.5px solid #EF4444` } : {}) }}>
           <div style={s.secRow}>
             <span style={s.secLbl}>{t('setAssignment')}</span>
@@ -1070,6 +1102,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             {setWarning && <div style={s.warnMsg}>⚠ {t('noSetWarning')}</div>}
           </div>
         </div>
+        )} {/* end read-only / edit-mode set assignment conditional */}
 
         {/* ── Save / Update / Post-save actions ── */}
         {(isNewPoint || isEditMode) ? (
@@ -1081,7 +1114,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <button style={s.compareBtn} onClick={handleCompareThis}>
               {t('compareThisReading')}
             </button>
-            <button style={s.slopeBtn} onClick={() => alert(t('comingSoon'))}>
+            <button style={s.slopeBtn} onClick={handleFindSlope}>
               {t('findSlope')}
             </button>
           </div>
@@ -1250,8 +1283,17 @@ const s: Record<string, React.CSSProperties> = {
   inlineBtn: {
     backgroundColor: CARD, borderRadius: 6, padding: '5px 14px',
     border: `1.5px solid ${BLUE_ACC}`, fontSize: 13, fontWeight: 700,
-    color: BLUE, cursor: 'pointer', minWidth: 100, maxWidth: 150,
-    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
+    color: BLUE, cursor: 'pointer', minWidth: 80,
+    whiteSpace: 'normal' as const, wordBreak: 'break-word' as const,
+    textAlign: 'center' as const, lineHeight: '1.3',
+  },
+  // Read-only point name — same visual as inlineBtn but non-clickable
+  inlineLbl: {
+    backgroundColor: CARD, borderRadius: 6, padding: '5px 14px',
+    border: `1.5px solid ${BORDER}`, fontSize: 13, fontWeight: 700,
+    color: TEXT_PRI, minWidth: 80,
+    whiteSpace: 'normal' as const, wordBreak: 'break-word' as const,
+    textAlign: 'center' as const, lineHeight: '1.3', display: 'inline-block' as const,
   },
   newBtn:       { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 },
   newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
