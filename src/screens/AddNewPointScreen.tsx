@@ -341,7 +341,7 @@ function InfoTip({ text }: { text: string }) {
     <span style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         ref={btnRef}
-        style={{ background: 'none', border: 'none', color: BLUE_ACC, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
         onClick={handleToggle}
       >ⓘ</button>
       {open && (
@@ -861,10 +861,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <InfoTip text={t('rodInfoTip')} />
             <div style={{ flex: 1 }} />
             <button style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}) }} onClick={() => setRodFormat('fif')}>
-              {t('feetInchesBtn')}
+              {t('feetInchesBtn').replace('/', '/\n')}
             </button>
             <button style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}) }} onClick={() => setRodFormat('eng')}>
-              {t('engineeringFtBtn')}
+              {t('engineeringFtBtn').replace(' ', '\n')}
             </button>
           </div>
 
@@ -930,7 +930,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <>
                     <div style={s.rodDiv} />
                     <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, '0/0')}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const }}>{t('clearBtn')}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const }}>{t('clearBtn')}</span>
                     </button>
                   </>
                 )}
@@ -1006,7 +1006,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
                   placeholder="" readOnly={!isEditMode}
                 />
-                <span style={{ fontSize: 13, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
+                <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
               </div>
             </div>
           )}
@@ -1324,21 +1324,21 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 18, cursor: 'pointer', color: TEXT_PRI, lineHeight: 1, padding: 0, flexShrink: 0,
   },
   navCenter: { flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  navLabel:  { fontSize: 16, fontWeight: 700, color: TEXT_PRI, flexShrink: 0 },
+  navLabel:  { fontSize: 18, fontWeight: 800, color: TEXT_PRI, flexShrink: 0 },
   inlineBtn: {
-    backgroundColor: CARD, borderRadius: 6, padding: '5px 14px',
-    border: `1.5px solid ${BLUE_ACC}`, fontSize: 13, fontWeight: 700,
+    backgroundColor: CARD, borderRadius: 6, padding: '3px 14px',
+    border: `1.5px solid ${BLUE_ACC}`, fontSize: 15, fontWeight: 700,
     color: BLUE, cursor: 'pointer', minWidth: 80,
     whiteSpace: 'normal' as const, wordBreak: 'break-word' as const,
-    textAlign: 'center' as const, lineHeight: '1.3',
+    textAlign: 'center' as const, lineHeight: '1.2',
   },
   // Read-only point name — same visual as inlineBtn but non-clickable
   inlineLbl: {
-    backgroundColor: CARD, borderRadius: 6, padding: '5px 14px',
-    border: `1.5px solid ${BORDER}`, fontSize: 13, fontWeight: 700,
+    backgroundColor: CARD, borderRadius: 6, padding: '3px 14px',
+    border: `1.5px solid ${BORDER}`, fontSize: 15, fontWeight: 700,
     color: TEXT_PRI, minWidth: 80,
     whiteSpace: 'normal' as const, wordBreak: 'break-word' as const,
-    textAlign: 'center' as const, lineHeight: '1.3', display: 'inline-block' as const,
+    textAlign: 'center' as const, lineHeight: '1.2', display: 'inline-block' as const,
   },
   newBtn:       { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 },
   newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
@@ -1350,20 +1350,20 @@ const s: Record<string, React.CSSProperties> = {
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 6 },
   sep:     { height: 1, backgroundColor: '#F3F4F6', margin: '2px 0' },
   secRow:  { display: 'flex', alignItems: 'center', gap: 4 },
-  secLbl:  { fontSize: 16, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase' },
+  secLbl:  { fontSize: 16, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase', lineHeight: 1.1 },
 
-  fmtBtn:    { padding: '4px 10px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px' },
+  fmtBtn:    { padding: '4px 10px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px', whiteSpace: 'pre-line' as const, textAlign: 'center' as const, lineHeight: 1.25 },
   fmtBtnOn:  { backgroundColor: BLUE, border: `1px solid ${BLUE}`, color: '#fff' } as React.CSSProperties,
 
   rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 54 },
   rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', gap: 4 },
   rodPartLbl:  { fontSize: 13, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.5px', textAlign: 'center' },
-  rodFeetInput:{ width: '100%', height: 34, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
-  rodSelect:   { width: '100%', height: 32, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 15, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
+  rodFeetInput:{ width: '100%', height: 34, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 19, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
+  rodSelect:   { width: '100%', height: 32, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
   rodDiv:      { width: 1, backgroundColor: '#F3F4F6', flexShrink: 0 },
   clearAllBtn: { width: 40, border: 'none', borderLeft: `1px solid #F3F4F6`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: `${SURFACE}88` },
 
-  engInput:   { height: 36, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
+  engInput:   { height: 36, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 19, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
   autoGenRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap' as const },
   autoGenLbl: { fontSize: 15, color: TEXT_PRI, fontWeight: 600 },
   autoGenVal: { fontSize: 15, color: BLUE, fontWeight: 700 },
@@ -1378,15 +1378,15 @@ const s: Record<string, React.CSSProperties> = {
   autoBmUnit:  { fontSize: 13, fontWeight: 700, color: '#F5F7FA', marginBottom: 2 },
 
   bmRow:   { display: 'flex', alignItems: 'center', gap: 8 },
-  bmTxt:   { flex: 1, fontSize: 15, color: TEXT_PRI, lineHeight: 1.5, fontWeight: 600 },
-  bmInput: { width: 92, height: 34, backgroundColor: '#FFFFFF', border: `1.5px solid #6B7280`, borderRadius: 6, textAlign: 'center', fontSize: 14, fontWeight: 700, color: TEXT_PRI, outline: 'none' },
+  bmTxt:   { flex: 1, fontSize: 16, color: TEXT_PRI, lineHeight: 1.5, fontWeight: 600 },
+  bmInput: { width: 92, height: 36, backgroundColor: '#FFFFFF', border: `1.5px solid #6B7280`, borderRadius: 6, textAlign: 'center', fontSize: 16, fontWeight: 700, color: TEXT_PRI, outline: 'none' },
 
   assignedBadge:  { display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '8px 10px' },
   setLblBadge:    { backgroundColor: BLUE, borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: '0.4px' },
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '7px 12px', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
+  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '6px 12px', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
   setAssignBtnActive: { backgroundColor: NAVY, border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: BLUE, border: '3px solid transparent' } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
@@ -1395,7 +1395,7 @@ const s: Record<string, React.CSSProperties> = {
   savedAt:      { fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
-  saveBtn:    { height: 40, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
+  saveBtn:    { height: 38, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' },
   compareBtn: { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
   slopeBtn:   { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };
