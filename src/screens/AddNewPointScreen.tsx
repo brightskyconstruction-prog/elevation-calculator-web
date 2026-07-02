@@ -341,20 +341,20 @@ function InfoTip({ text }: { text: string }) {
     <span style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         ref={btnRef}
-        style={{ background: 'none', border: 'none', color: BLUE_ACC, fontSize: 13, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+        style={{ background: 'none', border: 'none', color: BLUE_ACC, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
         onClick={handleToggle}
       >ⓘ</button>
       {open && (
         <div style={{
           position: 'fixed', top: tipPos.top, left: tipPos.left,
           backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
-          padding: '10px 14px', width: 248, fontSize: 12, color: TEXT_SEC,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.18)', zIndex: 9999, lineHeight: 1.5,
+          padding: '12px 16px', width: 264, fontSize: 14, color: TEXT_SEC,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.18)', zIndex: 9999, lineHeight: 1.6,
         }}>
           {text}
           <br />
           <button
-            style={{ marginTop: 8, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}
+            style={{ marginTop: 10, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 13, cursor: 'pointer', fontWeight: 700 }}
             onClick={() => setOpen(false)}
           >{t('gotIt')}</button>
         </div>
@@ -1019,7 +1019,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {!isEditMode && !isNewPoint ? (
           <div style={s.card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>{t('assignedSetLabel')}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>{t('assignedSetLabel')}</span>
               <span style={{ fontSize: 15, fontWeight: 700, color: assignedSetObj ? TEXT_PRI : TEXT_DIS }}>
                 {assignedSetObj
                   ? [assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')
@@ -1154,8 +1154,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <span style={s.savedAt}>{t('recordedLabel')} {fmtTimestamp(savedAt)}</span>
             {locationTxt ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <span style={{ fontSize: 13 }}>📍</span>
-                <span style={{ flex: 1, fontSize: 13, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 14 }}>📍</span>
+                <span style={{ flex: 1, fontSize: 14, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {locationTxt}
                 </span>
                 {savedLat != null && savedLon != null && (
@@ -1350,14 +1350,14 @@ const s: Record<string, React.CSSProperties> = {
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 6 },
   sep:     { height: 1, backgroundColor: '#F3F4F6', margin: '2px 0' },
   secRow:  { display: 'flex', alignItems: 'center', gap: 4 },
-  secLbl:  { fontSize: 14, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase' },
+  secLbl:  { fontSize: 16, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase' },
 
-  fmtBtn:    { padding: '3px 8px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 13, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px' },
+  fmtBtn:    { padding: '4px 10px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px' },
   fmtBtnOn:  { backgroundColor: BLUE, border: `1px solid ${BLUE}`, color: '#fff' } as React.CSSProperties,
 
   rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 54 },
   rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', gap: 4 },
-  rodPartLbl:  { fontSize: 12, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.5px', textAlign: 'center' },
+  rodPartLbl:  { fontSize: 13, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.5px', textAlign: 'center' },
   rodFeetInput:{ width: '100%', height: 34, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
   rodSelect:   { width: '100%', height: 32, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 15, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
   rodDiv:      { width: 1, backgroundColor: '#F3F4F6', flexShrink: 0 },
@@ -1365,34 +1365,34 @@ const s: Record<string, React.CSSProperties> = {
 
   engInput:   { height: 36, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
   autoGenRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap' as const },
-  autoGenLbl: { fontSize: 14, color: TEXT_PRI, fontWeight: 600 },
-  autoGenVal: { fontSize: 14, color: BLUE, fontWeight: 700 },
-  warnMsg:    { fontSize: 13, color: '#EF4444', fontWeight: 600, padding: '4px 0' },
+  autoGenLbl: { fontSize: 15, color: TEXT_PRI, fontWeight: 600 },
+  autoGenVal: { fontSize: 15, color: BLUE, fontWeight: 700 },
+  warnMsg:    { fontSize: 14, color: '#EF4444', fontWeight: 600, padding: '4px 0' },
 
   autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '7px 10px', border: '1.5px solid #2A5898' },
   knownElevBox:{ border: `1.5px solid ${GOLD}`, backgroundColor: '#1A3A5C' } as React.CSSProperties,
-  autoBmLbl:   { fontSize: 13, fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.6px', textTransform: 'uppercase' },
-  autoBmDesc:  { fontSize: 13, color: '#F5F7FA', lineHeight: 1.5 },
+  autoBmLbl:   { fontSize: 14, fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.6px', textTransform: 'uppercase' },
+  autoBmDesc:  { fontSize: 14, color: '#F5F7FA', lineHeight: 1.5 },
   autoBmRight: { display: 'flex', alignItems: 'flex-end', gap: 3 },
   autoBmVal:   { fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: 'monospace' },
   autoBmUnit:  { fontSize: 13, fontWeight: 700, color: '#F5F7FA', marginBottom: 2 },
 
   bmRow:   { display: 'flex', alignItems: 'center', gap: 8 },
-  bmTxt:   { flex: 1, fontSize: 14, color: TEXT_PRI, lineHeight: 1.5, fontWeight: 600 },
+  bmTxt:   { flex: 1, fontSize: 15, color: TEXT_PRI, lineHeight: 1.5, fontWeight: 600 },
   bmInput: { width: 92, height: 34, backgroundColor: '#FFFFFF', border: `1.5px solid #6B7280`, borderRadius: 6, textAlign: 'center', fontSize: 14, fontWeight: 700, color: TEXT_PRI, outline: 'none' },
 
   assignedBadge:  { display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '8px 10px' },
   setLblBadge:    { backgroundColor: BLUE, borderRadius: 4, padding: '1px 5px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: '0.4px' },
-  setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
-  setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '8px 12px', color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
+  setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '5px 12px', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
+  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '7px 12px', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
   setAssignBtnActive: { backgroundColor: NAVY, border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: BLUE, border: '3px solid transparent' } as React.CSSProperties,
-  removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '2px 0' },
+  removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
 
   timestampCard:{ backgroundColor: CARD, borderRadius: 8, border: `1px solid #F3F4F6`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 },
-  savedAt:      { fontSize: 12, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
+  savedAt:      { fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
   saveBtn:    { height: 40, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
