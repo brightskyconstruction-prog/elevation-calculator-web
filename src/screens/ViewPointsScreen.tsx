@@ -1263,20 +1263,20 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' as const }}>
 
       {/* ── Compact top bar ── */}
-      <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '5px 10px 6px', display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
+      <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '7px 10px 8px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>
             {points.length} {t('surveyPoints')}
           </span>
           {points.length > 0 && (
             <button
-              style={{ height: 24, padding: '0 8px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 5, fontSize: 10, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer' }}
+              style={{ height: 32, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
               onClick={() => setShowAllModal(true)}
             >{t('viewAllPoints')}</button>
           )}
         </div>
         <input
-          style={{ height: 32, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 12, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' as const, width: '100%' }}
+          style={{ height: 38, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 12px', fontSize: 15, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' as const, width: '100%' }}
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={t('searchPlaceholder')}
@@ -1304,28 +1304,28 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, overflow: 'hidden' }}>
 
             {/* Header: label + name + Edit/Delete */}
-            <div style={{ padding: '8px 10px 5px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
-                <span style={{ fontSize: 18, fontWeight: 900, color: BLUE_ACC, letterSpacing: 0.3 }}>{pt.label}</span>
-                {pt.pointName && <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>• {pt.pointName}</span>}
-                <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '1px 6px' }}>
-                  <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.6, color: theme.badgeTxt }}>{badgeLabel}</span>
+            <div style={{ padding: '10px 12px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                <span style={{ fontSize: 20, fontWeight: 900, color: BLUE_ACC, letterSpacing: 0.3 }}>{pt.label}</span>
+                {pt.pointName && <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>• {pt.pointName}</span>}
+                <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '2px 7px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: theme.badgeTxt }}>{badgeLabel}</span>
                 </div>
                 {setObj && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '1px 5px' }}>
-                    {setObj.setLabel && <span style={{ fontSize: 8, fontWeight: 800, color: BLUE_ACC }}>{setObj.setLabel}</span>}
-                    <span style={{ fontSize: 8, fontWeight: 700, color: NAVY }}>{setObj.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 7px' }}>
+                    {setObj.setLabel && <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC }}>{setObj.setLabel}</span>}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: NAVY }}>{setObj.name}</span>
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                 {onEditPoint && (
                   <button onClick={() => onEditPoint(pt)}
-                    style={{ height: 26, padding: '0 8px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 5, fontSize: 10, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer' }}
+                    style={{ height: 32, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
                   >{t('edit')}</button>
                 )}
                 <button onClick={() => handleDeleteSingle(pt)}
-                  style={{ height: 26, padding: '0 8px', backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.30)', borderRadius: 5, fontSize: 10, fontWeight: 700, color: RED, cursor: 'pointer' }}
+                  style={{ height: 32, padding: '0 12px', backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.30)', borderRadius: 6, fontSize: 14, fontWeight: 800, color: RED, cursor: 'pointer' }}
                 >{t('delete')}</button>
               </div>
             </div>
@@ -1333,39 +1333,39 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
             <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 10px' }} />
 
             {/* ── 2-column detail grid ── */}
-            <div style={{ padding: '6px 10px 4px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 10px' }}>
+            <div style={{ padding: '7px 12px 5px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
               {/* col 1: Point ID */}
               <div>
-                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spPointId')}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.label}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spPointId')}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.label}</div>
               </div>
               {/* col 2: Type */}
               <div>
-                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spPointType')}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI }}>{badgeLabel}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spPointType')}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{badgeLabel}</div>
               </div>
               {/* col 1: Set */}
               {setObj && (
                 <div>
-                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spSet')}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI }}>{setObj.setLabel ? `${setObj.setLabel} · ${setObj.name}` : setObj.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spSet')}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{setObj.setLabel ? `${setObj.setLabel} · ${setObj.name}` : setObj.name}</div>
                 </div>
               )}
               {/* col 2: Created */}
               <div>
-                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spCreated')}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.createdAt)}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spCreated')}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.createdAt)}</div>
               </div>
               {/* col 1: Last Updated */}
               <div>
-                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spLastUpdated')}</div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.updatedAt)}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spLastUpdated')}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.updatedAt)}</div>
               </div>
               {/* col 2: Elevation (if available) */}
               {hasBm && (
                 <div>
-                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('elevation')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: ptType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('elevation')}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: ptType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>
                     {(pt.bmElevation ?? 0).toFixed(2)} ft
                   </div>
                 </div>
@@ -1375,16 +1375,16 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
             <div style={{ height: 1, backgroundColor: BORDER_S, margin: '4px 10px 0' }} />
 
             {/* Rod Reading — 2-column */}
-            <div style={{ padding: '5px 10px 7px' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: NAVY, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('rodReading')}</div>
+            <div style={{ padding: '6px 12px 9px' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: NAVY, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('rodReading')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 10px' }}>
                 <div>
-                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spFeetInches')}</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{fifStr}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spFeetInches')}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{fifStr}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('spDecimalFeet')}</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spDecimalFeet')}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
                 </div>
               </div>
             </div>
@@ -1393,18 +1393,18 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
 
         {/* ── Compact Prev / Next navigation ── */}
         {sorted.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button
               disabled={curIdx === 0}
-              style={{ flex: 1, height: 30, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: curIdx === 0 ? TEXT_DIS : BLUE, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
+              style={{ flex: 1, height: 38, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === 0 ? TEXT_DIS : BLUE, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
               onClick={() => setRawIdx(curIdx - 1)}
             >← {t('prevPoint')}</button>
-            <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, whiteSpace: 'nowrap' as const }}>
               {curIdx + 1}/{sorted.length}
             </span>
             <button
               disabled={curIdx === sorted.length - 1}
-              style={{ flex: 1, height: 30, backgroundColor: curIdx === sorted.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === sorted.length - 1 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: curIdx === sorted.length - 1 ? TEXT_DIS : BLUE, cursor: curIdx === sorted.length - 1 ? 'default' : 'pointer', opacity: curIdx === sorted.length - 1 ? 0.4 : 1 }}
+              style={{ flex: 1, height: 38, backgroundColor: curIdx === sorted.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === sorted.length - 1 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === sorted.length - 1 ? TEXT_DIS : BLUE, cursor: curIdx === sorted.length - 1 ? 'default' : 'pointer', opacity: curIdx === sorted.length - 1 ? 0.4 : 1 }}
               onClick={() => setRawIdx(curIdx + 1)}
             >{t('nextPoint')} →</button>
           </div>

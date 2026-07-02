@@ -1252,13 +1252,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           flexDirection: 'column',
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
             <button
-              style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '2px 6px 2px 0', flexShrink: 0 }}
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '6px 10px', flexShrink: 0, borderRadius: 8, fontWeight: 700, minWidth: 42, minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
               aria-label="Close"
             >←</button>
-            <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', flex: 1 }}>Manage Point</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', flex: 1 }}>Manage Point</span>
           </div>
           {/* Content */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
