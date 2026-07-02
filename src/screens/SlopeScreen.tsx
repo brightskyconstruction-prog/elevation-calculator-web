@@ -523,7 +523,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           {/* Clear + Save buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
-              style={{ flex: '0 0 auto', height: 36, paddingLeft: 16, paddingRight: 16, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 8, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+              style={{ flex: '0 0 auto', height: 36, paddingLeft: 16, paddingRight: 16, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={() => { setFromId(null); setToId(null); setDist(''); setSavedCombo(null); }}
             >{t('slopeClearBtn')}</button>
             <button
@@ -837,7 +837,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
             <div style={{ ...LBL, marginBottom: 0 }}>{t('slopeStartPoint')}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button
-                style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 7, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+                style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
                 onClick={handleClear}
               >{t('slopeClearBtn')}</button>
               <button
