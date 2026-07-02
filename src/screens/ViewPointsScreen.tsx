@@ -488,29 +488,29 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
           {/* POINT col — narrower */}
           <div style={{ flex: 1.8, display: 'flex', alignItems: 'center', paddingRight: 6 }}>
             <div style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: roleBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 4 }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: '#fff' }}>{role}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{role}</span>
             </div>
             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, wordBreak: 'break-word' as const, lineHeight: 1.25 }}>{pt.pointName || pt.label}</div>
-              {pt.pointName && <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, marginTop: 1 }}>{pt.label}</div>}
+              <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, wordBreak: 'break-word' as const, lineHeight: 1.25 }}>{pt.pointName || pt.label}</div>
+              {pt.pointName && <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, marginTop: 1 }}>{pt.label}</div>}
             </div>
           </div>
           <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch', flexShrink: 0 }} />
           {/* ROD READING col — decimal + FIF + goal */}
           <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, padding: '0 6px' }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{rodFIF}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{rodFIF}</div>
             </div>
             {rodGoal != null ? (
               <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'rod')}>
-                <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalHeight')}</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{rodGoal.toFixed(2)} ft</div>
-                <div style={{ fontSize: 9, color: GREEN, fontFamily: 'monospace' }}>{goalRodFIF}</div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalHeight')}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{rodGoal.toFixed(2)} ft</div>
+                <div style={{ fontSize: 11, color: GREEN, fontFamily: 'monospace' }}>{goalRodFIF}</div>
               </div>
             ) : (
               <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 8px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'rod')}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' as const }}>{t('goalHeightBtn')}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' as const }}>{t('goalHeightBtn')}</span>
               </div>
             )}
           </div>
@@ -520,23 +520,23 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             {pt.bmElevation > 0 ? (
               <>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)} ft</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{elevFIF}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)} ft</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{elevFIF}</div>
                 </div>
                 {elevGoal != null ? (
                   <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'elev')}>
-                    <div style={{ fontSize: 7, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalElev')}</div>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{elevGoal.toFixed(2)} ft</div>
-                    <div style={{ fontSize: 9, color: GREEN, fontFamily: 'monospace' }}>{goalElevFIF}</div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalElev')}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{elevGoal.toFixed(2)} ft</div>
+                    <div style={{ fontSize: 11, color: GREEN, fontFamily: 'monospace' }}>{goalElevFIF}</div>
                   </div>
                 ) : (
                   <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 8px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'elev')}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' as const }}>{t('goalElevBtn')}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.2, whiteSpace: 'nowrap' as const }}>{t('goalElevBtn')}</span>
                   </div>
                 )}
               </>
             ) : (
-              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>—</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>—</span>
             )}
           </div>
         </div>
@@ -544,14 +544,14 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
         {(rodDiff != null || elevDiff != null) && (
           <div style={{ display: 'flex', alignItems: 'stretch', padding: '3px 6px', backgroundColor: rowBg, borderTop: `1px solid ${BORDER_S}88` }}>
             <div style={{ flex: 1.8, paddingRight: 6, display: 'flex', alignItems: 'center', minWidth: 0, overflow: 'hidden' }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('difference')}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('difference')}</span>
             </div>
             <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
             <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '0 6px' }}>
               {rodDiff != null && (
                 <>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{Math.abs(rodDiff).toFixed(2)} ft</span>
-                  <span style={{ fontSize: 9, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{rodDiffFIF}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{Math.abs(rodDiff).toFixed(2)} ft</span>
+                  <span style={{ fontSize: 11, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{rodDiffFIF}</span>
                 </>
               )}
             </div>
@@ -559,8 +559,8 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingLeft: 6 }}>
               {elevDiff != null && (
                 <>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{Math.abs(elevDiff).toFixed(2)} ft</span>
-                  <span style={{ fontSize: 9, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{elevDiffFIF}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{Math.abs(elevDiff).toFixed(2)} ft</span>
+                  <span style={{ fontSize: 11, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{elevDiffFIF}</span>
                 </>
               )}
             </div>
@@ -583,24 +583,24 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               onClick={handleSwap}
             >
               <span style={{ fontSize: 17, color: '#fff', fontWeight: 800, lineHeight: 1 }}>⇆</span>
-              <span style={{ fontSize: 12, color: '#fff', fontWeight: 800, lineHeight: 1.2, textAlign: 'center' }}>{t('swapPoints')}</span>
+              <span style={{ fontSize: 14, color: '#fff', fontWeight: 800, lineHeight: 1.2, textAlign: 'center' }}>{t('swapPoints')}</span>
             </button>
-            <span style={{ flex: 1, fontSize: 16, fontWeight: 700, lineHeight: 1.4, color: compColor }}>{compText}</span>
+            <span style={{ flex: 1, fontSize: 17, fontWeight: 700, lineHeight: 1.4, color: compColor }}>{compText}</span>
           </div>
 
           {/* 3-column table card */}
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', padding: '6px 6px', backgroundColor: RAISED }}>
               <div style={{ flex: 1.8, paddingRight: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('pointCol')}</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('pointCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
               <div style={{ flex: 3.1, padding: '0 6px', textAlign: 'right' }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('rodReadingCol')}</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('rodReadingCol')}</span>
               </div>
               <div style={{ width: 1, backgroundColor: '#D5D8DE', alignSelf: 'stretch' }} />
               <div style={{ flex: 3.1, paddingLeft: 6, textAlign: 'right' }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('elevationCol')}</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#111111', letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('elevationCol')}</span>
               </div>
             </div>
             <div style={{ height: 1, backgroundColor: BORDER }} />
@@ -611,7 +611,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
 
           {/* Compare Another — below table, above ad */}
           <button
-            style={{ width: '100%', height: 36, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 800, letterSpacing: 0.2, cursor: 'pointer', boxShadow: '0 2px 6px rgba(20,58,99,0.30)' }}
+            style={{ width: '100%', height: 36, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 800, letterSpacing: 0.2, cursor: 'pointer', boxShadow: '0 2px 6px rgba(20,58,99,0.30)' }}
             onClick={handleCancel}
           >{t('compareAnother')}</button>
 
@@ -628,7 +628,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 }}>
               <span style={{ fontSize: 40 }}>📐</span>
               <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_PRI, textAlign: 'center' }}>{t('compareTwoPoints')}</span>
-              <span style={{ fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, maxWidth: 280 }}>{t('compareDesc')}</span>
+              <span style={{ fontSize: 15, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, maxWidth: 280 }}>{t('compareDesc')}</span>
             </div>
           ) : (
             <>
@@ -646,23 +646,23 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', minWidth: 0 }}>
                     {currentGroup?.setLabel ? (
                       <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '1px 6px', flexShrink: 0 }}>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{currentGroup.setLabel}</span>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{currentGroup.setLabel}</span>
                       </div>
                     ) : null}
                     {currentGroup?.setLabel && (
-                      <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
+                      <span style={{ color: BORDER_B, fontSize: 14, flexShrink: 0 }}>|</span>
                     )}
-                    <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{currentGroup?.name ?? '—'}</span>
                     {currentGroup?.createdAt ? (
                       <>
-                        <span style={{ color: BORDER_B, fontSize: 12, flexShrink: 0 }}>|</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
+                        <span style={{ color: BORDER_B, fontSize: 14, flexShrink: 0 }}>|</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>
                           {new Date(currentGroup.createdAt).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </>
                     ) : null}
                     {totalGroups > 1 && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, whiteSpace: 'nowrap' as const, flexShrink: 0 }}>{safeIdx + 1}/{totalGroups}</span>
                     )}
                   </div>
 
@@ -693,7 +693,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 {/* 3-column point grid — fixed 2 rows × 3 cols, paginated */}
                 <div style={{ padding: '6px 6px 4px' }}>
                   {(currentGroup?.pts ?? []).length === 0 ? (
-                    <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 14, padding: 24 }}>{t('noPointsInSet')}</p>
+                    <p style={{ textAlign: 'center', color: TEXT_DIS, fontSize: 16, padding: 24 }}>{t('noPointsInSet')}</p>
                   ) : (() => {
                     const allPts = currentGroup?.pts ?? [];
                     const CARDS_PER_PAGE = 6;
@@ -734,29 +734,29 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                     style={{ position: 'absolute', top: 5, right: 5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: selColor, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingInline: 3, zIndex: 1, boxShadow: `0 1px 4px ${isA ? 'rgba(30,87,153,0.4)' : 'rgba(31,138,77,0.4)'}` }}
                                     onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
                                   >
-                                    <span style={{ fontSize: 9, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{isA ? 'A ✕' : 'B ✕'}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{isA ? 'A ✕' : 'B ✕'}</span>
                                   </div>
                                 )}
                                 {/* PT label + name */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, paddingRight: sel ? 26 : 0, overflow: 'hidden', marginBottom: 2 }}>
-                                  <span style={{ fontSize: 15, fontWeight: 900, color: isA ? BLUE : isB ? GREEN : NAVY, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
+                                  <span style={{ fontSize: 17, fontWeight: 900, color: isA ? BLUE : isB ? GREEN : NAVY, letterSpacing: 0.1, flexShrink: 0 }}>{pt.label}</span>
                                   {pt.pointName && (
-                                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
+                                    <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>| {pt.pointName}</span>
                                   )}
                                 </div>
                                 {/* Divider */}
                                 <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 2 }} />
                                 {/* Rod */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
-                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
+                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
+                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
                                 </div>
                                 {/* Elev */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
-                                  <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
-                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
+                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
                               </div>
                             );
@@ -768,7 +768,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                             <button
                               disabled={safePage === 0}
                               onClick={() => setCardPage(Math.max(0, safePage - 1))}
-                              style={{ width: 24, height: 24, borderRadius: 5, backgroundColor: safePage === 0 ? SURFACE : NAVY, border: 'none', fontSize: 15, fontWeight: 800, color: safePage === 0 ? TEXT_DIS : '#fff', cursor: safePage === 0 ? 'default' : 'pointer', opacity: safePage === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}
+                              style={{ width: 24, height: 24, borderRadius: 5, backgroundColor: safePage === 0 ? SURFACE : NAVY, border: 'none', fontSize: 17, fontWeight: 800, color: safePage === 0 ? TEXT_DIS : '#fff', cursor: safePage === 0 ? 'default' : 'pointer', opacity: safePage === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}
                             >‹</button>
                             <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                               {Array.from({ length: totalCardPages }).map((_, pi) => (
@@ -782,7 +782,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                             <button
                               disabled={safePage >= totalCardPages - 1}
                               onClick={() => setCardPage(Math.min(totalCardPages - 1, safePage + 1))}
-                              style={{ width: 24, height: 24, borderRadius: 5, backgroundColor: safePage >= totalCardPages - 1 ? SURFACE : NAVY, border: 'none', fontSize: 15, fontWeight: 800, color: safePage >= totalCardPages - 1 ? TEXT_DIS : '#fff', cursor: safePage >= totalCardPages - 1 ? 'default' : 'pointer', opacity: safePage >= totalCardPages - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}
+                              style={{ width: 24, height: 24, borderRadius: 5, backgroundColor: safePage >= totalCardPages - 1 ? SURFACE : NAVY, border: 'none', fontSize: 17, fontWeight: 800, color: safePage >= totalCardPages - 1 ? TEXT_DIS : '#fff', cursor: safePage >= totalCardPages - 1 ? 'default' : 'pointer', opacity: safePage >= totalCardPages - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}
                             >›</button>
                           </div>
                         )}
@@ -794,19 +794,19 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                 {/* Status + buttons — immediately after grid, in the flow */}
                 <div style={{ padding: '4px 8px 6px', borderTop: `1px solid ${BORDER}` }}>
                   <div style={{ marginBottom: 5 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: selCount === 2 ? GREEN : TEXT_SEC }}>
                       {selCount === 0 ? t('tapTwoPoints') : selCount === 1 ? t('oneOfTwo') : t('twoSelected')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'row', gap: 6 }}>
                     {totalGroups > 1 && (
                       <button
-                        style={{ flex: 1.4, height: 34, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 800, cursor: 'pointer', padding: '0 6px', boxShadow: '0 2px 6px rgba(20,58,99,0.35)', letterSpacing: 0.2 }}
+                        style={{ flex: 1.4, height: 34, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', padding: '0 6px', boxShadow: '0 2px 6px rgba(20,58,99,0.35)', letterSpacing: 0.2 }}
                         onClick={() => setShowSetPicker(true)}
                       >{t('chooseFromAnotherSet')}</button>
                     )}
                     <button
-                      style={{ flex: 1, height: 34, backgroundColor: canGo ? BLUE : NAVY, border: 'none', borderRadius: 8, color: canGo ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 15, fontWeight: 800, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.5, boxShadow: canGo ? '0 2px 6px rgba(30,87,153,0.40)' : 'none' }}
+                      style={{ flex: 1, height: 34, backgroundColor: canGo ? BLUE : NAVY, border: 'none', borderRadius: 8, color: canGo ? '#fff' : 'rgba(255,255,255,0.35)', fontSize: 17, fontWeight: 800, cursor: canGo ? 'pointer' : 'default', letterSpacing: 0.3, opacity: canGo ? 1 : 0.5, boxShadow: canGo ? '0 2px 6px rgba(30,87,153,0.40)' : 'none' }}
                       onClick={handleGo}
                       disabled={!canGo}
                     >{t('goBtn')}</button>
@@ -845,7 +845,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             onClick={e => e.stopPropagation()}
           >
             <div style={{ padding: '13px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI }}>{t('chooseFromAnotherSet')}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{t('chooseFromAnotherSet')}</span>
               <button onClick={() => setShowSetPicker(false)}
                 style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_DIS, cursor: 'pointer', lineHeight: 1, padding: 0 }}
               >✕</button>
@@ -861,19 +861,19 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       {g.setLabel ? (
                         <div style={{ backgroundColor: BLUE, borderRadius: 3, padding: '1px 6px', flexShrink: 0 }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>{g.setLabel}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>{g.setLabel}</span>
                         </div>
                       ) : null}
-                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, flex: 1 }}>{g.name}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, flex: 1 }}>{g.name}</span>
                       {isActive && <span style={{ fontSize: 13, color: BLUE, flexShrink: 0 }}>✓</span>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {g.createdAt ? (
-                        <span style={{ fontSize: 10, color: TEXT_DIS }}>
+                        <span style={{ fontSize: 12, color: TEXT_DIS }}>
                           {new Date(g.createdAt).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       ) : null}
-                      <span style={{ fontSize: 10, color: TEXT_SEC, fontWeight: 600 }}>{g.pts.length} {g.pts.length === 1 ? 'pt' : 'pts'}</span>
+                      <span style={{ fontSize: 12, color: TEXT_SEC, fontWeight: 600 }}>{g.pts.length} {g.pts.length === 1 ? 'pt' : 'pts'}</span>
                     </div>
                   </div>
                 );
@@ -938,7 +938,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
         const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
         return (
           <button key={s.id}
-            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 12, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 14, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
             onClick={() => { setSelectedSet(s.id); setShowMoreSets(false); }}
           >{label}</button>
         );
@@ -946,7 +946,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
       {hiddenChips.length > 0 && (
         <div style={{ position: 'relative' as const }}>
           <button
-            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
+            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
             onClick={() => setShowMoreSets(v => !v)}
           >{showMoreSets ? '▲' : '▼'} {t('moreSets')}</button>
           {showMoreSets && (
@@ -956,7 +956,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
                 const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
                 return (
                   <button key={s.id}
-                    style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left' as const, background: active ? '#EEF4FF' : 'none', border: 'none', color: active ? BLUE : TEXT_PRI, fontSize: 12, fontWeight: active ? 700 : 500, cursor: 'pointer' }}
+                    style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left' as const, background: active ? '#EEF4FF' : 'none', border: 'none', color: active ? BLUE : TEXT_PRI, fontSize: 14, fontWeight: active ? 700 : 500, cursor: 'pointer' }}
                     onClick={() => { setSelectedSet(s.id); setShowMoreSets(false); }}
                   >{label}</button>
                 );
@@ -975,7 +975,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 40 }}>
           <span style={{ fontSize: 36 }}>📡</span>
           <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_PRI }}>{t('noPointsDisplay')}</span>
-          <span style={{ fontSize: 13, color: TEXT_DIS, textAlign: 'center' }}>{t('addPointsToGraph')}</span>
+          <span style={{ fontSize: 15, color: TEXT_DIS, textAlign: 'center' }}>{t('addPointsToGraph')}</span>
         </div>
       </div>
     );
@@ -1028,9 +1028,9 @@ function GraphTab({ points, sets }: GraphTabProps) {
   })();
 
   // Font sizes — larger than before
-  const valFontSz    = n <= 5 ? 10.5 : n <= 10 ? 9 : 7.5;
-  const lblFontSz    = n <= 5 ? 10   : n <= 10 ? 9 : 7.5;
-  const nameFontSz   = n <= 5 ? 8.5  : n <= 10 ? 7.5 : 6;
+  const valFontSz    = n <= 5 ? 13   : n <= 10 ? 11 : 9;
+  const lblFontSz    = n <= 5 ? 12   : n <= 10 ? 11 : 9;
+  const nameFontSz   = n <= 5 ? 10.5 : n <= 10 ? 9.5 : 8;
   const maxNameChars = n <= 5 ? 10   : n <= 10 ? 7   : 5;
 
   // Word-wrap helper: splits a name into lines of at most maxChars characters
@@ -1054,11 +1054,11 @@ function GraphTab({ points, sets }: GraphTabProps) {
       <div style={{ backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
         {/* Card header */}
         <div style={{ padding: '10px 12px', borderBottom: `1px solid ${BORDER_S}` }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: BLUE, letterSpacing: 1, textTransform: 'uppercase' as const }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: BLUE, letterSpacing: 1, textTransform: 'uppercase' as const }}>
             {t('rodReadingAnalysis')}
           </div>
           {refSetName ? (
-            <div style={{ fontSize: 11, fontWeight: 500, color: TEXT_SEC, marginTop: 3 }}>{t('referenceSet')}: {refSetName}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: TEXT_SEC, marginTop: 3 }}>{t('referenceSet')}: {refSetName}</div>
           ) : null}
         </div>
 
@@ -1072,7 +1072,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
             <rect x={PAD_L} y={PAD_T} width={PLOT_W} height={PLOT_H} fill="none" stroke="#E2E8F0" strokeWidth="0.75" rx="3" />
 
             {/* Y-axis unit */}
-            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="9" fontWeight="800" fill={TEXT_SEC}>ft</text>
+            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="11" fontWeight="800" fill={TEXT_SEC}>ft</text>
 
             {/* Y-axis grid + tick labels */}
             {axisTicks.map((tick, i) => {
@@ -1082,7 +1082,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
                 <g key={`tk${i}`}>
                   <line x1={PAD_L} y1={ty} x2={PAD_L + PLOT_W} y2={ty}
                     stroke="#D1D8E4" strokeWidth="0.75" strokeDasharray="3,4" />
-                  <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="9.5" fontWeight="700" fill={TEXT_SEC}>
+                  <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="11.5" fontWeight="700" fill={TEXT_SEC}>
                     {tick.toFixed(2)}
                   </text>
                 </g>
@@ -1095,7 +1095,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
 
             {/* LASER label — right side, aligned with laser line */}
             <text x={PAD_L + PLOT_W - 3} y={laserY - 5} textAnchor="end"
-              fontSize="11.5" fontWeight="800" fill={GOLD_SVG} letterSpacing="1.5">
+              fontSize="13.5" fontWeight="800" fill={GOLD_SVG} letterSpacing="1.5">
               {t('laserLabel')}
             </text>
 
@@ -1524,7 +1524,7 @@ export default function ViewPointsScreen({ projectId, compareFromId, compareToId
                 flex: 1, height: 34, borderRadius: 8,
                 border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
                 backgroundColor: isActive ? '#FFFFFF' : GOLD,
-                color: '#163A63', fontSize: 14, fontWeight: 700,
+                color: '#163A63', fontSize: 16, fontWeight: 700,
                 cursor: 'pointer',
                 boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
                 whiteSpace: 'nowrap', overflow: 'hidden',
