@@ -831,20 +831,21 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-        {/* Clear + ⓘ row — right-aligned, no wasted left space */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
-          <button
-            style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 7, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
-            onClick={handleClear}
-          >{t('slopeClearBtn')}</button>
-          <button
-            style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
-            onClick={() => setShowTargetTip(true)}
-          >ⓘ</button>
-        </div>
-
         <div>
-          <div style={LBL}>{t('slopeStartPoint')}</div>
+          {/* START POINT label + Clear + ⓘ on the same row — no wasted left space */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+            <div style={{ ...LBL, marginBottom: 0 }}>{t('slopeStartPoint')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 7, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+                onClick={handleClear}
+              >{t('slopeClearBtn')}</button>
+              <button
+                style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
+                onClick={() => setShowTargetTip(true)}
+              >ⓘ</button>
+            </div>
+          </div>
           <div
             style={{ backgroundColor: startPt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${startPt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '7px 10px', cursor: 'pointer', minHeight: 48 }}
             onClick={() => setShowPicker(true)}
