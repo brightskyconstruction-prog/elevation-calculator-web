@@ -94,12 +94,12 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
               {set.setLabel && (
-                <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{set.setLabel}</span>
+                <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{set.setLabel}</span>
               )}
               <span style={{ fontSize: 17, fontWeight: 700, color: TEXT_P }}>{set.name}</span>
             </div>
           </div>
-          <button style={{ padding: '5px 10px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT_S, fontSize: 12, fontWeight: 600, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
+          <button style={{ padding: '6px 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT_S, fontSize: 14, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
         </div>
 
         <div style={{ display: 'flex', padding: '7px 12px', gap: 7, borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' as const }}>
@@ -148,15 +148,15 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
                 <div key={pt.id} style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                     <div style={{ width: 42, height: 42, backgroundColor: BLUE_D, borderRadius: 6, border: `1px solid ${BLUE}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: BLUE_A, letterSpacing: 0.5 }}>{pt.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: BLUE_A, letterSpacing: 0.5 }}>{pt.label}</span>
                     </div>
                     <div style={{ flex: 1 }}>
-                      {pt.pointName && <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_P }}>{pt.pointName}</div>}
-                      {pt.takenBy   && <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_S }}>{pt.takenBy}</div>}
+                      {pt.pointName && <div style={{ fontSize: 16, fontWeight: 700, color: TEXT_P }}>{pt.pointName}</div>}
+                      {pt.takenBy   && <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_S }}>{pt.takenBy}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, backgroundColor: SURFACE, borderRadius: 3, padding: '1px 5px' }}>#{idx + 1}</span>
-                      <span style={{ backgroundColor: theme.badgeBg, border: `1px solid ${theme.badgeBdr}`, borderRadius: 4, padding: '2px 6px', fontSize: 9, fontWeight: 800, color: theme.badgeTxt }}>{t(theme.labelKey)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, backgroundColor: SURFACE, borderRadius: 3, padding: '1px 6px' }}>#{idx + 1}</span>
+                      <span style={{ backgroundColor: theme.badgeBg, border: `1px solid ${theme.badgeBdr}`, borderRadius: 4, padding: '2px 7px', fontSize: 11, fontWeight: 800, color: theme.badgeTxt }}>{t(theme.labelKey)}</span>
                     </div>
                   </div>
 
@@ -175,17 +175,17 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
                   </div>
 
                   {addr && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: TEXT_P }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: TEXT_P }}>
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>📍 {addr}</span>
                       {lat != null && lon != null && (
                         <a href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`} target="_blank" rel="noreferrer"
-                          style={{ backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 10, fontWeight: 800, textDecoration: 'none' }}>{t('svsMapBtn')}</a>
+                          style={{ backgroundColor: BLUE, borderRadius: 4, padding: '3px 9px', color: '#fff', fontSize: 12, fontWeight: 800, textDecoration: 'none' }}>{t('svsMapBtn')}</a>
                       )}
                     </div>
                   )}
 
                   {pt.savedAt && (
-                    <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_S, borderTop: `1px solid ${BORDER}`, paddingTop: 5 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_S, borderTop: `1px solid ${BORDER}`, paddingTop: 5 }}>
                       {t('svsRecorded')}: {fmtTimestamp(pt.savedAt)}
                     </div>
                   )}
@@ -200,13 +200,13 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
 }
 
 const sdS: Record<string, React.CSSProperties> = {
-  stat:    { backgroundColor: SURFACE, borderRadius: 6, padding: '4px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  statLbl: { fontSize: 9, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' },
-  statVal: { fontSize: 14, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
-  cell:    { flex: 1, backgroundColor: SURFACE, borderRadius: 6, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 2 },
-  cellLbl: { fontSize: 10, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' },
-  cellVal: { fontSize: 15, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
-  cellSub: { fontSize: 11, fontWeight: 600, color: TEXT_P, fontFamily: 'monospace' },
+  stat:    { backgroundColor: SURFACE, borderRadius: 6, padding: '5px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
+  statLbl: { fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' },
+  statVal: { fontSize: 16, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
+  cell:    { flex: 1, backgroundColor: SURFACE, borderRadius: 6, padding: '7px 9px', display: 'flex', flexDirection: 'column', gap: 2 },
+  cellLbl: { fontSize: 12, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' },
+  cellVal: { fontSize: 17, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' },
+  cellSub: { fontSize: 13, fontWeight: 600, color: TEXT_P, fontFamily: 'monospace' },
 };
 
 // ─── View All Sets Modal ───────────────────────────────────────────────────────
@@ -226,8 +226,8 @@ function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: ViewA
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, borderRadius: '18px 18px 0 0', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ alignSelf: 'center', width: 38, height: 4, backgroundColor: BORDER_S, borderRadius: 2, margin: '10px auto 4px' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px 6px', borderBottom: `1px solid ${BORDER}` }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P }}>{t('viewAllSets')}</span>
-          <button style={{ padding: '4px 9px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 11, fontWeight: 600, color: TEXT_S, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
+          <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_P }}>{t('viewAllSets')}</span>
+          <button style={{ padding: '6px 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 14, fontWeight: 700, color: TEXT_S, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
           {sets.map((s, idx) => {
@@ -238,13 +238,13 @@ function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: ViewA
                 style={{ backgroundColor: isCur ? BLUE_D : CARD, border: `1px solid ${isCur ? BLUE_A : BORDER}`, borderRadius: 7, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
                 onClick={() => { onSelect(idx); onClose(); }}>
                 {s.setLabel && (
-                  <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '3px 7px', fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: 0.4, flexShrink: 0 }}>{s.setLabel}</span>
+                  <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: 0.4, flexShrink: 0 }}>{s.setLabel}</span>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.name}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_S, marginTop: 2 }}>{strings[lang].svsCreated(fmtDateFull(s.createdAt, lang))} · {strings[lang].svsPts(ptCount)}</div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: TEXT_P, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.name}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: TEXT_S, marginTop: 2 }}>{strings[lang].svsCreated(fmtDateFull(s.createdAt, lang))} · {strings[lang].svsPts(ptCount)}</div>
                 </div>
-                {isCur && <span style={{ fontSize: 14, fontWeight: 800, color: BLUE_A, flexShrink: 0 }}>✓</span>}
+                {isCur && <span style={{ fontSize: 18, fontWeight: 800, color: BLUE_A, flexShrink: 0 }}>✓</span>}
               </div>
             );
           })}
@@ -369,7 +369,7 @@ export default function ViewSetsScreen({ projectId }: Props) {
               flex: 1, height: 34, borderRadius: 8,
               border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
               backgroundColor: isActive ? '#FFFFFF' : GOLD,
-              color: '#163A63', fontSize: 13, fontWeight: 700,
+              color: '#163A63', fontSize: 16, fontWeight: 700,
               cursor: 'pointer', boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
               whiteSpace: 'nowrap' as const, overflow: 'hidden',
               transition: 'background-color 0.15s',
@@ -382,7 +382,7 @@ export default function ViewSetsScreen({ projectId }: Props) {
       {filter === 'search' && (
         <div style={{ padding: '6px 10px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}` }}>
           <input
-            style={{ width: '100%', height: 32, borderRadius: 6, border: `1px solid ${BORDER}`, padding: '0 10px', fontSize: 13, color: TEXT_P, outline: 'none', backgroundColor: SURFACE, boxSizing: 'border-box' as const }}
+            style={{ width: '100%', height: 36, borderRadius: 6, border: `1px solid ${BORDER}`, padding: '0 10px', fontSize: 15, color: TEXT_P, outline: 'none', backgroundColor: SURFACE, boxSizing: 'border-box' as const }}
             placeholder={t('searchSets')}
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -393,12 +393,12 @@ export default function ViewSetsScreen({ projectId }: Props) {
 
       {/* ── Toolbar ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 10px', backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_P, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
           {strings[lang].svsSets(sets.length)}
         </span>
         {sets.length > 0 && (
           <button
-            style={{ height: 26, padding: '0 10px', backgroundColor: BLUE_D, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+            style={{ height: 30, padding: '0 12px', backgroundColor: BLUE_D, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
             onClick={() => setShowManage(true)}
           >{t('manageSets')}</button>
         )}
@@ -425,7 +425,7 @@ export default function ViewSetsScreen({ projectId }: Props) {
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {curSet.setLabel && (
-                  <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: 0.5, flexShrink: 0 }}>{curSet.setLabel}</span>
+                  <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.5, flexShrink: 0 }}>{curSet.setLabel}</span>
                 )}
                 <span style={{ fontSize: 17, fontWeight: 800, color: TEXT_P, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{curSet.name}</span>
               </div>
@@ -433,23 +433,23 @@ export default function ViewSetsScreen({ projectId }: Props) {
               {/* Info grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 10px' }}>
                 <div>
-                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('svsCreatedLabel')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_P }}>{fmtDateFull(curSet.createdAt, lang)}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('svsCreatedLabel')}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_P }}>{fmtDateFull(curSet.createdAt, lang)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_D, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('svsPointsLabel')}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: BLUE_A }}>{ptCount}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 1 }}>{t('svsPointsLabel')}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: BLUE_A }}>{ptCount}</div>
                 </div>
               </div>
 
               {/* Action buttons */}
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
-                  style={{ flex: 1, height: 32, backgroundColor: BLUE_D, border: `1px solid ${BLUE}`, borderRadius: 7, fontSize: 12, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+                  style={{ flex: 1, height: 36, backgroundColor: BLUE_D, border: `1px solid ${BLUE}`, borderRadius: 7, fontSize: 14, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                   onClick={() => setDetailSet(curSet)}
                 >{t('viewSetDetails')}</button>
                 <button
-                  style={{ height: 32, padding: '0 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 7, fontSize: 12, fontWeight: 700, color: TEXT_S, cursor: 'pointer' }}
+                  style={{ height: 36, padding: '0 14px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 7, fontSize: 14, fontWeight: 700, color: TEXT_S, cursor: 'pointer' }}
                   onClick={() => setShowAllModal(true)}
                 >{t('viewAllSets')}</button>
               </div>
@@ -461,15 +461,15 @@ export default function ViewSetsScreen({ projectId }: Props) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <button
                 disabled={curIdx === 0}
-                style={{ flex: 1, height: 30, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: curIdx === 0 ? TEXT_D : BLUE_A, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
+                style={{ flex: 1, height: 34, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 700, color: curIdx === 0 ? TEXT_D : BLUE_A, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
                 onClick={() => setRawIdx(curIdx - 1)}
               >← {t('prevSet')}</button>
-              <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_S, whiteSpace: 'nowrap' as const }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, whiteSpace: 'nowrap' as const }}>
                 {curIdx + 1}/{displayed.length}
               </span>
               <button
                 disabled={curIdx === displayed.length - 1}
-                style={{ flex: 1, height: 30, backgroundColor: curIdx === displayed.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === displayed.length - 1 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 11, fontWeight: 700, color: curIdx === displayed.length - 1 ? TEXT_D : BLUE_A, cursor: curIdx === displayed.length - 1 ? 'default' : 'pointer', opacity: curIdx === displayed.length - 1 ? 0.4 : 1 }}
+                style={{ flex: 1, height: 34, backgroundColor: curIdx === displayed.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === displayed.length - 1 ? BORDER : BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 700, color: curIdx === displayed.length - 1 ? TEXT_D : BLUE_A, cursor: curIdx === displayed.length - 1 ? 'default' : 'pointer', opacity: curIdx === displayed.length - 1 ? 0.4 : 1 }}
                 onClick={() => setRawIdx(curIdx + 1)}
               >{t('nextSet')} →</button>
             </div>
