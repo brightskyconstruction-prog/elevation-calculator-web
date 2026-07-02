@@ -152,13 +152,13 @@ function CompactCalcRow({ item, compact = false }: { item: CalcHistItem; compact
 
 // ─── Conv history row ─────────────────────────────────────────────────────────
 function ConvHistRow({ item, compact = false }: { item: ConvItem; compact?: boolean }) {
-  const sz = compact ? 13 : 15;
+  const sz = compact ? 14 : 16;
   const FIFNode = <StackedFraction feet={item.fifFeet} inches={item.fifInches} fracLbl={item.fifFracLbl} color={TEXT_P} size={sz} />;
   const EngNode = <span style={{ fontSize: sz, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' }}>{item.engVal.toFixed(2)} ft</span>;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       {item.mode === 'fif_to_eng' ? FIFNode : EngNode}
-      <span style={{ fontSize: compact ? 13 : 16, color: GOLD, fontWeight: 700 }}>→</span>
+      <span style={{ fontSize: compact ? 14 : 17, color: GOLD, fontWeight: 700 }}>→</span>
       {item.mode === 'fif_to_eng' ? EngNode : FIFNode}
     </div>
   );
@@ -404,9 +404,9 @@ function ConverterView() {
 
           {/* FIF card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
             <input
-              style={{ width: '100%', height: 40, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
+              style={{ width: '100%', height: 32, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
               value={cFt} onChange={e => onCFtChange(e.target.value)}
               inputMode="numeric"
               placeholder={cFtFocused ? '' : 'Feet'}
@@ -414,11 +414,11 @@ function ConverterView() {
               onBlur={() => setCFtFocused(false)}
             />
             {cFtErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
-            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, boxSizing: 'border-box' as const }}
+            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, boxSizing: 'border-box' as const }}
               value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
               {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, boxSizing: 'border-box' as const }}
+            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, boxSizing: 'border-box' as const }}
               value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
                 const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
                 if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
@@ -436,7 +436,7 @@ function ConverterView() {
 
           {/* Decimal card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0 }}>
               <input
                 style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
@@ -479,7 +479,7 @@ function ConverterView() {
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
               <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentConvs')}</span>
-              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 14, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllConvs(true)}>{t('allConvs')}</button>
             </div>
             {convHistory.slice(0, 2).map((item, i) => (
