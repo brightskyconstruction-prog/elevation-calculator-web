@@ -414,11 +414,11 @@ function ConverterView() {
               onBlur={() => setCFtFocused(false)}
             />
             {cFtErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
-            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, boxSizing: 'border-box' as const }}
+            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, boxSizing: 'border-box' as const, padding: '7px 8px', lineHeight: '1' }}
               value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
               {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, boxSizing: 'border-box' as const }}
+            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, boxSizing: 'border-box' as const, padding: '7px 8px', lineHeight: '1' }}
               value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
                 const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
                 if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
