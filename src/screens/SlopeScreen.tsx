@@ -793,12 +793,19 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
 
 // ─── 3. Target Slope Tab ──────────────────────────────────────────────────────
 function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Record<string, SurveySet> }) {
-  const { t } = useLang();
-  const [startId,    setStartId]    = useState<string | null>(null);
-  const [slopePct,   setSlopePct]   = useState('');
-  const [distance,   setDistance]   = useState('');
-  const [dir,        setDir]        = useState<'uphill' | 'downhill'>('downhill');
-  const [showPicker, setShowPicker] = useState(false);
+  const { t, lang } = useLang();
+  const [startId,       setStartId]       = useState<string | null>(null);
+  const [slopePct,      setSlopePct]      = useState('');
+  const [distance,      setDistance]      = useState('');
+  const [dir,           setDir]           = useState<'uphill' | 'downhill'>('downhill');
+  const [showPicker,    setShowPicker]    = useState(false);
+  const [showTargetTip, setShowTargetTip] = useState(false);
+  const [slopeFocused,  setSlopeFocused]  = useState(false);
+  const [distFocused,   setDistFocused]   = useState(false);
+
+  // Controlled display values — show placeholder when empty+unfocused, blank when focused
+  const slopeDisplay = (!slopePct && !slopeFocused) ? '2.00' : slopePct;
+  const distDisplay  = (!distance && !distFocused)  ? '0.00' : distance;
 
   const handleClear = useCallback(() => {
     setStartId(null);
@@ -823,12 +830,19 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+
+        {/* Clear + ⓘ row — right-aligned, no wasted left space */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
           <button
-            style={{ height: 28, paddingLeft: 12, paddingRight: 12, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 7, color: TEXT_SEC, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+            style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 7, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
             onClick={handleClear}
           >{t('slopeClearBtn')}</button>
+          <button
+            style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
+            onClick={() => setShowTargetTip(true)}
+          >ⓘ</button>
         </div>
+
         <div>
           <div style={LBL}>{t('slopeStartPoint')}</div>
           <div
@@ -837,33 +851,46 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
           >
             {startPt ? (
               <>
-                <div style={{ fontSize: 13, fontWeight: 900, color: BLUE_ACC }}>{startPt.label}{startPt.pointName ? ` · ${startPt.pointName}` : ''}</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{startPt.label}{startPt.pointName ? ` · ${startPt.pointName}` : ''}</div>
                 {startElev > 0
-                  ? <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{t('slopeCurrElev')} {startElev.toFixed(3)} {t('slopeFtUnit')}</div>
-                  : <div style={{ fontSize: 11, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
+                  ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{t('slopeCurrElev')} {startElev.toFixed(2)} {t('slopeFtUnit')}</div>
+                  : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
                 }
               </>
             ) : (
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelectStart')}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelectStart')}</div>
             )}
           </div>
         </div>
+
         <div>
           <div style={LBL}>{t('slopeTargetSlope')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="number" inputMode="decimal" value={slopePct} onChange={e => setSlopePct(e.target.value)} placeholder="2.00"
-              style={{ flex: 1, height: 38, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }} />
-            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI }}>%</span>
+            <input
+              type="text" inputMode="decimal" value={slopeDisplay}
+              onChange={e => setSlopePct(e.target.value)}
+              onFocus={() => setSlopeFocused(true)}
+              onBlur={() => setSlopeFocused(false)}
+              style={{ flex: 1, height: 38, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!slopePct && !slopeFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
+            />
+            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>%</span>
           </div>
         </div>
+
         <div>
           <div style={LBL}>{t('slopeHorizDist')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="number" inputMode="decimal" value={distance} onChange={e => setDistance(e.target.value)} placeholder="0.00"
-              style={{ flex: 1, height: 38, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }} />
-            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI }}>{t('slopeFtUnit')}</span>
+            <input
+              type="text" inputMode="decimal" value={distDisplay}
+              onChange={e => setDistance(e.target.value)}
+              onFocus={() => setDistFocused(true)}
+              onBlur={() => setDistFocused(false)}
+              style={{ flex: 1, height: 38, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!distance && !distFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
+            />
+            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{t('slopeFtUnit')}</span>
           </div>
         </div>
+
         <div>
           <div style={LBL}>{t('slopeDirection')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -872,7 +899,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
               const btnC   = d === 'uphill' ? GREEN_DARK : RED_DARK;
               return (
                 <button key={d}
-                  style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${active ? btnC : BORDER}`, backgroundColor: active ? `${btnC}14` : SURFACE, fontSize: 13, fontWeight: 800, color: active ? btnC : TEXT_SEC, cursor: 'pointer' }}
+                  style={{ flex: 1, minHeight: 40, padding: '6px 8px', borderRadius: 7, border: `1.5px solid ${active ? btnC : BORDER}`, backgroundColor: active ? `${btnC}14` : SURFACE, fontSize: 15, fontWeight: 800, color: active ? btnC : TEXT_SEC, cursor: 'pointer' }}
                   onClick={() => setDir(d)}
                 >{d === 'downhill' ? `↘ ${t('slopeDownhill')}` : `↗ ${t('slopeUphill')}`}</button>
               );
@@ -887,30 +914,69 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
           {/* Start Elevation */}
           <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeStartElev')}</div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.2 }}>{startElev.toFixed(3)}<span style={{ fontSize: 10, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span></div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeStartElev')}</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.2 }}>{startElev.toFixed(2)}<span style={{ fontSize: 12, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span></div>
           </div>
 
           {/* Elevation Change */}
           <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeElevChange')}</div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: rc, fontFamily: 'monospace', lineHeight: 1.2 }}>
-              {dir === 'uphill' ? '+' : '−'}{elevChange.toFixed(3)}<span style={{ fontSize: 10, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
+            <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeElevChange')}</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: rc, fontFamily: 'monospace', lineHeight: 1.2 }}>
+              {dir === 'uphill' ? '+' : '−'}{elevChange.toFixed(2)}<span style={{ fontSize: 12, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
             </div>
           </div>
 
           {/* Required Elevation — color-coded to match direction */}
           <div style={{ backgroundColor: rc, borderRadius: 9, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: `0 2px 8px ${rc}44` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.80)', letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('slopeReqElev')}</div>
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>{dir === 'uphill' ? '↗' : '↘'}</span>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.80)', letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('slopeReqElev')}</div>
+              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)' }}>{dir === 'uphill' ? '↗' : '↘'}</span>
             </div>
-            <div style={{ fontSize: 14, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1.2, marginTop: 4 }}>
-              {reqElev.toFixed(3)}<span style={{ fontSize: 10, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
+            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1.2, marginTop: 4 }}>
+              {reqElev.toFixed(2)}<span style={{ fontSize: 12, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
             </div>
           </div>
 
         </div>
+      )}
+
+      {/* Target Slope info tip modal */}
+      {showTargetTip && (
+        <CenteredOverlay onClose={() => setShowTargetTip(false)}>
+          <div style={{ width: '100%', maxWidth: 380, backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+            <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>
+                {lang === 'es' ? 'Cómo Usar Pendiente Objetivo' : 'How to Use Target Slope'}
+              </span>
+              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={() => setShowTargetTip(false)}>✕</button>
+            </div>
+            <div style={{ padding: '14px 16px', fontSize: 14, color: TEXT_SEC, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {lang === 'es' ? (
+                <>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Inicio</strong> — Toca el campo y selecciona el punto desde donde se mide. Solo se muestran puntos con datos de elevación.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Pendiente Objetivo</strong> — Ingresa el porcentaje de pendiente deseado (p. ej., 2.00 para un 2%). El campo se borrará automáticamente al tocarlo.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Distancia Horizontal</strong> — Ingresa la distancia horizontal en pies. El campo se borrará automáticamente al tocarlo.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Dirección</strong> — Elige <strong style={{ color: TEXT_PRI }}>Bajada</strong> si el terreno desciende, o <strong style={{ color: TEXT_PRI }}>Subida</strong> si asciende desde el punto de inicio.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Cómo se Calcula</strong> — Elevación Requerida = Elevación de Inicio ± (Pendiente % × Distancia). Los resultados muestran la Elevación de Inicio, el Cambio de Elevación y la Elevación Requerida al final del recorrido.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Limpiar</strong> — Toca Limpiar para restablecer todos los campos y comenzar un nuevo cálculo.</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Start Point</strong> — Tap the field and select the point you're measuring from. Only points with elevation data are shown.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Target Slope</strong> — Enter the desired slope percentage (e.g. 2.00 for 2%). The field clears automatically when you tap it.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Horizontal Distance</strong> — Enter the horizontal distance in feet. The field clears automatically when you tap it.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Direction</strong> — Choose <strong style={{ color: TEXT_PRI }}>Downhill</strong> if the grade descends, or <strong style={{ color: TEXT_PRI }}>Uphill</strong> if it rises from your start point.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>How it Calculates</strong> — Required Elevation = Start Elevation ± (Slope % × Distance). Results show Start Elevation, Elevation Change, and the Required Elevation you need to reach at the end of the run.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Clear</strong> — Tap Clear to reset all fields and start a new calculation.</p>
+                </>
+              )}
+              <button
+                style={{ alignSelf: 'flex-start', marginTop: 4, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, cursor: 'pointer', fontWeight: 700 }}
+                onClick={() => setShowTargetTip(false)}
+              >{t('gotIt')}</button>
+            </div>
+          </div>
+        </CenteredOverlay>
       )}
 
       {showPicker && (
