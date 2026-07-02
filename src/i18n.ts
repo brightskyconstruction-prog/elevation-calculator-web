@@ -299,7 +299,7 @@ const en = {
   okBtn:               'OK',
 
   // ── Slope tab ──────────────────────────────────────────────────────
-  slopeTabFind:        'Find Slope',
+  slopeTabFind:        'Calculate',
   slopeTabProfile:     'History',
   slopeTabTarget:      'Target',
   slopeFromPoint:      'From Point',
@@ -658,7 +658,7 @@ const es: typeof en = {
   okBtn:               'OK',
 
   // ── Slope tab ──────────────────────────────────────────────────────
-  slopeTabFind:        'Calcular Pendiente',
+  slopeTabFind:        'Calcular',
   slopeTabProfile:     'Historial',
   slopeTabTarget:      'Objetivo',
   slopeFromPoint:      'Punto de Origen',
