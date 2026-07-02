@@ -204,14 +204,14 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
 
         {/* Header */}
         <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>{t('slopeCalcDetail')}</span>
+          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>{t('slopeCalcDetail')}</span>
           <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={onClose}>✕</button>
         </div>
 
         {/* Direction banner */}
         <div style={{ backgroundColor: dc, padding: '7px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{dirIcon(calc.dir)} {dirLabel(calc.dir)}</span>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{calc.fromLabel} → {calc.toLabel}</span>
+          <span style={{ fontSize: 17, fontWeight: 900, color: '#fff' }}>{dirIcon(calc.dir)} {dirLabel(calc.dir)}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{calc.fromLabel} → {calc.toLabel}</span>
         </div>
 
         {/* Scrollable body */}
@@ -234,8 +234,8 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
               { lbl: t('slopeAngleLbl'), val: `${calc.angle.toFixed(2)}°`, c: TEXT_PRI },
             ]).map(({ lbl, val, c }) => (
               <div key={lbl} style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '6px 7px' }}>
-                <div style={{ fontSize: 8.5, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{lbl}</div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: c, fontFamily: 'monospace', lineHeight: 1.2 }}>{val}</div>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 2 }}>{lbl}</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: c, fontFamily: 'monospace', lineHeight: 1.2 }}>{val}</div>
               </div>
             ))}
           </div>
@@ -244,16 +244,16 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
           <div style={{ backgroundColor: SURFACE, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
             {rows.map(([lbl, val, hl]) => (
               <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, flexShrink: 0 }}>{lbl}</span>
-                <span style={{ fontSize: 13, fontWeight: 800, color: hl ? dc : TEXT_PRI, fontFamily: 'monospace', textAlign: 'right' as const }}>{val}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, flexShrink: 0 }}>{lbl}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: hl ? dc : TEXT_PRI, fontFamily: 'monospace', textAlign: 'right' as const }}>{val}</span>
               </div>
             ))}
           </div>
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 8, marginTop: 2, paddingBottom: 4 }}>
-            <button style={{ flex: 1, height: 38, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }} onClick={onEdit}>{t('edit')}</button>
-            <button style={{ flex: 1, height: 38, backgroundColor: RED_DARK, border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }} onClick={handleDelete}>{t('delete')}</button>
+            <button style={{ flex: 1, height: 42, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }} onClick={onEdit}>{t('edit')}</button>
+            <button style={{ flex: 1, height: 42, backgroundColor: RED_DARK, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }} onClick={handleDelete}>{t('delete')}</button>
           </div>
         </div>
       </div>
@@ -607,11 +607,12 @@ interface HistoryTabProps {
 }
 
 function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   // 'list' = 4-entry preview, 'all' = full-page scrollable history
-  const [view,       setView]       = useState<'list' | 'all'>('list');
-  const [detailCalc, setDetailCalc] = useState<SavedCalc | null>(null);
-  const [menuId,     setMenuId]     = useState<string | null>(null);
+  const [view,           setView]           = useState<'list' | 'all'>('list');
+  const [detailCalc,     setDetailCalc]     = useState<SavedCalc | null>(null);
+  const [menuId,         setMenuId]         = useState<string | null>(null);
+  const [showHistoryTip, setShowHistoryTip] = useState(false);
 
   const visibleCalcs = savedCalcs.slice(0, HISTORY_VISIBLE);
   const hasMore      = savedCalcs.length > HISTORY_VISIBLE;
@@ -632,28 +633,28 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
           style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '9px 11px', display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}
           onClick={() => { setMenuId(null); setDetailCalc(c); }}
         >
-          <div style={{ width: 34, height: 34, backgroundColor: dc, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ fontSize: 16, color: '#fff' }}>{dirIcon(c.dir)}</span>
+          <div style={{ width: 40, height: 40, backgroundColor: dc, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: 20, color: '#fff' }}>{dirIcon(c.dir)}</span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
+              <span style={{ fontSize: 17, fontWeight: 800, color: TEXT_PRI }}>{c.fromLabel} → {c.toLabel}</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
               {c.distance.toFixed(1)} ft · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : c.dir === 'downhill' ? '▼' : 'Δ'}</span> {sign(c.diff)}{c.diff.toFixed(3)} ft
             </div>
           </div>
           <button
-            style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 20, cursor: 'pointer', padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}
+            style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 24, cursor: 'pointer', padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}
             onClick={e => { e.stopPropagation(); setMenuId(isMenu ? null : c.id); }}
           >⋮</button>
         </div>
         {isMenu && (
           <div style={{ position: 'absolute', right: 4, top: 42, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 4px 14px rgba(0,0,0,0.14)', zIndex: 10, minWidth: 120, overflow: 'hidden' }}>
-            <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '9px 14px', fontSize: 13, fontWeight: 700, color: NAVY, background: 'none', border: 'none', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}
+            <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '11px 16px', fontSize: 15, fontWeight: 700, color: NAVY, background: 'none', border: 'none', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}
               onClick={e => { e.stopPropagation(); setMenuId(null); handleEdit(c); }}>{t('edit')}</button>
-            <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '9px 14px', fontSize: 13, fontWeight: 700, color: RED_DARK, background: 'none', border: 'none', cursor: 'pointer' }}
+            <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '11px 16px', fontSize: 15, fontWeight: 700, color: RED_DARK, background: 'none', border: 'none', cursor: 'pointer' }}
               onClick={e => { e.stopPropagation(); setMenuId(null); if (window.confirm(t('slopeDeleteCalcConfirm'))) onDelete(c.id); }}>{t('delete')}</button>
           </div>
         )}
@@ -669,10 +670,10 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
         {/* Page header */}
         <div style={{ backgroundColor: NAVY, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <button
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 700, cursor: 'pointer', padding: '2px 0', display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 16, fontWeight: 700, cursor: 'pointer', padding: '2px 0', display: 'flex', alignItems: 'center', gap: 4 }}
             onClick={() => { setMenuId(null); setView('list'); }}
           >‹ {t('slopeBackBtn')}</button>
-          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' as const }}>
+          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' as const }}>
             {t('slopeHistoryTitle')} ({savedCalcs.length})
           </span>
           {/* spacer to balance the back button */}
@@ -682,7 +683,7 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
         {/* Scrollable full list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
           {savedCalcs.length === 0 ? (
-            <div style={{ padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 13, fontWeight: 600 }}>
+            <div style={{ padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 15, fontWeight: 600 }}>
               {t('slopeNoHistory')}
             </div>
           ) : (
@@ -705,29 +706,40 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
 
   // ── Default: 4-entry preview list ─────────────────────────────────────────
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {savedCalcs.length === 0 ? (
-        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 13, fontWeight: 600, marginTop: 8 }}>
-          {t('slopeNoHistory')}
-        </div>
-      ) : (
-        <>
-          {/* 4 most recent — no section header */}
-          {visibleCalcs.map(c => <HistoryEntry key={c.id} c={c} />)}
+      {/* ⓘ button row */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 8px 0', flexShrink: 0 }}>
+        <button
+          style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
+          onClick={() => setShowHistoryTip(true)}
+        >ⓘ</button>
+      </div>
 
-          {/* View All navigation row */}
-          <div
-            style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-            onClick={() => { setMenuId(null); setView('all'); }}
-          >
-            <span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>
-              {t('slopeViewAllCalcs')}{hasMore ? ` (${savedCalcs.length})` : ''}
-            </span>
-            <span style={{ fontSize: 16, color: NAVY }}>›</span>
+      {/* Scrollable list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px 6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {savedCalcs.length === 0 ? (
+          <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 15, fontWeight: 600, marginTop: 8 }}>
+            {t('slopeNoHistory')}
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            {/* 4 most recent — no section header */}
+            {visibleCalcs.map(c => <HistoryEntry key={c.id} c={c} />)}
+
+            {/* View All navigation row */}
+            <div
+              style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+              onClick={() => { setMenuId(null); setView('all'); }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>
+                {t('slopeViewAllCalcs')}{hasMore ? ` (${savedCalcs.length})` : ''}
+              </span>
+              <span style={{ fontSize: 18, color: NAVY }}>›</span>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Detail Modal */}
       {detailCalc && (
@@ -737,6 +749,43 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
           onEdit={() => handleEdit(detailCalc)}
           onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
         />
+      )}
+
+      {/* History info tip modal */}
+      {showHistoryTip && (
+        <CenteredOverlay onClose={() => setShowHistoryTip(false)}>
+          <div style={{ width: '100%', maxWidth: 390, maxHeight: '88vh', backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+            <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>
+                {lang === 'es' ? 'Cómo Usar el Historial' : 'How to Use History'}
+              </span>
+              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={() => setShowHistoryTip(false)}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', fontSize: 14, color: TEXT_SEC, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {lang === 'es' ? (
+                <>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>¿Qué muestra el Historial?</strong> — El Historial muestra tus cálculos de pendiente guardados recientemente. Cada tarjeta representa un cálculo guardado.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Información de cada tarjeta</strong> — Verás los puntos de origen y destino (p. ej., PT3 → PT9), el porcentaje de pendiente (+ para subida, − para bajada), la distancia horizontal y la diferencia de elevación.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Abrir un cálculo</strong> — Toca cualquier tarjeta para ver el Resumen de Cálculo completo, que incluye: gráfico visual, Punto de Origen y Destino, valores de elevación, diferencia de elevación, distancia, pendiente %, razón, ángulo, dirección (Subida/Bajada) y la fecha y hora en que se guardó.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Editar o eliminar</strong> — Desde el Resumen de Cálculo, toca <strong style={{ color: TEXT_PRI }}>Editar</strong> para cargar el cálculo de nuevo en Calcular Pendiente y hacer cambios, o <strong style={{ color: TEXT_PRI }}>Eliminar</strong> para borrarlo. También puedes usar el menú de tres puntos (⋮) en cualquier tarjeta para editar o eliminar rápidamente.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Ver todo el historial</strong> — Toca <em>Ver Todos los Cálculos</em> en la parte inferior para ver la lista completa de todos los cálculos guardados.</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>What does History show?</strong> — History displays your most recently saved slope calculations. Each card represents one saved calculation.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>What each card shows</strong> — You'll see the From and To points (e.g. PT3 → PT9), the slope percentage (+ for uphill, − for downhill), the horizontal distance, and the elevation difference.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Opening a calculation</strong> — Tap any card to open the full Calculation Summary, which includes: a visual chart, From Point, To Point, elevation values, elevation difference, distance, slope %, ratio, angle, direction (Uphill/Downhill), and the date & time it was saved.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Edit or Delete</strong> — From the Calculation Summary, tap <strong style={{ color: TEXT_PRI }}>Edit</strong> to load the calculation back into Find Slope for changes, or <strong style={{ color: TEXT_PRI }}>Delete</strong> to remove it. You can also use the three-dot menu (⋮) on any card to quickly edit or delete without opening the summary.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>View all history</strong> — Tap <em>View All Calculations</em> at the bottom to see your complete list of saved calculations.</p>
+                </>
+              )}
+              <button
+                style={{ alignSelf: 'flex-start', marginTop: 4, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, cursor: 'pointer', fontWeight: 700 }}
+                onClick={() => setShowHistoryTip(false)}
+              >{t('gotIt')}</button>
+            </div>
+          </div>
+        </CenteredOverlay>
       )}
     </div>
   );
