@@ -117,7 +117,7 @@ function MeasureBlock({ feet, inches, fracLbl, engFt, negative = false, compact 
   feet: number; inches: number; fracLbl: string; engFt: number;
   negative?: boolean; compact?: boolean;
 }) {
-  const sz = compact ? 13 : 14;
+  const sz = compact ? 14 : 15;
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
       <StackedFraction feet={feet} inches={inches} fracLbl={fracLbl} negative={negative} color={TEXT_P} size={sz} />
@@ -137,7 +137,7 @@ function CompactCalcRow({ item, compact = false }: { item: CalcHistItem; compact
     ? { feet: parseInt(item.bFt || '0', 10), inches: item.bIn, fracLbl: item.bFrL }
     : engToFif(Math.abs(item.valB));
   const rFIF = engToFif(Math.abs(item.valR));
-  const sym  = compact ? 14 : 16;
+  const sym  = compact ? 15 : 17;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -264,7 +264,7 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
   return (
     <>
       <input
-        style={{ height: 40, borderRadius: 4, border: `1.5px solid ${ftErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
+        style={{ height: 32, borderRadius: 4, border: `1.5px solid ${ftErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
         value={ft} onChange={e => onFtChange(e.target.value)}
         inputMode="numeric"
         placeholder={ftFocused ? '' : 'Feet'}
@@ -273,13 +273,13 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
       />
       {ftErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{ftErr}</span>}
       <select
-        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
+        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
         value={String(inches)} onChange={e => setInches(parseInt(e.target.value, 10))}
       >
         {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <select
-        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
+        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
         value={frL === 'None' ? '0' : String(frac)} onChange={e => {
           const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
           if (opt) { setFrac(parseFloat(opt.value)); setFrL(opt.label); }
@@ -456,12 +456,12 @@ function ConverterView() {
         {/* ── Action buttons ── */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            style={{ flex: 1, height: 44, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
             onClick={handleAllClear}
           >{t('allClear')}</button>
           <button
             style={{
-              flex: 2, height: 44,
+              flex: 2, height: 40,
               backgroundColor: convEnabled ? NAVY : '#CBD5E1',
               border: `2px solid ${convEnabled ? GOLD : '#9CA3AF'}`,
               borderRadius: 8,
@@ -478,8 +478,8 @@ function ConverterView() {
         {convHistory.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentConvs')}</span>
-              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 12, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentConvs')}</span>
+              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllConvs(true)}>{t('allConvs')}</button>
             </div>
             {convHistory.slice(0, 2).map((item, i) => (
@@ -594,7 +594,7 @@ function CalculatorView() {
                 value={aEng}
                 onChange={e => { setAEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
-                placeholder={aEngFocused ? '' : 'Decimal Feet'}
+                placeholder={aEngFocused ? '' : '0.00'}
                 onFocus={() => setAEngFocused(true)}
                 onBlur={() => setAEngFocused(false)}
               />
@@ -632,7 +632,7 @@ function CalculatorView() {
                 value={bEng}
                 onChange={e => { setBEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
-                placeholder={bEngFocused ? '' : 'Decimal Feet'}
+                placeholder={bEngFocused ? '' : '0.00'}
                 onFocus={() => setBEngFocused(true)}
                 onBlur={() => setBEngFocused(false)}
               />
@@ -660,12 +660,12 @@ function CalculatorView() {
         {/* Action buttons — changes 2, 3, 4: larger font, shorter height, disable after calc */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            style={{ flex: 1, height: 44, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
             onClick={handleAllClear}
           >{t('allClear')}</button>
           <button
             style={{
-              flex: 2, height: 44,
+              flex: 2, height: 40,
               backgroundColor: calcEnabled ? NAVY : '#CBD5E1',
               border: `2px solid ${calcEnabled ? GOLD : '#9CA3AF'}`,
               borderRadius: 8,
@@ -682,8 +682,8 @@ function CalculatorView() {
         {history.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
-              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 12, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
+              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
             </div>
             {history.slice(0, 2).map((item, i) => (
@@ -729,7 +729,7 @@ export default function CalculatorScreen() {
               border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
               backgroundColor: isActive ? '#FFFFFF' : GOLD,
               color: '#163A63',
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: 700,
               cursor: 'pointer',
               boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
