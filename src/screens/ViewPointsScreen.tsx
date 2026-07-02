@@ -1263,14 +1263,14 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' as const }}>
 
       {/* ── Compact top bar ── */}
-      <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '7px 10px 8px', display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+      <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '5px 10px 6px', display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>
             {points.length} {t('surveyPoints')}
           </span>
           {points.length > 0 && (
             <button
-              style={{ height: 32, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
+              style={{ height: 28, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
               onClick={() => setShowAllModal(true)}
             >{t('viewAllPoints')}</button>
           )}
@@ -1396,7 +1396,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button
               disabled={curIdx === 0}
-              style={{ flex: 1, height: 38, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === 0 ? TEXT_DIS : BLUE, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
+              style={{ flex: 1, height: 32, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === 0 ? TEXT_DIS : BLUE, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
               onClick={() => setRawIdx(curIdx - 1)}
             >← {t('prevPoint')}</button>
             <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, whiteSpace: 'nowrap' as const }}>
@@ -1404,7 +1404,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
             </span>
             <button
               disabled={curIdx === sorted.length - 1}
-              style={{ flex: 1, height: 38, backgroundColor: curIdx === sorted.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === sorted.length - 1 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === sorted.length - 1 ? TEXT_DIS : BLUE, cursor: curIdx === sorted.length - 1 ? 'default' : 'pointer', opacity: curIdx === sorted.length - 1 ? 0.4 : 1 }}
+              style={{ flex: 1, height: 32, backgroundColor: curIdx === sorted.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === sorted.length - 1 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === sorted.length - 1 ? TEXT_DIS : BLUE, cursor: curIdx === sorted.length - 1 ? 'default' : 'pointer', opacity: curIdx === sorted.length - 1 ? 0.4 : 1 }}
               onClick={() => setRawIdx(curIdx + 1)}
             >{t('nextPoint')} →</button>
           </div>
@@ -1427,16 +1427,16 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}
-            <div style={{ padding: '13px 16px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>
+            <div style={{ padding: '11px 16px 9px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: TEXT_PRI }}>
                 {points.length} {t('surveyPoints')}
               </span>
               <button onClick={() => setShowAllModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: 22, color: TEXT_SEC, cursor: 'pointer', lineHeight: 1, padding: 0 }}
+                style={{ background: 'none', border: 'none', fontSize: 24, color: TEXT_SEC, cursor: 'pointer', lineHeight: 1, padding: '2px 4px' }}
               >✕</button>
             </div>
             {/* Modal list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '6px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
               {sorted.map((mpt, i) => {
                 const mType  = typeMap.get(mpt.id) ?? 'standalone';
                 const mTheme = TYPE_THEME[mType];
@@ -1445,33 +1445,33 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 const isCur  = curIdx === i;
                 return (
                   <div key={mpt.id}
-                    style={{ backgroundColor: isCur ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isCur ? BLUE : BORDER}`, borderLeft: `3px solid ${mTheme.border}`, padding: '9px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ backgroundColor: isCur ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isCur ? BLUE : BORDER}`, borderLeft: `3px solid ${mTheme.border}`, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                     onClick={() => { setRawIdx(i); setShowAllModal(false); }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {/* Row 1: PT label + point name */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                        <span style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{mpt.label}</span>
-                        {mpt.pointName && <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>• {mpt.pointName}</span>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                        <span style={{ fontSize: 18, fontWeight: 900, color: BLUE_ACC }}>{mpt.label}</span>
+                        {mpt.pointName && <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>• {mpt.pointName}</span>}
                       </div>
                       {/* Row 2: badges + values */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
-                        <div style={{ borderRadius: 4, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '2px 6px' }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
+                        <div style={{ borderRadius: 4, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '2px 7px' }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
                         </div>
                         {mSet && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 6px' }}>
-                            {mSet.setLabel && <span style={{ fontSize: 10, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
-                            <span style={{ fontSize: 10, fontWeight: 700, color: NAVY }}>{mSet.name}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 7px' }}>
+                            {mSet.setLabel && <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
+                            <span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>{mSet.name}</span>
                           </div>
                         )}
-                        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
                         {(mpt.bmElevation ?? 0) > 0 && (
-                          <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>· {(mpt.bmElevation ?? 0).toFixed(2)} ft elev</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>· {(mpt.bmElevation ?? 0).toFixed(2)} ft elev</span>
                         )}
                       </div>
                     </div>
-                    {isCur && <span style={{ fontSize: 16, color: BLUE, flexShrink: 0 }}>✓</span>}
+                    {isCur && <span style={{ fontSize: 20, color: BLUE, flexShrink: 0 }}>✓</span>}
                   </div>
                 );
               })}

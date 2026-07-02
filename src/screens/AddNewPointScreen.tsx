@@ -1252,9 +1252,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           flexDirection: 'column',
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
             <button
-              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '6px 10px', flexShrink: 0, borderRadius: 8, fontWeight: 700, minWidth: 42, minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'rgba(255,255,255,0.14)', border: '1.5px solid rgba(255,255,255,0.30)', color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '5px 11px', flexShrink: 0, borderRadius: 8, fontWeight: 800, minWidth: 40, minHeight: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
               aria-label="Close"
             >←</button>
