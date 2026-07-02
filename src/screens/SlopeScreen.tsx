@@ -379,11 +379,16 @@ interface FindSlopeProps {
 
 function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsumed, pendingFromId, pendingToId, onPendingFromToConsumed }: FindSlopeProps) {
   const { t, lang } = useLang();
-  const [fromId, setFromId] = useState<string | null>(null);
-  const [toId,   setToId]   = useState<string | null>(null);
-  const [dist,   setDist]   = useState('');
-  const [picker, setPicker] = useState<'from' | 'to' | null>(null);
+  const [fromId,      setFromId]      = useState<string | null>(null);
+  const [toId,        setToId]        = useState<string | null>(null);
+  const [dist,        setDist]        = useState('');
+  const [distFocused, setDistFocused] = useState(false);
+  const [picker,      setPicker]      = useState<'from' | 'to' | null>(null);
   const [showSlopeTip, setShowSlopeTip] = useState(false);
+
+  // Show '0.00' as a visual default when field is empty AND not focused.
+  // When focused, the value becomes '' so the cursor is in a blank field.
+  const distDisplay = (!dist && !distFocused) ? '0.00' : dist;
 
   // Track the exact combo (fromId:toId:dist) that was last saved to prevent duplicates
   const [savedCombo, setSavedCombo] = useState<string | null>(null);
@@ -475,11 +480,11 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           <div style={LBL}>{t('slopeHorizDist')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
-              type="text" inputMode="decimal" value={dist}
+              type="text" inputMode="decimal" value={distDisplay}
               onChange={e => { setDist(e.target.value); setSavedCombo(null); }}
-              onFocus={e => { if (!dist || dist === '0' || dist === '0.00') { setDist(''); e.target.select(); } }}
-              placeholder="0.00"
-              style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
+              onFocus={() => setDistFocused(true)}
+              onBlur={() => setDistFocused(false)}
+              style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!dist && !distFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
             />
             <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, minWidth: 22 }}>{t('slopeFtUnit')}</span>
           </div>
