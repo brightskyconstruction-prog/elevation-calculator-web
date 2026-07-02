@@ -117,7 +117,7 @@ function MeasureBlock({ feet, inches, fracLbl, engFt, negative = false, compact 
   feet: number; inches: number; fracLbl: string; engFt: number;
   negative?: boolean; compact?: boolean;
 }) {
-  const sz = compact ? 10 : 11;
+  const sz = compact ? 13 : 14;
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
       <StackedFraction feet={feet} inches={inches} fracLbl={fracLbl} negative={negative} color={TEXT_P} size={sz} />
@@ -137,7 +137,7 @@ function CompactCalcRow({ item, compact = false }: { item: CalcHistItem; compact
     ? { feet: parseInt(item.bFt || '0', 10), inches: item.bIn, fracLbl: item.bFrL }
     : engToFif(Math.abs(item.valB));
   const rFIF = engToFif(Math.abs(item.valR));
-  const sym  = compact ? 11 : 13;
+  const sym  = compact ? 14 : 16;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -152,13 +152,13 @@ function CompactCalcRow({ item, compact = false }: { item: CalcHistItem; compact
 
 // ─── Conv history row ─────────────────────────────────────────────────────────
 function ConvHistRow({ item, compact = false }: { item: ConvItem; compact?: boolean }) {
-  const sz = compact ? 10 : 12;
+  const sz = compact ? 13 : 15;
   const FIFNode = <StackedFraction feet={item.fifFeet} inches={item.fifInches} fracLbl={item.fifFracLbl} color={TEXT_P} size={sz} />;
   const EngNode = <span style={{ fontSize: sz, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' }}>{item.engVal.toFixed(2)} ft</span>;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       {item.mode === 'fif_to_eng' ? FIFNode : EngNode}
-      <span style={{ fontSize: compact ? 11 : 14, color: GOLD, fontWeight: 700 }}>→</span>
+      <span style={{ fontSize: compact ? 13 : 16, color: GOLD, fontWeight: 700 }}>→</span>
       {item.mode === 'fif_to_eng' ? EngNode : FIFNode}
     </div>
   );
@@ -173,21 +173,21 @@ function AllCalcsModal({ history, onClose, onDeleteAll }: {
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', zIndex: 300 }}>
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}` }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>{t('allCalcsTitle')}</span>
-          <button style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
+          <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>{t('allCalcsTitle')}</span>
+          <button style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {history.length === 0 && <p style={{ textAlign: 'center', color: TEXT_D, padding: 32 }}>{t('noCalcsYet')}</p>}
           {history.map((item, i) => (
             <div key={item.id} style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '1px 6px', fontSize: 9, fontWeight: 800, color: BLUE_A, alignSelf: 'flex-start' }}>#{i + 1}</span>
+              <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: BLUE_A, alignSelf: 'flex-start' }}>#{i + 1}</span>
               <CompactCalcRow item={item} />
             </div>
           ))}
         </div>
         {history.length > 0 && (
           <div style={{ padding: '10px 16px', borderTop: `1px solid ${BORDER}` }}>
-            <button style={{ width: '100%', height: 46, backgroundColor: 'rgba(192,57,43,0.10)', border: '1.5px solid #C0392B', borderRadius: 8, color: '#C0392B', fontSize: 13, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5 }} onClick={onDeleteAll}>
+            <button style={{ width: '100%', height: 48, backgroundColor: 'rgba(192,57,43,0.10)', border: '1.5px solid #C0392B', borderRadius: 8, color: '#C0392B', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5 }} onClick={onDeleteAll}>
               {t('deleteAllCalcs')}
             </button>
           </div>
@@ -206,21 +206,21 @@ function AllConvsModal({ history, onClose, onDeleteAll }: {
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', zIndex: 300 }}>
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}` }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>{t('allConvsTitle')}</span>
-          <button style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
+          <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>{t('allConvsTitle')}</span>
+          <button style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {history.length === 0 && <p style={{ textAlign: 'center', color: TEXT_D, padding: 32 }}>{t('noConvsYet')}</p>}
           {history.map((item, i) => (
             <div key={item.id} style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '1px 6px', fontSize: 9, fontWeight: 800, color: BLUE_A, alignSelf: 'flex-start' }}>#{i + 1}</span>
+              <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: BLUE_A, alignSelf: 'flex-start' }}>#{i + 1}</span>
               <ConvHistRow item={item} />
             </div>
           ))}
         </div>
         {history.length > 0 && (
           <div style={{ padding: '10px 16px', borderTop: `1px solid ${BORDER}` }}>
-            <button style={{ width: '100%', height: 46, backgroundColor: 'rgba(192,57,43,0.10)', border: '1.5px solid #C0392B', borderRadius: 8, color: '#C0392B', fontSize: 13, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5 }} onClick={onDeleteAll}>
+            <button style={{ width: '100%', height: 48, backgroundColor: 'rgba(192,57,43,0.10)', border: '1.5px solid #C0392B', borderRadius: 8, color: '#C0392B', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5 }} onClick={onDeleteAll}>
               {t('deleteAllConvs')}
             </button>
           </div>
@@ -237,7 +237,7 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
     <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 4, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
       {(['eng', 'fif'] as Mode[]).map(m => (
         <button key={m} style={{
-          height: 26, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800,
+          height: 28, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 800,
           letterSpacing: 0.2, color: mode === m ? '#fff' : TEXT_S,
           backgroundColor: mode === m ? NAVY : SURFACE,
           transition: 'background-color 0.12s, color 0.12s',
@@ -264,22 +264,22 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
   return (
     <>
       <input
-        style={{ height: 38, borderRadius: 4, border: `1.5px solid ${ftErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
+        style={{ height: 40, borderRadius: 4, border: `1.5px solid ${ftErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
         value={ft} onChange={e => onFtChange(e.target.value)}
         inputMode="numeric"
         placeholder={ftFocused ? '' : 'Feet'}
         onFocus={() => setFtFocused(true)}
         onBlur={() => setFtFocused(false)}
       />
-      {ftErr && <span style={{ fontSize: 7, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{ftErr}</span>}
+      {ftErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{ftErr}</span>}
       <select
-        style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
+        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
         value={String(inches)} onChange={e => setInches(parseInt(e.target.value, 10))}
       >
         {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <select
-        style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
+        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
         value={frL === 'None' ? '0' : String(frac)} onChange={e => {
           const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
           if (opt) { setFrac(parseFloat(opt.value)); setFrL(opt.label); }
@@ -404,28 +404,28 @@ function ConverterView() {
 
           {/* FIF card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
             <input
-              style={{ width: '100%', height: 38, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
+              style={{ width: '100%', height: 40, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
               value={cFt} onChange={e => onCFtChange(e.target.value)}
               inputMode="numeric"
               placeholder={cFtFocused ? '' : 'Feet'}
               onFocus={() => setCFtFocused(true)}
               onBlur={() => setCFtFocused(false)}
             />
-            {cFtErr && <span style={{ fontSize: 7, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
-            <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' as const }}
+            {cFtErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
+            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, boxSizing: 'border-box' as const }}
               value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
               {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <select style={{ width: '100%', height: 30, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 12, color: TEXT_P, boxSizing: 'border-box' as const }}
+            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 13, color: TEXT_P, boxSizing: 'border-box' as const }}
               value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
                 const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
                 if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
               }}>
               {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <button style={{ height: 24, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 9, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
+            <button style={{ height: 28, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={clearFIF}>✕ {t('clearBtn')}</button>
           </div>
 
@@ -436,7 +436,7 @@ function ConverterView() {
 
           {/* Decimal card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0 }}>
               <input
                 style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
@@ -446,9 +446,9 @@ function ConverterView() {
                 onFocus={() => setCEngFocused(true)}
                 onBlur={() => setCEngFocused(false)}
               />
-              <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>ft</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>ft</span>
             </div>
-            <button style={{ height: 24, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 9, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
+            <button style={{ height: 28, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={clearEng}>✕ {t('clearBtn')}</button>
           </div>
         </div>
@@ -456,17 +456,17 @@ function ConverterView() {
         {/* ── Action buttons ── */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 13, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            style={{ flex: 1, height: 44, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
             onClick={handleAllClear}
           >{t('allClear')}</button>
           <button
             style={{
-              flex: 2, height: 40,
-              backgroundColor: convEnabled ? NAVY : '#4B5563',
-              border: `2px solid ${convEnabled ? GOLD : '#6B7280'}`,
+              flex: 2, height: 44,
+              backgroundColor: convEnabled ? NAVY : '#CBD5E1',
+              border: `2px solid ${convEnabled ? GOLD : '#9CA3AF'}`,
               borderRadius: 8,
-              color: convEnabled ? '#fff' : '#D1D5DB',
-              fontSize: 15, fontWeight: 800, letterSpacing: 1.5,
+              color: convEnabled ? '#fff' : '#6B7280',
+              fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
               cursor: convEnabled ? 'pointer' : 'default',
             }}
             onClick={handleConvert}
@@ -478,8 +478,8 @@ function ConverterView() {
         {convHistory.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentConvs')}</span>
-              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 8px', border: `1px solid ${BLUE}`, fontSize: 9, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentConvs')}</span>
+              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 12, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllConvs(true)}>{t('allConvs')}</button>
             </div>
             {convHistory.slice(0, 2).map((item, i) => (
@@ -578,7 +578,7 @@ function CalculatorView() {
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, minWidth: 0 }}>
 
           {/* Input A */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, overflow: 'hidden' }}>
+          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
             <ModeToggle mode={modeA} onChange={m => { setModeA(m); resetCalc(); }} />
             {modeA === 'fif' ? (
               <FIFInputs
@@ -590,7 +590,7 @@ function CalculatorView() {
               />
             ) : (
               <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={aEng}
                 onChange={e => { setAEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
@@ -599,7 +599,7 @@ function CalculatorView() {
                 onBlur={() => setAEngFocused(false)}
               />
             )}
-            <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
+            <button style={{ height: 26, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
           </div>
 
           {/* Operator column — change 5: "OR" between + and − */}
@@ -608,7 +608,7 @@ function CalculatorView() {
               style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === '+' ? NAVY : CARD, border: `2px solid ${op === '+' ? GOLD : BORDER}`, color: op === '+' ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
               onClick={() => { setOp('+'); resetCalc(); }}
             >+</button>
-            <span style={{ fontSize: 9, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, lineHeight: 1 }}>OR</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, lineHeight: 1 }}>OR</span>
             <button
               style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === '-' ? NAVY : CARD, border: `2px solid ${op === '-' ? GOLD : BORDER}`, color: op === '-' ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
               onClick={() => { setOp('-'); resetCalc(); }}
@@ -616,7 +616,7 @@ function CalculatorView() {
           </div>
 
           {/* Input B */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, overflow: 'hidden' }}>
+          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
             <ModeToggle mode={modeB} onChange={m => { setModeB(m); resetCalc(); }} />
             {modeB === 'fif' ? (
               <FIFInputs
@@ -628,7 +628,7 @@ function CalculatorView() {
               />
             ) : (
               <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={bEng}
                 onChange={e => { setBEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
@@ -637,18 +637,18 @@ function CalculatorView() {
                 onBlur={() => setBEngFocused(false)}
               />
             )}
-            <button style={{ height: 22, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 8, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
+            <button style={{ height: 26, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
           </div>
 
           {/* Result card */}
           <div style={{ flex: 2.8, minWidth: 0, backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 2, overflow: 'hidden' }}>
-            <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase' }}>{t('result')}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase' }}>{t('result')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' }}>
               {result !== null && resultFif ? (
                 <>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{result.toFixed(2)} ft</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{result.toFixed(2)} ft</span>
                   <div style={{ height: 1, width: '80%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={13} />
+                  <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={15} />
                 </>
               ) : (
                 <span style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.25)' }}>—</span>
@@ -660,17 +660,17 @@ function CalculatorView() {
         {/* Action buttons — changes 2, 3, 4: larger font, shorter height, disable after calc */}
         <div style={{ display: 'flex', gap: 8 }}>
           <button
-            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 13, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
+            style={{ flex: 1, height: 44, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
             onClick={handleAllClear}
           >{t('allClear')}</button>
           <button
             style={{
-              flex: 2, height: 40,
-              backgroundColor: calcEnabled ? NAVY : '#4B5563',
-              border: `2px solid ${calcEnabled ? GOLD : '#6B7280'}`,
+              flex: 2, height: 44,
+              backgroundColor: calcEnabled ? NAVY : '#CBD5E1',
+              border: `2px solid ${calcEnabled ? GOLD : '#9CA3AF'}`,
               borderRadius: 8,
-              color: calcEnabled ? '#fff' : '#D1D5DB',
-              fontSize: 15, fontWeight: 800, letterSpacing: 1.5,
+              color: calcEnabled ? '#fff' : '#6B7280',
+              fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
               cursor: calcEnabled ? 'pointer' : 'default',
             }}
             onClick={handleCalculate}
@@ -682,8 +682,8 @@ function CalculatorView() {
         {history.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
-              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 8px', border: `1px solid ${BLUE}`, fontSize: 9, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
+              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 12, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
             </div>
             {history.slice(0, 2).map((item, i) => (
@@ -724,12 +724,12 @@ export default function CalculatorScreen() {
           return (
             <button key={tab.id} style={{
               flex: 1,
-              height: 34,
+              height: 36,
               borderRadius: 8,
               border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
               backgroundColor: isActive ? '#FFFFFF' : GOLD,
               color: '#163A63',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 700,
               cursor: 'pointer',
               boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
