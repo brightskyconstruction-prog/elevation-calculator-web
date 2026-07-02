@@ -455,15 +455,13 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
 
       {/* Inputs card */}
-      <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8, position: 'relative' }}>
 
-        {/* ⓘ button — top-right of card */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -4, marginTop: -2 }}>
-          <button
-            style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
-            onClick={() => setShowSlopeTip(true)}
-          >ⓘ</button>
-        </div>
+        {/* ⓘ button — absolutely positioned top-right, no layout impact */}
+        <button
+          style={{ position: 'absolute', top: 4, right: 4, background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)', zIndex: 1 }}
+          onClick={() => setShowSlopeTip(true)}
+        >ⓘ</button>
 
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7 }}>
           <PointSelectCard pt={fromPt} label={t('slopeFromPoint')} onPick={() => setPicker('from')} />
@@ -477,9 +475,9 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           <div style={LBL}>{t('slopeHorizDist')}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
-              type="number" inputMode="decimal" value={dist}
+              type="text" inputMode="decimal" value={dist}
               onChange={e => { setDist(e.target.value); setSavedCombo(null); }}
-              onFocus={() => { if (dist === '0' || dist === '0.00') { setDist(''); } }}
+              onFocus={e => { if (!dist || dist === '0' || dist === '0.00') { setDist(''); e.target.select(); } }}
               placeholder="0.00"
               style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
             />
@@ -936,7 +934,7 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
           const active = activeTab === tab.id;
           return (
             <button key={tab.id}
-              style={{ flex: 1, height: 34, borderRadius: 8, border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`, backgroundColor: active ? '#FFFFFF' : GOLD, color: NAVY, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none', transition: 'background-color 0.15s, border-color 0.15s' }}
+              style={{ flex: 1, minHeight: 34, padding: '5px 6px', borderRadius: 8, border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`, backgroundColor: active ? '#FFFFFF' : GOLD, color: NAVY, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none', transition: 'background-color 0.15s, border-color 0.15s', whiteSpace: 'normal', lineHeight: 1.2 }}
               onClick={() => setActiveTab(tab.id)}
             >{tab.label}</button>
           );
