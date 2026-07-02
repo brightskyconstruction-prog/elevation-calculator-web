@@ -79,7 +79,7 @@ function fmtDateTime(ms: number) {
 
 // ─── Shared label style ───────────────────────────────────────────────────────
 const LBL: CSSProperties = {
-  fontSize: 12.5,
+  fontSize: 15,
   fontWeight: 800,
   color: TEXT_PRI,
   letterSpacing: 0.5,
@@ -348,16 +348,16 @@ function PointSelectCard({ pt, label, onPick }: { pt: SurveyPoint | null; label:
       >
         {pt ? (
           <>
-            <div style={{ fontSize: 13, fontWeight: 900, color: BLUE_ACC, lineHeight: 1.3 }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC, lineHeight: 1.3 }}>
               {pt.label}{pt.pointName ? ` · ${pt.pointName}` : ''}
             </div>
             {hasElev
-              ? <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{pt.bmElevation!.toFixed(3)} {t('slopeFtElev')}</div>
-              : <div style={{ fontSize: 11, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeNoElevPt')}</div>
+              ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{pt.bmElevation!.toFixed(3)} {t('slopeFtElev')}</div>
+              : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeNoElevPt')}</div>
             }
           </>
         ) : (
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelect')}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelect')}</div>
         )}
       </div>
     </div>
@@ -378,11 +378,12 @@ interface FindSlopeProps {
 }
 
 function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsumed, pendingFromId, pendingToId, onPendingFromToConsumed }: FindSlopeProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [fromId, setFromId] = useState<string | null>(null);
   const [toId,   setToId]   = useState<string | null>(null);
   const [dist,   setDist]   = useState('');
   const [picker, setPicker] = useState<'from' | 'to' | null>(null);
+  const [showSlopeTip, setShowSlopeTip] = useState(false);
 
   // Track the exact combo (fromId:toId:dist) that was last saved to prevent duplicates
   const [savedCombo, setSavedCombo] = useState<string | null>(null);
@@ -455,6 +456,15 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
 
       {/* Inputs card */}
       <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+        {/* ⓘ button — top-right of card */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: -4, marginTop: -2 }}>
+          <button
+            style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
+            onClick={() => setShowSlopeTip(true)}
+          >ⓘ</button>
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7 }}>
           <PointSelectCard pt={fromPt} label={t('slopeFromPoint')} onPick={() => setPicker('from')} />
           <button
@@ -469,25 +479,26 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             <input
               type="number" inputMode="decimal" value={dist}
               onChange={e => { setDist(e.target.value); setSavedCombo(null); }}
+              onFocus={() => { if (dist === '0' || dist === '0.00') { setDist(''); } }}
               placeholder="0.00"
               style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
             />
-            <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, minWidth: 22 }}>{t('slopeFtUnit')}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, minWidth: 22 }}>{t('slopeFtUnit')}</span>
           </div>
         </div>
-        {samePoint && <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK }}>{t('slopeSamePointErr')}</div>}
-        {fromPt && !validFrom && <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK }}>{t('slopeNoElevFrom')}</div>}
-        {toPt   && !validTo   && <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK }}>{t('slopeNoElevTo')}</div>}
+        {samePoint && <div style={{ fontSize: 14, fontWeight: 700, color: RED_DARK }}>{t('slopeSamePointErr')}</div>}
+        {fromPt && !validFrom && <div style={{ fontSize: 14, fontWeight: 700, color: RED_DARK }}>{t('slopeNoElevFrom')}</div>}
+        {toPt   && !validTo   && <div style={{ fontSize: 14, fontWeight: 700, color: RED_DARK }}>{t('slopeNoElevTo')}</div>}
       </div>
 
       {/* Results */}
       {result && (
         <>
           <div style={{ backgroundColor: dc, borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 16, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
               {dirIcon(result.dir)} {dirLabel(result.dir)}
             </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.88)', textAlign: 'right' as const }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', textAlign: 'right' as const }}>
               {fromPt!.label} → {toPt!.label}
             </span>
           </div>
@@ -500,8 +511,8 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
               { key: 'slopeAngleLbl', value: `${result.angle.toFixed(2)}°`, color: TEXT_PRI },
             ] as const).map(({ key, value, color }) => (
               <div key={key} style={{ backgroundColor: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 8px' }}>
-                <div style={{ fontSize: 9.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t(key)}</div>
-                <div style={{ fontSize: 15, fontWeight: 900, color, fontFamily: 'monospace', lineHeight: 1.2 }}>{value}</div>
+                <div style={{ fontSize: 11.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t(key)}</div>
+                <div style={{ fontSize: 17, fontWeight: 900, color, fontFamily: 'monospace', lineHeight: 1.2 }}>{value}</div>
               </div>
             ))}
           </div>
@@ -509,15 +520,15 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           {/* Clear + Save buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
-              style={{ flex: '0 0 auto', height: 33, paddingLeft: 16, paddingRight: 16, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 8, color: TEXT_SEC, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
+              style={{ flex: '0 0 auto', height: 36, paddingLeft: 16, paddingRight: 16, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 8, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={() => { setFromId(null); setToId(null); setDist(''); setSavedCombo(null); }}
             >{t('slopeClearBtn')}</button>
             <button
               style={{
-                flex: 1, height: 33,
+                flex: 1, height: 36,
                 backgroundColor: alreadySaved ? '#6B7280' : NAVY,
                 border: 'none', borderRadius: 8,
-                color: '#fff', fontSize: 13, fontWeight: 800,
+                color: '#fff', fontSize: 15, fontWeight: 800,
                 cursor: alreadySaved ? 'default' : 'pointer',
                 letterSpacing: 0.3,
                 boxShadow: alreadySaved ? 'none' : '0 2px 6px rgba(20,58,99,0.25)',
@@ -529,6 +540,43 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             >{alreadySaved ? t('slopeSavedCalc') : t('slopeSaveCalc')}</button>
           </div>
         </>
+      )}
+
+      {/* Info tip modal */}
+      {showSlopeTip && (
+        <CenteredOverlay onClose={() => setShowSlopeTip(false)}>
+          <div style={{ width: '100%', maxWidth: 380, backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+            <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>
+                {lang === 'es' ? 'Cómo Usar Calcular Pendiente' : 'How to Use Find Slope'}
+              </span>
+              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={() => setShowSlopeTip(false)}>✕</button>
+            </div>
+            <div style={{ padding: '14px 16px', fontSize: 14, color: TEXT_SEC, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {lang === 'es' ? (
+                <>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Origen</strong> — Toca el campo "PUNTO DE ORIGEN" y selecciona el punto de inicio. Solo se muestran puntos con datos de elevación.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Destino</strong> — Toca el campo "PUNTO DE DESTINO" y selecciona el punto final.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Distancia Horizontal</strong> — Ingresa la distancia horizontal entre los dos puntos en pies.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Resultados</strong> — La pendiente se calcula como la diferencia de elevación dividida entre la distancia. Verás la diferencia de elevación, el porcentaje de pendiente, la razón y el ángulo.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Guardar</strong> — Toca "Guardar Cálculo" para guardarlo en el Historial. Usa el botón ⇆ para intercambiar el origen y el destino.</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>From Point</strong> — Tap the FROM POINT field and select your starting point. Only points with elevation data are shown.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>To Point</strong> — Tap the TO POINT field and select the ending point.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Horizontal Distance</strong> — Enter the horizontal distance between the two points in feet.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Results</strong> — Slope is calculated as the elevation difference divided by horizontal distance. You'll see Elevation Difference, Slope %, Ratio, and Angle.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Save</strong> — Tap "Save Calculation" to save to History. Use the ⇆ button to swap From and To points.</p>
+                </>
+              )}
+              <button
+                style={{ alignSelf: 'flex-start', marginTop: 4, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, cursor: 'pointer', fontWeight: 700 }}
+                onClick={() => setShowSlopeTip(false)}
+              >{t('gotIt')}</button>
+            </div>
+          </div>
+        </CenteredOverlay>
       )}
 
       {/* Point pickers */}
@@ -888,7 +936,7 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
           const active = activeTab === tab.id;
           return (
             <button key={tab.id}
-              style={{ flex: 1, height: 34, borderRadius: 8, border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`, backgroundColor: active ? '#FFFFFF' : GOLD, color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none', transition: 'background-color 0.15s, border-color 0.15s' }}
+              style={{ flex: 1, height: 34, borderRadius: 8, border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`, backgroundColor: active ? '#FFFFFF' : GOLD, color: NAVY, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none', transition: 'background-color 0.15s, border-color 0.15s' }}
               onClick={() => setActiveTab(tab.id)}
             >{tab.label}</button>
           );
