@@ -366,29 +366,31 @@ interface FindSlopeProps {
 
 function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsumed, pendingFromId, pendingToId, onPendingFromToConsumed }: FindSlopeProps) {
   const { t, lang } = useLang();
-  const [fromId,      setFromId]      = useState<string | null>(null);
-  const [toId,        setToId]        = useState<string | null>(null);
-  const [dist,        setDist]        = useState('');
-  const [distFocused, setDistFocused] = useState(false);
-  const [picker,      setPicker]      = useState<'from' | 'to' | null>(null);
+  const [fromId,       setFromId]       = useState<string | null>(null);
+  const [toId,         setToId]         = useState<string | null>(null);
+  const [dist,         setDist]         = useState('');
+  const [distFocused,  setDistFocused]  = useState(false);
+  const [picker,       setPicker]       = useState<'from' | 'to' | null>(null);
   const [showSlopeTip, setShowSlopeTip] = useState(false);
+  const [showResults,  setShowResults]  = useState(false);
+  const [committed,    setCommitted]    = useState<{
+    result: ReturnType<typeof calcSlope>;
+    fromPt: SurveyPoint;
+    toPt:   SurveyPoint;
+    distN:  number;
+  } | null>(null);
 
   // Show '0.00' as a visual default when field is empty AND not focused.
-  // When focused, the value becomes '' so the cursor is in a blank field.
   const distDisplay = (!dist && !distFocused) ? '0.00' : dist;
 
-  // Track the exact combo (fromId:toId:dist) that was last saved to prevent duplicates
-  const [savedCombo, setSavedCombo] = useState<string | null>(null);
-  const currentCombo = `${fromId ?? ''}:${toId ?? ''}:${dist}`;
-  const alreadySaved = savedCombo !== null && savedCombo === currentCombo;
-
-  // Load a pending edit from the History tab
+  // Load a pending edit from the History tab — return to input view with pre-filled values
   useEffect(() => {
     if (pendingEdit) {
       setFromId(pendingEdit.fromId);
       setToId(pendingEdit.toId);
       setDist(pendingEdit.distance.toString());
-      setSavedCombo(null); // allow re-save with (possibly) edited values
+      setShowResults(false);
+      setCommitted(null);
       onPendingEditConsumed();
     }
   }, [pendingEdit, onPendingEditConsumed]);
@@ -399,7 +401,8 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
       setFromId(pendingFromId);
       setToId(pendingToId ?? null);
       setDist('');
-      setSavedCombo(null);
+      setShowResults(false);
+      setCommitted(null);
       onPendingFromToConsumed?.();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -415,27 +418,34 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
   const samePoint = !!fromId && fromId === toId;
   const canCalc   = validFrom && validTo && validDist && !samePoint;
 
-  const result = canCalc ? calcSlope(fromPt!.bmElevation!, toPt!.bmElevation!, distN) : null;
-  const dc = result ? dirColor(result.dir) : TEXT_DIS;
+  const handleSwap = useCallback(() => { setFromId(toId); setToId(fromId); }, [fromId, toId]);
 
-  const handleSwap = useCallback(() => { setFromId(toId); setToId(fromId); setSavedCombo(null); }, [fromId, toId]);
-
-  const handleSave = useCallback(() => {
-    if (!result || !fromPt || !toPt || !fromId || !toId || alreadySaved) return;
+  const handleCalculate = useCallback(() => {
+    if (!canCalc || !fromPt || !toPt || !fromId || !toId) return;
+    const r = calcSlope(fromPt.bmElevation!, toPt.bmElevation!, distN);
+    setCommitted({ result: r, fromPt, toPt, distN });
+    setShowResults(true);
     onSave({
       id:        Date.now().toString(),
       fromId,    fromLabel: fromPt.label,  fromName: fromPt.pointName ?? '',  fromElev: fromPt.bmElevation!,
       toId,      toLabel:   toPt.label,    toName:   toPt.pointName ?? '',    toElev:   toPt.bmElevation!,
       distance:  distN,
-      slopePct:  result.pct,
-      diff:      result.diff,
-      ratio:     result.ratio,
-      angle:     result.angle,
-      dir:       result.dir,
+      slopePct:  r.pct,
+      diff:      r.diff,
+      ratio:     r.ratio,
+      angle:     r.angle,
+      dir:       r.dir,
       savedAt:   Date.now(),
     });
-    setSavedCombo(currentCombo);
-  }, [result, fromPt, toPt, fromId, toId, distN, alreadySaved, currentCombo, onSave]);
+  }, [canCalc, fromPt, toPt, fromId, toId, distN, onSave]);
+
+  const handleCalcAnother = useCallback(() => {
+    setShowResults(false);
+    setFromId(null);
+    setToId(null);
+    setDist('');
+    setCommitted(null);
+  }, []);
 
   function dirLabel(dir: string) {
     if (dir === 'uphill')   return t('slopeUphill');
@@ -443,6 +453,109 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
     return t('slopeFlat');
   }
 
+  // ── Info tip modal (shared between both views) ────────────────────────────
+  const infoTipModal = showSlopeTip ? (
+    <CenteredOverlay onClose={() => setShowSlopeTip(false)}>
+      <div style={{ width: '100%', maxWidth: 380, backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+        <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>
+            {lang === 'es' ? 'Cómo Usar Calcular Pendiente' : 'How to Use Find Slope'}
+          </span>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={() => setShowSlopeTip(false)}>✕</button>
+        </div>
+        <div style={{ padding: '14px 16px', fontSize: 14, color: TEXT_SEC, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {lang === 'es' ? (
+            <>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Origen</strong> — Toca el campo "PUNTO DE ORIGEN" y selecciona el punto de inicio. Solo se muestran puntos con datos de elevación.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Destino</strong> — Toca el campo "PUNTO DE DESTINO" y selecciona el punto final.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Distancia Horizontal</strong> — Ingresa la distancia horizontal entre los dos puntos en pies.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Resultados</strong> — La pendiente se calcula como la diferencia de elevación dividida entre la distancia. Verás la diferencia de elevación, el porcentaje de pendiente, la razón y el ángulo.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Calcular</strong> — Toca "Calcular" para ver los resultados. El cálculo se guarda automáticamente en el Historial. Usa el botón ⇆ para intercambiar el origen y el destino.</p>
+            </>
+          ) : (
+            <>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>From Point</strong> — Tap the FROM POINT field and select your starting point. Only points with elevation data are shown.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>To Point</strong> — Tap the TO POINT field and select the ending point.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Horizontal Distance</strong> — Enter the horizontal distance between the two points in feet.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Results</strong> — Slope is calculated as the elevation difference divided by horizontal distance. You'll see Elevation Difference, Slope %, Ratio, and Angle.</p>
+              <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Calculate</strong> — Tap "Calculate" to view the results. The calculation is automatically saved to History. Use the ⇆ button to swap From and To points.</p>
+            </>
+          )}
+          <button
+            style={{ alignSelf: 'flex-start', marginTop: 4, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, cursor: 'pointer', fontWeight: 700 }}
+            onClick={() => setShowSlopeTip(false)}
+          >{t('gotIt')}</button>
+        </div>
+      </div>
+    </CenteredOverlay>
+  ) : null;
+
+  // ── RESULTS VIEW ──────────────────────────────────────────────────────────
+  if (showResults && committed) {
+    const { result, fromPt: cFromPt, toPt: cToPt, distN: cDistN } = committed;
+    const dc = dirColor(result.dir);
+    return (
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+        {/* Direction banner */}
+        <div style={{ backgroundColor: dc, borderRadius: 8, padding: '7px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
+            {dirIcon(result.dir)} {dirLabel(result.dir)}
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)' }}>
+            {cFromPt.label} → {cToPt.label}
+          </span>
+        </div>
+
+        {/* Summary: From / To / Distance */}
+        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {([
+            { lbl: t('slopeFromPoint'), val: `${cFromPt.label}${cFromPt.pointName ? ' · ' + cFromPt.pointName : ''}`, color: BLUE_ACC },
+            { lbl: t('slopeToPoint'),   val: `${cToPt.label}${cToPt.pointName ? ' · ' + cToPt.pointName : ''}`,       color: BLUE_ACC },
+            { lbl: t('slopeHorizDist'), val: `${cDistN.toFixed(2)} ft`, color: TEXT_PRI },
+          ]).map(({ lbl, val, color }) => (
+            <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{lbl}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color, fontFamily: 'monospace' }}>{val}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Graph — primary focal point */}
+        <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '8px 4px 4px' }}>
+          <CalcProfileChart
+            elevA={cFromPt.bmElevation!} elevB={cToPt.bmElevation!} distN={cDistN}
+            labelA={cFromPt.label} labelB={cToPt.label}
+          />
+        </div>
+
+        {/* 4 metric cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
+          {([
+            { key: 'slopeElevDiff', value: `${sign(result.diff)}${result.diff.toFixed(3)}ft`, color: dc },
+            { key: 'slopeSlopePct', value: `${sign(result.pct)}${result.pct.toFixed(2)}%`,    color: dc },
+            { key: 'slopeRatioLbl', value: result.ratio != null ? `1:${result.ratio.toFixed(1)}` : '—', color: TEXT_PRI },
+            { key: 'slopeAngleLbl', value: `${result.angle.toFixed(2)}°`, color: TEXT_PRI },
+          ] as const).map(({ key, value, color }) => (
+            <div key={key} style={{ backgroundColor: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 8px' }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t(key)}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color, fontFamily: 'monospace', lineHeight: 1.2 }}>{value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Calculate Another Slope */}
+        <button
+          style={{ height: 44, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.3, marginTop: 2 }}
+          onClick={handleCalcAnother}
+        >{t('slopeCalcAnotherBtn')}</button>
+
+        {infoTipModal}
+      </div>
+    );
+  }
+
+  // ── INPUT VIEW ────────────────────────────────────────────────────────────
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
 
@@ -468,7 +581,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input
               type="text" inputMode="decimal" value={distDisplay}
-              onChange={e => { setDist(e.target.value); setSavedCombo(null); }}
+              onChange={e => { setDist(e.target.value); }}
               onFocus={() => setDistFocused(true)}
               onBlur={() => setDistFocused(false)}
               style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!dist && !distFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
@@ -481,105 +594,41 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
         {toPt   && !validTo   && <div style={{ fontSize: 14, fontWeight: 700, color: RED_DARK }}>{t('slopeNoElevTo')}</div>}
       </div>
 
-      {/* Results */}
-      {result && (
-        <>
-          <div style={{ backgroundColor: dc, borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
-              {dirIcon(result.dir)} {dirLabel(result.dir)}
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)', textAlign: 'right' as const }}>
-              {fromPt!.label} → {toPt!.label}
-            </span>
-          </div>
+      {/* Clear + Calculate buttons */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          style={{ flex: '0 0 auto', height: 44, paddingLeft: 18, paddingRight: 18, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+          onClick={() => { setFromId(null); setToId(null); setDist(''); }}
+        >{t('slopeClearBtn')}</button>
+        <button
+          style={{
+            flex: 1, height: 44,
+            backgroundColor: canCalc ? NAVY : '#CBD5E1',
+            border: 'none', borderRadius: 10,
+            color: canCalc ? '#fff' : '#9CA3AF',
+            fontSize: 16, fontWeight: 800,
+            cursor: canCalc ? 'pointer' : 'default',
+            letterSpacing: 0.3,
+            transition: 'background-color 0.2s',
+          }}
+          disabled={!canCalc}
+          onClick={handleCalculate}
+        >{t('slopeCalculateBtn')}</button>
+      </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
-            {([
-              { key: 'slopeElevDiff', value: `${sign(result.diff)}${result.diff.toFixed(3)}ft`, color: dc },
-              { key: 'slopeSlopePct', value: `${sign(result.pct)}${result.pct.toFixed(2)}%`,    color: dc },
-              { key: 'slopeRatioLbl', value: result.ratio != null ? `1:${result.ratio.toFixed(1)}` : '—', color: TEXT_PRI },
-              { key: 'slopeAngleLbl', value: `${result.angle.toFixed(2)}°`, color: TEXT_PRI },
-            ] as const).map(({ key, value, color }) => (
-              <div key={key} style={{ backgroundColor: CARD, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 8px' }}>
-                <div style={{ fontSize: 11.5, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t(key)}</div>
-                <div style={{ fontSize: 17, fontWeight: 900, color, fontFamily: 'monospace', lineHeight: 1.2 }}>{value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Clear + Save buttons */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              style={{ flex: '0 0 auto', height: 36, paddingLeft: 16, paddingRight: 16, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
-              onClick={() => { setFromId(null); setToId(null); setDist(''); setSavedCombo(null); }}
-            >{t('slopeClearBtn')}</button>
-            <button
-              style={{
-                flex: 1, height: 36,
-                backgroundColor: alreadySaved ? '#6B7280' : NAVY,
-                border: 'none', borderRadius: 8,
-                color: '#fff', fontSize: 15, fontWeight: 800,
-                cursor: alreadySaved ? 'default' : 'pointer',
-                letterSpacing: 0.3,
-                boxShadow: alreadySaved ? 'none' : '0 2px 6px rgba(20,58,99,0.25)',
-                opacity: alreadySaved ? 0.55 : 1,
-                transition: 'background-color 0.2s, opacity 0.2s',
-              }}
-              onClick={handleSave}
-              disabled={alreadySaved}
-            >{alreadySaved ? t('slopeSavedCalc') : t('slopeSaveCalc')}</button>
-          </div>
-        </>
-      )}
-
-      {/* Info tip modal */}
-      {showSlopeTip && (
-        <CenteredOverlay onClose={() => setShowSlopeTip(false)}>
-          <div style={{ width: '100%', maxWidth: 380, backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
-            <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>
-                {lang === 'es' ? 'Cómo Usar Calcular Pendiente' : 'How to Use Find Slope'}
-              </span>
-              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={() => setShowSlopeTip(false)}>✕</button>
-            </div>
-            <div style={{ padding: '14px 16px', fontSize: 14, color: TEXT_SEC, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {lang === 'es' ? (
-                <>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Origen</strong> — Toca el campo "PUNTO DE ORIGEN" y selecciona el punto de inicio. Solo se muestran puntos con datos de elevación.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Destino</strong> — Toca el campo "PUNTO DE DESTINO" y selecciona el punto final.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Distancia Horizontal</strong> — Ingresa la distancia horizontal entre los dos puntos en pies.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Resultados</strong> — La pendiente se calcula como la diferencia de elevación dividida entre la distancia. Verás la diferencia de elevación, el porcentaje de pendiente, la razón y el ángulo.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Guardar</strong> — Toca "Guardar Cálculo" para guardarlo en el Historial. Usa el botón ⇆ para intercambiar el origen y el destino.</p>
-                </>
-              ) : (
-                <>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>From Point</strong> — Tap the FROM POINT field and select your starting point. Only points with elevation data are shown.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>To Point</strong> — Tap the TO POINT field and select the ending point.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Horizontal Distance</strong> — Enter the horizontal distance between the two points in feet.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Results</strong> — Slope is calculated as the elevation difference divided by horizontal distance. You'll see Elevation Difference, Slope %, Ratio, and Angle.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Save</strong> — Tap "Save Calculation" to save to History. Use the ⇆ button to swap From and To points.</p>
-                </>
-              )}
-              <button
-                style={{ alignSelf: 'flex-start', marginTop: 4, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, cursor: 'pointer', fontWeight: 700 }}
-                onClick={() => setShowSlopeTip(false)}
-              >{t('gotIt')}</button>
-            </div>
-          </div>
-        </CenteredOverlay>
-      )}
+      {infoTipModal}
 
       {/* Point pickers */}
       {picker === 'from' && (
         <PointPickerModal points={points} setMap={setMap} selectedId={fromId}
           title={t('slopeSelectFrom')}
-          onSelect={id => { setFromId(id); setSavedCombo(null); }}
+          onSelect={id => { setFromId(id); }}
           onClose={() => setPicker(null)} />
       )}
       {picker === 'to' && (
         <PointPickerModal points={points} setMap={setMap} selectedId={toId}
           title={t('slopeSelectTo')}
-          onSelect={id => { setToId(id); setSavedCombo(null); }}
+          onSelect={id => { setToId(id); }}
           onClose={() => setPicker(null)} />
       )}
     </div>
