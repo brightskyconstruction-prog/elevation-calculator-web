@@ -473,7 +473,6 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
     const elevBm   = pt.bmElevation > 0 ? pt.bmElevation : null;
     const elevDiff = (elevGoal != null && elevBm != null) ? elevGoal - elevBm : null;
     const rowBg  = role === 'A' ? 'rgba(47,127,191,0.07)' : 'rgba(31,138,77,0.07)';
-    const roleBg = role === 'A' ? BLUE : GREEN;
 
     const rodFIF      = toFIFStr(pt.engineeringFeet);
     const goalRodFIF  = rodGoal  != null ? toFIFStr(rodGoal)  : '';
