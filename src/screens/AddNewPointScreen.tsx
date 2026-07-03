@@ -265,6 +265,76 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave, head
   );
 }
 
+// ─── Set list modal (replaces inline dropdown in QuickEditModal) ──────────────
+interface SetListModalProps {
+  open: boolean;
+  onClose: () => void;
+  points: SurveyPoint[];
+  currentPointId?: string;
+  t: (k: string) => string;
+  onSelectPoint: (pt: SurveyPoint) => void;
+}
+function SetListModal({ open, onClose, points, currentPointId, t, onSelectPoint }: SetListModalProps) {
+  if (!open) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 400,
+        backgroundColor: 'rgba(0,0,0,0.60)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '0 24px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          backgroundColor: CARD, borderRadius: 18,
+          maxWidth: 400, width: '100%', maxHeight: '70vh',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.32)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 16px 12px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0,
+        }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: TEXT_PRI }}>
+            {t('viewAllSetPoints')}
+          </h3>
+          <button
+            style={{ background: 'none', border: 'none', color: TEXT_PRI, fontSize: 22, fontWeight: 900, lineHeight: 1, cursor: 'pointer', padding: '2px 4px' }}
+            onClick={onClose}
+            aria-label="Close"
+          >✕</button>
+        </div>
+        {/* Scrollable list */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {points.length === 0
+            ? <div style={{ padding: '20px', color: TEXT_DIS, fontSize: 15, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
+            : points.map(pt => (
+              <div
+                key={pt.id}
+                style={{
+                  display: 'flex', alignItems: 'center', padding: '12px 16px',
+                  cursor: 'pointer', borderBottom: `1px solid ${BORDER}`,
+                  backgroundColor: pt.id === currentPointId ? BLUE_DEEP : 'transparent',
+                  overflow: 'hidden',
+                }}
+                onClick={() => onSelectPoint(pt)}
+              >
+                <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 16, flexShrink: 0 }}>{pt.label}</span>
+                <span style={{ color: TEXT_SEC, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Duplicate point name alert dialog ───────────────────────────────────────
 interface DupNameModalProps {
   conflict: { name: string; label: string } | null;
@@ -401,7 +471,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [dupConflict,       setDupConflict]       = useState<{ name: string; label: string } | null>(null);
   const [showManagePoint,   setShowManagePoint]   = useState(false);
   const [editingFromManage, setEditingFromManage] = useState(false); // true = overlay mounted but hidden while editing a point from it
-  const [showSetPanel,   setShowSetPanel]   = useState(false);
+  const [showSetListModal, setShowSetListModal] = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const savedNewPointRef = useRef<{
     rodFeet: string; rodInches: number; rodFracDec: number; rodFracLbl: string;
@@ -469,7 +539,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     }
   };
 
-  const toggleSetDropdown = () => setShowSetPanel(v => !v);
 
   // Last used set: set associated with the most recently updated point that has a setId
   const lastUsedSet = (() => {
@@ -512,7 +581,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
-    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupConflict(null); setShowSetPanel(false); setSetAssignMethod(null); setPendingNewSet(null);
+    setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupConflict(null); setShowSetListModal(false); setSetAssignMethod(null); setPendingNewSet(null);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -1188,50 +1257,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       />
       <QuickEditModal
         open={showNameModal} title={t('pointName')} placeholder={t('pointNamePlaceholder')}
-        value={pointName} onClose={() => { setShowNameModal(false); setShowSetPanel(false); }}
+        value={pointName} onClose={() => { setShowNameModal(false); setShowSetListModal(false); }}
         headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
           <button
             style={{ ...s.viewSetDropBtn, fontSize: 14, maxWidth: 220 }}
-            onClick={toggleSetDropdown}
+            onClick={() => setShowSetListModal(true)}
           >
-            {t('viewAllSetPoints')} {showSetPanel ? '▲' : '▼'}
+            {t('viewAllSetPoints')}
           </button>
-        ) : undefined}
-        dropdownContent={(showSetPanel && dropdownSetId) ? (
-          <div style={{
-            border: `1px solid ${BORDER}`, borderRadius: 8,
-            backgroundColor: CARD, overflow: 'hidden',
-            maxHeight: 220, overflowY: 'auto',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-          }}>
-            {dropdownPoints.length === 0
-              ? <div style={{ padding: '12px', color: TEXT_DIS, fontSize: 15, textAlign: 'center' }}>{t('noSetPointsYet')}</div>
-              : dropdownPoints.map(pt => (
-                <div
-                  key={pt.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', padding: '10px 14px',
-                    cursor: 'pointer', borderBottom: `1px solid ${BORDER}`,
-                    backgroundColor: pt.id === currentPoint?.id ? BLUE_DEEP : 'transparent',
-                    overflow: 'hidden',
-                  }}
-                  onClick={() => {
-                    if (isNewPoint && !cameFromNewPoint) {
-                      savedNewPointRef.current = { rodFeet, rodInches, rodFracDec, rodFracLbl, engFtStr, bmElevStr, pointName, takenBy, assignedSet };
-                      setCameFromNewPoint(true);
-                    }
-                    const gi = points.findIndex(p => p.id === pt.id);
-                    if (gi >= 0) goTo(gi);
-                    setShowSetPanel(false);
-                    setShowNameModal(false);
-                  }}
-                >
-                  <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 16, flexShrink: 0 }}>{pt.label}</span>
-                  <span style={{ color: TEXT_SEC, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}> — {pt.pointName || t('unnamedPoint')}</span>
-                </div>
-              ))
-            }
-          </div>
         ) : undefined}
         validate={(name) => assignedSet ? checkDupName(name, assignedSet, currentPoint?.id) : null}
         onSave={v => {
@@ -1242,6 +1275,25 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       />
       {/* ── Duplicate point name alert dialog ── */}
       <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
+
+      {/* ── Set list modal — centered overlay showing all points in the current set ── */}
+      <SetListModal
+        open={showSetListModal}
+        onClose={() => setShowSetListModal(false)}
+        points={dropdownPoints}
+        currentPointId={currentPoint?.id}
+        t={t}
+        onSelectPoint={(pt) => {
+          if (isNewPoint && !cameFromNewPoint) {
+            savedNewPointRef.current = { rodFeet, rodInches, rodFracDec, rodFracLbl, engFtStr, bmElevStr, pointName, takenBy, assignedSet };
+            setCameFromNewPoint(true);
+          }
+          const gi = points.findIndex(p => p.id === pt.id);
+          if (gi >= 0) goTo(gi);
+          setShowSetListModal(false);
+          setShowNameModal(false);
+        }}
+      />
 
       {/* ── Manage Point overlay — kept mounted (display toggle) to preserve SinglePointTab state ── */}
       {(showManagePoint || editingFromManage) && (
@@ -1290,14 +1342,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 // ─── Shared modal styles ─────────────────────────────────────────────────────
 
 const c: Record<string, React.CSSProperties> = {
-  modalTitle: { fontSize: 16, fontWeight: 700, color: TEXT_PRI, textAlign: 'center', margin: 0 },
-  modalDesc:  { fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, margin: 0 },
-  fieldLbl:   { display: 'block', fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 4 },
-  input:      { height: 42, width: '100%', backgroundColor: '#f9f9f9', border: `1.5px solid ${BORDER}`, borderRadius: 6, padding: '0 12px', fontSize: 14, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' },
-  saveBtn:    { height: 44, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' },
-  cancelBtn:  { height: 40, width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT_SEC, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
+  modalTitle: { fontSize: 19, fontWeight: 700, color: TEXT_PRI, textAlign: 'center', margin: 0 },
+  modalDesc:  { fontSize: 15, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, margin: 0 },
+  fieldLbl:   { display: 'block', fontSize: 12, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 4 },
+  input:      { height: 42, width: '100%', backgroundColor: '#f9f9f9', border: `1.5px solid ${BORDER}`, borderRadius: 6, padding: '0 12px', fontSize: 16, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' },
+  saveBtn:    { height: 48, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 8, color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' },
+  cancelBtn:  { height: 40, width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer' },
   setIdBadge: { backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, padding: '6px 10px', flexShrink: 0 },
-  setIdText:  { fontSize: 13, fontWeight: 800, color: BLUE_ACC, letterSpacing: '0.5px' },
+  setIdText:  { fontSize: 15, fontWeight: 800, color: BLUE_ACC, letterSpacing: '0.5px' },
   setRow:     { display: 'flex', alignItems: 'center', padding: '10px 12px', cursor: 'pointer' },
   setName:    { fontSize: 13, fontWeight: 700, color: BLUE_ACC },
   setDetail:  { fontSize: 11, color: TEXT_SEC },
