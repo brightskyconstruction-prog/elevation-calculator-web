@@ -1332,61 +1332,44 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
 
             <div style={{ height: 1, backgroundColor: BORDER_S, margin: '0 10px' }} />
 
-            {/* ── 2-column detail grid ── */}
-            <div style={{ padding: '7px 12px 5px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 10px' }}>
-              {/* col 1: Point ID */}
+            {/* ── Compact data section: Rod Reading + Elevation + Dates ── */}
+            <div style={{ padding: '7px 12px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+              {/* Rod Reading */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spPointId')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.label}</div>
-              </div>
-              {/* col 2: Type */}
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spPointType')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{badgeLabel}</div>
-              </div>
-              {/* col 1: Set */}
-              {setObj && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spSet')}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{setObj.setLabel ? `${setObj.setLabel} · ${setObj.name}` : setObj.name}</div>
-                </div>
-              )}
-              {/* col 2: Created */}
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spCreated')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.createdAt)}</div>
-              </div>
-              {/* col 1: Last Updated */}
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spLastUpdated')}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.updatedAt)}</div>
-              </div>
-              {/* col 2: Elevation (if available) */}
-              {hasBm && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('elevation')}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: ptType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>
-                    {(pt.bmElevation ?? 0).toFixed(2)} ft
+                <div style={{ fontSize: 12, fontWeight: 800, color: NAVY, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('rodReading')}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 10px' }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spFeetInches')}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{fifStr}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spDecimalFeet')}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div style={{ height: 1, backgroundColor: BORDER_S, margin: '4px 10px 0' }} />
-
-            {/* Rod Reading — 2-column */}
-            <div style={{ padding: '6px 12px 9px' }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: NAVY, letterSpacing: 0.8, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('rodReading')}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 10px' }}>
+              {/* Elevation + Dates — 3 cols if elevation present, 2 cols otherwise */}
+              <div style={{ display: 'grid', gridTemplateColumns: hasBm ? '1fr 1fr 1fr' : '1fr 1fr', gap: '0 10px' }}>
+                {hasBm && (
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('elevation')}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: ptType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>
+                      {(pt.bmElevation ?? 0).toFixed(2)} ft
+                    </div>
+                  </div>
+                )}
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spFeetInches')}</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{fifStr}</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spCreated')}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.createdAt)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spDecimalFeet')}</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spLastUpdated')}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(pt.updatedAt)}</div>
                 </div>
               </div>
+
             </div>
           </div>
         )}
