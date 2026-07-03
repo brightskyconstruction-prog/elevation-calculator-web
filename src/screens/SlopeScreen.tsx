@@ -513,7 +513,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             {/* From Point */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeFromPoint')}</span>
-              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: BLUE_ACC, fontFamily: '"Courier New", Courier, monospace' }}>
+              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: NAVY }}>
                 <b>{cFromPt.label}{cFromPt.pointName ? ` (${cFromPt.pointName})` : ''}</b>{' '}
                 <span style={{ whiteSpace: 'nowrap' as const }}><b>• {(cFromPt.bmElevation ?? 0).toFixed(3)} ft Elevation</b></span>
               </div>
@@ -521,7 +521,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             {/* To Point */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeToPoint')}</span>
-              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: BLUE_ACC, fontFamily: '"Courier New", Courier, monospace' }}>
+              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: NAVY }}>
                 <b>{cToPt.label}{cToPt.pointName ? ` (${cToPt.pointName})` : ''}</b>{' '}
                 <span style={{ whiteSpace: 'nowrap' as const }}><b>• {(cToPt.bmElevation ?? 0).toFixed(3)} ft Elevation</b></span>
               </div>
