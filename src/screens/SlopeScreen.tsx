@@ -105,8 +105,8 @@ function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
 }) {
   const result = calcSlope(elevA, elevB, distN);
   const dc = dirColor(result.dir);
-  const W = 340, H = 240;
-  const PL = 50, PR = 14, PT = 26, PB = 36;
+  const W = 340, H = 232;
+  const PL = 50, PR = 14, PT = 22, PB = 22;
   const PW = W - PL - PR;
   const PH = H - PT - PB;
 
@@ -153,7 +153,7 @@ function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
       <circle cx={xB} cy={yB} r={2.5} fill={BLUE_ACC} />
       <text x={xB} y={yB - 9} textAnchor="middle" fontSize="9.5" fontWeight="900" fill={NAVY}>{labelB}</text>
       <text x={xB} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{elevB.toFixed(2)}</text>
-      <text x={PL + PW / 2} y={H - 1} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_DIS}>
+      <text x={PL + PW / 2} y={PT + PH + 20} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_DIS}>
         {distN.toFixed(1)} ft horizontal
       </text>
       <text x={PL + PW / 2} y={(yA + yB) / 2 - 8} textAnchor="middle" fontSize="11" fontWeight="900" fill={dc}>
@@ -495,7 +495,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
     const { result, fromPt: cFromPt, toPt: cToPt, distN: cDistN } = committed;
     const dc = dirColor(result.dir);
     return (
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
         {/* Direction banner + Summary — visually connected as one unit */}
         <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${BORDER}`, flexShrink: 0 }}>
@@ -511,18 +511,20 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           {/* Summary */}
           <div style={{ backgroundColor: CARD, padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
             {/* From Point */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeFromPoint')}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace', textAlign: 'right' as const }}>
-                {cFromPt.label}{cFromPt.pointName ? ` · ${cFromPt.pointName}` : ''} · {(cFromPt.bmElevation ?? 0).toFixed(3)} ft elev
-              </span>
+              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
+                {cFromPt.label}{cFromPt.pointName ? ` (${cFromPt.pointName})` : ''}{' '}
+                <span style={{ whiteSpace: 'nowrap' as const }}>• {(cFromPt.bmElevation ?? 0).toFixed(3)} ft Elevation</span>
+              </div>
             </div>
             {/* To Point */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeToPoint')}</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace', textAlign: 'right' as const }}>
-                {cToPt.label}{cToPt.pointName ? ` · ${cToPt.pointName}` : ''} · {(cToPt.bmElevation ?? 0).toFixed(3)} ft elev
-              </span>
+              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
+                {cToPt.label}{cToPt.pointName ? ` (${cToPt.pointName})` : ''}{' '}
+                <span style={{ whiteSpace: 'nowrap' as const }}>• {(cToPt.bmElevation ?? 0).toFixed(3)} ft Elevation</span>
+              </div>
             </div>
             {/* Horizontal Distance */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
