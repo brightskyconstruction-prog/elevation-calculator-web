@@ -495,34 +495,55 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
     const { result, fromPt: cFromPt, toPt: cToPt, distN: cDistN } = committed;
     const dc = dirColor(result.dir);
     return (
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
 
-        {/* Direction banner */}
-        <div style={{ backgroundColor: dc, borderRadius: 8, padding: '7px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
-            {dirIcon(result.dir)} {dirLabel(result.dir)}
-          </span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)' }}>
-            {cFromPt.label} → {cToPt.label}
-          </span>
-        </div>
-
-        {/* Summary: From / To / Distance */}
-        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {([
-            { lbl: t('slopeFromPoint'), val: `${cFromPt.label}${cFromPt.pointName ? ' · ' + cFromPt.pointName : ''}`, color: BLUE_ACC },
-            { lbl: t('slopeToPoint'),   val: `${cToPt.label}${cToPt.pointName ? ' · ' + cToPt.pointName : ''}`,       color: BLUE_ACC },
-            { lbl: t('slopeHorizDist'), val: `${cDistN.toFixed(2)} ft`, color: TEXT_PRI },
-          ]).map(({ lbl, val, color }) => (
-            <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{lbl}</span>
-              <span style={{ fontSize: 15, fontWeight: 800, color, fontFamily: 'monospace' }}>{val}</span>
+        {/* Direction banner + Summary — visually connected as one unit */}
+        <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${BORDER}`, flexShrink: 0 }}>
+          {/* Banner */}
+          <div style={{ backgroundColor: dc, padding: '6px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
+              {dirIcon(result.dir)} {dirLabel(result.dir)}
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)' }}>
+              {cFromPt.label} → {cToPt.label}
+            </span>
+          </div>
+          {/* Summary */}
+          <div style={{ backgroundColor: CARD, padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {/* From Point */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeFromPoint')}</span>
+              <div style={{ textAlign: 'right' as const }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
+                  {cFromPt.label}{cFromPt.pointName ? ` · ${cFromPt.pointName}` : ''}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>
+                  {(cFromPt.bmElevation ?? 0).toFixed(3)} ft
+                </div>
+              </div>
             </div>
-          ))}
+            {/* To Point */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeToPoint')}</span>
+              <div style={{ textAlign: 'right' as const }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
+                  {cToPt.label}{cToPt.pointName ? ` · ${cToPt.pointName}` : ''}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>
+                  {(cToPt.bmElevation ?? 0).toFixed(3)} ft
+                </div>
+              </div>
+            </div>
+            {/* Horizontal Distance */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeHorizDist')}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{cDistN.toFixed(2)} ft</span>
+            </div>
+          </div>
         </div>
 
         {/* Graph — primary focal point */}
-        <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '8px 4px 4px' }}>
+        <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '3px 4px 2px' }}>
           <CalcProfileChart
             elevA={cFromPt.bmElevation!} elevB={cToPt.bmElevation!} distN={cDistN}
             labelA={cFromPt.label} labelB={cToPt.label}
@@ -546,7 +567,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
 
         {/* Calculate Another Slope */}
         <button
-          style={{ height: 44, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.3, marginTop: 2 }}
+          style={{ height: 38, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.3 }}
           onClick={handleCalcAnother}
         >{t('slopeCalcAnotherBtn')}</button>
 
