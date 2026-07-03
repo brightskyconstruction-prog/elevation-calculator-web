@@ -22,6 +22,35 @@ const TEXT_PRI  = '#111827';
 const TEXT_SEC  = '#374151';
 const TEXT_DIS  = '#9CA3AF';
 
+// ─── Stacked fraction display for Feet-Inches values ─────────────────────────
+function StackedFIFSpan({ feet, inches, frac, color = '#111827', size = 14 }: {
+  feet: string | number; inches: string | number; frac: string;
+  color?: string; size?: number;
+}) {
+  const hasFrac  = !!(frac && frac !== '0/0' && frac !== 'None' && frac !== '0');
+  const parts    = hasFrac ? frac.split('/') : [];
+  const num      = parts.length === 2 ? parseInt(parts[0], 10) : NaN;
+  const den      = parts.length === 2 ? parseInt(parts[1], 10) : NaN;
+  const showFrac = hasFrac && !isNaN(num) && !isNaN(den);
+  const tiny     = Math.max(8, Math.round(size * 0.62));
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+      <span style={{ fontSize: size, fontWeight: 700, color }}>{feet}' {inches}{showFrac ? ' ' : '"'}</span>
+      {showFrac && (
+        <>
+          <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+            <span style={{ fontSize: tiny, fontWeight: 700, color, lineHeight: 1.1 }}>{num}</span>
+            <span style={{ width: '100%', height: 1.5, backgroundColor: color, display: 'block' }} />
+            <span style={{ fontSize: tiny, fontWeight: 700, color, lineHeight: 1.1 }}>{den}</span>
+          </span>
+          <span style={{ fontSize: size, fontWeight: 700, color }}>"</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 // ─── Public API exposed to App.tsx via imperativeRef ─────────────────────────
 
 export interface AddNewPointScreenAPI {
@@ -93,21 +122,22 @@ const mStyle: Record<string, React.CSSProperties> = {
 // ─── Create Set Modal ─────────────────────────────────────────────────────────
 interface CreateSetProps {
   open: boolean; onClose: () => void;
-  pointLabel: string; engFt: number; fifDisplay: string; nextSetId: string;
+  pointLabel: string; engFt: number;
+  rodFeet: string; rodInches: number; rodFracLbl: string;
+  nextSetId: string;
   onCreate: (name: string) => void;
 }
-function CreateSetModal({ open, onClose, pointLabel, engFt, fifDisplay, nextSetId, onCreate }: CreateSetProps) {
+function CreateSetModal({ open, onClose, pointLabel, engFt, rodFeet, rodInches, rodFracLbl, nextSetId, onCreate }: CreateSetProps) {
   const [name, setName] = useState('');
   const { t, lang } = useLang();
   return (
     <ModalOverlay open={open} onClose={onClose}>
       <h3 style={c.modalTitle}>{t('createSetTitle')}</h3>
       <p style={c.modalDesc}>
-        {strings[lang].willBeFirstPoint(
-          pointLabel,
-          fifDisplay || '—',
-          isNaN(engFt) ? '—' : engFt.toFixed(2),
-        )}
+        {lang === 'es' ? 'Punto' : 'Point'} {pointLabel}{' '}(
+        <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={14} />
+        {` | ${isNaN(engFt) || engFt === 0 ? '—' : engFt.toFixed(2)} ft ${lang === 'es' ? 'Ing.' : 'Engineering'})`}{' '}
+        {lang === 'es' ? 'será el primero en este conjunto.' : 'will be the first point in this set.'}
       </p>
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
         <div style={c.setIdBadge}><span style={c.setIdText}>{nextSetId}</span></div>
@@ -885,7 +915,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 {fifDisplay ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
                     <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('feetInchesBtn')}</span>
-                    <span style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRI, letterSpacing: '-0.5px' }}>{fifDisplay}</span>
+                    <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={22} />
                   </div>
                 ) : null}
                 {engDisplay ? (
@@ -1031,7 +1061,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               {fifDisplay && fifDisplay !== '—' && (
                 <div style={s.autoGenRow}>
                   <span style={s.autoGenLbl}>{t('autoGenFIF')}:</span>
-                  <span style={s.autoGenVal}>{fifDisplay}</span>
+                  <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={BLUE_ACC} size={15} />
                 </div>
               )}
             </>
@@ -1247,7 +1277,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       <CreateSetModal
         open={showCreate} onClose={() => setShowCreate(false)}
         pointLabel={currentLabel} engFt={parseFloat(engFtStr) || 0}
-        fifDisplay={fifDisplay}
+        rodFeet={rodFeet} rodInches={rodInches} rodFracLbl={rodFracLbl}
         nextSetId={nextSetLabel(projectId)} onCreate={handleCreateSet}
       />
       <AssignSetModal
