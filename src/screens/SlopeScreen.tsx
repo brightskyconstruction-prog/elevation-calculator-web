@@ -495,7 +495,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
     const { result, fromPt: cFromPt, toPt: cToPt, distN: cDistN } = committed;
     const dc = dirColor(result.dir);
     return (
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 0 }}>
 
         {/* Direction banner + Summary — visually connected as one unit */}
         <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${BORDER}`, flexShrink: 0 }}>
@@ -513,17 +513,17 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             {/* From Point */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeFromPoint')}</span>
-              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
-                {cFromPt.label}{cFromPt.pointName ? ` (${cFromPt.pointName})` : ''}{' '}
-                <span style={{ whiteSpace: 'nowrap' as const }}>• {(cFromPt.bmElevation ?? 0).toFixed(3)} ft Elevation</span>
+              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: BLUE_ACC, fontFamily: 'monospace' }}>
+                <b>{cFromPt.label}{cFromPt.pointName ? ` (${cFromPt.pointName})` : ''}</b>{' '}
+                <span style={{ whiteSpace: 'nowrap' as const, fontWeight: 700 }}>• <b>{(cFromPt.bmElevation ?? 0).toFixed(3)} ft Elevation</b></span>
               </div>
             </div>
             {/* To Point */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeToPoint')}</span>
-              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
-                {cToPt.label}{cToPt.pointName ? ` (${cToPt.pointName})` : ''}{' '}
-                <span style={{ whiteSpace: 'nowrap' as const }}>• {(cToPt.bmElevation ?? 0).toFixed(3)} ft Elevation</span>
+              <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: BLUE_ACC, fontFamily: 'monospace' }}>
+                <b>{cToPt.label}{cToPt.pointName ? ` (${cToPt.pointName})` : ''}</b>{' '}
+                <span style={{ whiteSpace: 'nowrap' as const, fontWeight: 700 }}>• <b>{(cToPt.bmElevation ?? 0).toFixed(3)} ft Elevation</b></span>
               </div>
             </div>
             {/* Horizontal Distance */}
@@ -534,8 +534,8 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
           </div>
         </div>
 
-        {/* Graph — primary focal point */}
-        <div style={{ borderRadius: 9, overflow: 'hidden', lineHeight: 0 }}>
+        {/* Graph — primary focal point, no gap above (attaches to card) */}
+        <div style={{ borderRadius: 9, overflow: 'hidden', lineHeight: 0, marginBottom: 4 }}>
           <CalcProfileChart
             elevA={cFromPt.bmElevation!} elevB={cToPt.bmElevation!} distN={cDistN}
             labelA={cFromPt.label} labelB={cToPt.label}
@@ -543,7 +543,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
         </div>
 
         {/* 4 metric cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5, marginBottom: 4 }}>
           {([
             { key: 'slopeElevDiff', value: `${sign(result.diff)}${result.diff.toFixed(3)}ft`, color: dc },
             { key: 'slopeSlopePct', value: `${sign(result.pct)}${result.pct.toFixed(2)}%`,    color: dc },
