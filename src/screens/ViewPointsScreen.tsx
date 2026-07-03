@@ -95,6 +95,35 @@ function toFIFStr(eng: number): string {
   return `${feet}'-${inches}${frac && frac !== '0' ? ` ${frac}` : ''}"`;
 }
 
+// ─── Stacked fraction display for FIF values ──────────────────────────────────
+function StackedFIFSpan({ feet, inches, frac, color = '#111827', size = 14 }: {
+  feet: string | number; inches: string | number; frac: string;
+  color?: string; size?: number;
+}) {
+  const hasFrac  = !!(frac && frac !== '0');
+  const parts    = hasFrac ? frac.split('/') : [];
+  const num      = parts.length === 2 ? parseInt(parts[0], 10) : NaN;
+  const den      = parts.length === 2 ? parseInt(parts[1], 10) : NaN;
+  const showFrac = hasFrac && !isNaN(num) && !isNaN(den);
+  const tiny     = Math.max(8, Math.round(size * 0.62));
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+      <span style={{ fontSize: size, fontWeight: 700, color }}>{feet}' - {inches}{showFrac ? ' ' : '"'}</span>
+      {showFrac && (
+        <>
+          <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+            <span style={{ fontSize: tiny, fontWeight: 700, color, lineHeight: 1.1 }}>{num}</span>
+            <span style={{ width: '100%', height: 1.5, backgroundColor: color, display: 'block' }} />
+            <span style={{ fontSize: tiny, fontWeight: 700, color, lineHeight: 1.1 }}>{den}</span>
+          </span>
+          <span style={{ fontSize: size, fontWeight: 700, color }}>"</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // GOAL ENTRY MODAL
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -474,12 +503,6 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
     const elevDiff = (elevGoal != null && elevBm != null) ? elevGoal - elevBm : null;
     const rowBg  = role === 'A' ? 'rgba(47,127,191,0.07)' : 'rgba(31,138,77,0.07)';
 
-    const rodFIF      = toFIFStr(pt.engineeringFeet);
-    const goalRodFIF  = rodGoal  != null ? toFIFStr(rodGoal)  : '';
-    const rodDiffFIF  = rodDiff  != null ? toFIFStr(Math.abs(rodDiff))  : '';
-    const elevFIF     = elevBm   != null ? toFIFStr(elevBm)   : '';
-    const goalElevFIF = elevGoal != null ? toFIFStr(elevGoal) : '';
-    const elevDiffFIF = elevDiff != null ? toFIFStr(Math.abs(elevDiff)) : '';
 
     return (
       <React.Fragment key={pt.id}>
@@ -496,13 +519,13 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
           <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, padding: '0 6px' }}>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{rodFIF}</div>
+              <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_SEC} size={15} />
             </div>
             {rodGoal != null ? (
               <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'rod')}>
                 <div style={{ fontSize: 9, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalHeight')}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{rodGoal.toFixed(2)} ft</div>
-                <div style={{ fontSize: 11, color: GREEN, fontFamily: 'monospace' }}>{goalRodFIF}</div>
+                <StackedFIFSpan {...engToFIF(rodGoal!)} color={GREEN} size={11} />
               </div>
             ) : (
               <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 8px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'rod')}>
@@ -517,13 +540,13 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               <>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)} ft</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{elevFIF}</div>
+                  <StackedFIFSpan {...engToFIF(pt.bmElevation)} color={TEXT_SEC} size={15} />
                 </div>
                 {elevGoal != null ? (
                   <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'elev')}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalElev')}</div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{elevGoal.toFixed(2)} ft</div>
-                    <div style={{ fontSize: 11, color: GREEN, fontFamily: 'monospace' }}>{goalElevFIF}</div>
+                    <StackedFIFSpan {...engToFIF(elevGoal!)} color={GREEN} size={11} />
                   </div>
                 ) : (
                   <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 8px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'elev')}>
@@ -547,7 +570,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               {rodDiff != null && (
                 <>
                   <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{Math.abs(rodDiff).toFixed(2)} ft</span>
-                  <span style={{ fontSize: 11, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{rodDiffFIF}</span>
+                  <StackedFIFSpan {...engToFIF(Math.abs(rodDiff))} color={diffColor(rodDiff)} size={11} />
                 </>
               )}
             </div>
@@ -556,7 +579,7 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               {elevDiff != null && (
                 <>
                   <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{Math.abs(elevDiff).toFixed(2)} ft</span>
-                  <span style={{ fontSize: 11, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{elevDiffFIF}</span>
+                  <StackedFIFSpan {...engToFIF(Math.abs(elevDiff))} color={diffColor(elevDiff)} size={11} />
                 </>
               )}
             </div>
@@ -1235,7 +1258,6 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
   const rInch  = pt?.rodInches != null ? String(pt.rodInches) : fif.inches;
   const rFrac  = (pt?.rodFractionLabel && pt.rodFractionLabel !== '0')
                  ? pt.rodFractionLabel : (fif.frac !== '0' ? fif.frac : '');
-  const fifStr = pt ? `${rFeet}' ${rInch}${rFrac ? ` ${rFrac}` : ''}"` : '';
 
   const badgeLabel = ptType === 'benchmark' ? t('spBenchmarkBadge')
                    : ptType === 'derived'   ? t('spDerivedBadge')
@@ -1337,7 +1359,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 10px' }}>
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spFeetInches')}</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{fifStr}</div>
+                    {pt && <StackedFIFSpan feet={rFeet} inches={rInch} frac={rFrac} color={TEXT_PRI} size={16} />}
                   </div>
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('spDecimalFeet')}</div>
