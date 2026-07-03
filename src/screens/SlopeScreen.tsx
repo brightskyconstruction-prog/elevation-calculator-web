@@ -500,11 +500,11 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
         {/* Direction banner + Summary — visually connected as one unit */}
         <div style={{ borderRadius: 10, overflow: 'hidden', border: `1px solid ${BORDER}`, flexShrink: 0 }}>
           {/* Banner */}
-          <div style={{ backgroundColor: dc, padding: '6px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
+          <div style={{ backgroundColor: dc, padding: '4px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 16, fontWeight: 900, color: '#fff', letterSpacing: 0.2 }}>
               {dirIcon(result.dir)} {dirLabel(result.dir)}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.88)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.88)' }}>
               {cFromPt.label} → {cToPt.label}
             </span>
           </div>
@@ -513,26 +513,16 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
             {/* From Point */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeFromPoint')}</span>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
-                  {cFromPt.label}{cFromPt.pointName ? ` · ${cFromPt.pointName}` : ''}
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>
-                  {(cFromPt.bmElevation ?? 0).toFixed(3)} ft
-                </div>
-              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace', textAlign: 'right' as const }}>
+                {cFromPt.label}{cFromPt.pointName ? ` · ${cFromPt.pointName}` : ''} · {(cFromPt.bmElevation ?? 0).toFixed(3)} ft elev
+              </span>
             </div>
             {/* To Point */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeToPoint')}</span>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace' }}>
-                  {cToPt.label}{cToPt.pointName ? ` · ${cToPt.pointName}` : ''}
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>
-                  {(cToPt.bmElevation ?? 0).toFixed(3)} ft
-                </div>
-              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC, fontFamily: 'monospace', textAlign: 'right' as const }}>
+                {cToPt.label}{cToPt.pointName ? ` · ${cToPt.pointName}` : ''} · {(cToPt.bmElevation ?? 0).toFixed(3)} ft elev
+              </span>
             </div>
             {/* Horizontal Distance */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -543,7 +533,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
         </div>
 
         {/* Graph — primary focal point */}
-        <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '3px 4px 2px' }}>
+        <div style={{ borderRadius: 9, overflow: 'hidden', lineHeight: 0 }}>
           <CalcProfileChart
             elevA={cFromPt.bmElevation!} elevB={cToPt.bmElevation!} distN={cDistN}
             labelA={cFromPt.label} labelB={cToPt.label}
@@ -618,7 +608,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
       {/* Clear + Calculate buttons */}
       <div style={{ display: 'flex', gap: 8 }}>
         <button
-          style={{ flex: '0 0 auto', height: 44, paddingLeft: 18, paddingRight: 18, backgroundColor: SURFACE, border: `1.5px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+          style={{ flex: '0 0 auto', height: 44, paddingLeft: 18, paddingRight: 18, backgroundColor: canCalc ? NAVY : SURFACE, border: canCalc ? 'none' : `1.5px solid ${BORDER}`, borderRadius: 10, color: canCalc ? '#fff' : TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
           onClick={() => { setFromId(null); setToId(null); setDist(''); }}
         >{t('slopeClearBtn')}</button>
         <button
