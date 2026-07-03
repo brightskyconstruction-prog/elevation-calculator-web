@@ -266,7 +266,7 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
     <>
       <div style={{ border: `1.5px solid ${borderClr}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <input
-          style={{ height: 36, border: 'none', backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
+          style={{ height: 36, border: 'none', backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
           value={ft} onChange={e => onFtChange(e.target.value)}
           inputMode="numeric"
           placeholder={ftFocused ? '' : 'Feet'}
@@ -275,14 +275,14 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
         />
         <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
         <select
-          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
           value={String(inches)} onChange={e => setInches(parseInt(e.target.value, 10))}
         >
           {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
         <select
-          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
           value={frL === 'None' ? '0' : String(frac)} onChange={e => {
             const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
             if (opt) { setFrac(parseFloat(opt.value)); setFrL(opt.label); }
@@ -412,7 +412,7 @@ function ConverterView() {
             <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
             <div style={{ border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <input
-                style={{ width: '100%', height: 36, border: 'none', backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 36, border: 'none', backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
                 value={cFt} onChange={e => onCFtChange(e.target.value)}
                 inputMode="numeric"
                 placeholder={cFtFocused ? '' : 'Feet'}
@@ -420,12 +420,12 @@ function ConverterView() {
                 onBlur={() => setCFtFocused(false)}
               />
               <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
-              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
                 value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
                 {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
-              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
                 value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
                   const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
                   if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
@@ -448,7 +448,7 @@ function ConverterView() {
             <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0 }}>
               <input
-                style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
                 value={cEng} onChange={e => onEngChange(e.target.value)}
                 inputMode="decimal"
                 placeholder={cEngFocused ? '' : '0.00'}
@@ -599,7 +599,7 @@ function CalculatorView() {
               />
             ) : (
               <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={aEng}
                 onChange={e => { setAEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
@@ -637,7 +637,7 @@ function CalculatorView() {
               />
             ) : (
               <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={bEng}
                 onChange={e => { setBEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
