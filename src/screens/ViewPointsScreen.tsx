@@ -487,9 +487,6 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
         <div style={{ display: 'flex', alignItems: 'stretch', padding: '6px 6px', backgroundColor: rowBg }}>
           {/* POINT col — narrower */}
           <div style={{ flex: 1.8, display: 'flex', alignItems: 'center', paddingRight: 6 }}>
-            <div style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: roleBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 4 }}>
-              <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{role}</span>
-            </div>
             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, wordBreak: 'break-word' as const, lineHeight: 1.25 }}>{pt.pointName || pt.label}</div>
               {pt.pointName && <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, marginTop: 1 }}>{pt.label}</div>}
@@ -731,10 +728,10 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                 {/* Role chip — A or B */}
                                 {sel && (
                                   <div
-                                    style={{ position: 'absolute', top: 5, right: 5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: selColor, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingInline: 3, zIndex: 1, boxShadow: `0 1px 4px ${isA ? 'rgba(30,87,153,0.4)' : 'rgba(31,138,77,0.4)'}` }}
+                                    style={{ position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: selColor, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1, boxShadow: `0 1px 4px ${isA ? 'rgba(30,87,153,0.4)' : 'rgba(31,138,77,0.4)'}` }}
                                     onClick={e => { e.stopPropagation(); handleTempSelect(pt.id); }}
                                   >
-                                    <span style={{ fontSize: 11, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{isA ? 'A ✕' : 'B ✕'}</span>
+                                    <span style={{ fontSize: 11, fontWeight: 900, color: '#fff', lineHeight: 1 }}>✕</span>
                                   </div>
                                 )}
                                 {/* PT label + name */}
