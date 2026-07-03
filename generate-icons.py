@@ -44,9 +44,11 @@ def make_icon(rod: Image.Image, size: int) -> Image.Image:
     # the yellow frame, giving a cleaner, more balanced appearance.
     border  = max(6, round(size * 0.13))
     stroke  = max(3, round(size * 0.025))  # ~2.5 % stroke width
+    radius  = max(4, round(size * 0.10))   # ~10 % corner radius for rounded frame
     draw    = ImageDraw.Draw(icon)
-    draw.rectangle(
+    draw.rounded_rectangle(
         [border, border, size - border - 1, size - border - 1],
+        radius=radius,
         outline=(*YELLOW, 255),
         width=stroke,
     )
