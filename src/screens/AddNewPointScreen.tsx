@@ -1065,12 +1065,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 {/* Radio dot */}
                 <span style={{
                   width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                  border: `2px solid ${setAssignMethod === 'existing' ? GOLD : 'rgba(255,255,255,0.45)'}`,
-                  backgroundColor: setAssignMethod === 'existing' ? GOLD : 'transparent',
+                  border: `2px solid ${NAVY}`,
+                  backgroundColor: setAssignMethod === 'existing' ? NAVY : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {setAssignMethod === 'existing' && (
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: NAVY, display: 'block' }} />
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
                   )}
                 </span>
                 <span style={{ flex: 1, textAlign: 'left' as const }}>
@@ -1109,12 +1109,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               {/* Radio dot */}
               <span style={{
                 width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                border: `2px solid ${setAssignMethod === 'new' ? GOLD : 'rgba(255,255,255,0.45)'}`,
-                backgroundColor: setAssignMethod === 'new' ? GOLD : 'transparent',
+                border: `2px solid ${NAVY}`,
+                backgroundColor: setAssignMethod === 'new' ? NAVY : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {setAssignMethod === 'new' && (
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: NAVY, display: 'block' }} />
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
                 )}
               </span>
               <span style={{ flex: 1, textAlign: 'left' as const }}>
@@ -1386,9 +1386,9 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#1B3858', border: '3px solid transparent', borderRadius: 7, padding: '6px 12px', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
-  setAssignBtnActive: { backgroundColor: NAVY, border: `3px solid ${GOLD}` } as React.CSSProperties,
-  setAssignBtnDim: { backgroundColor: BLUE, border: '3px solid transparent' } as React.CSSProperties,
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '6px 12px', color: TEXT_PRI, fontSize: 16, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3 },
+  setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
+  setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
 
   timestampCard:{ backgroundColor: CARD, borderRadius: 8, border: `1px solid #F3F4F6`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 },
