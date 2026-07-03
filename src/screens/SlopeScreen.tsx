@@ -105,7 +105,7 @@ function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
 }) {
   const result = calcSlope(elevA, elevB, distN);
   const dc = dirColor(result.dir);
-  const W = 340, H = 180;
+  const W = 340, H = 240;
   const PL = 50, PR = 14, PT = 26, PB = 36;
   const PW = W - PL - PR;
   const PH = H - PT - PB;
@@ -183,21 +183,6 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
     if (window.confirm(t('slopeDeleteCalcConfirm'))) onDelete();
   };
 
-  // Data rows: [label, value, highlight?]
-  const rows: [string, string, boolean][] = [
-    [t('slopeFrom'),        `${calc.fromLabel}${calc.fromName ? ' · ' + calc.fromName : ''}`, false],
-    [t('slopeFromElev'),    `${calc.fromElev.toFixed(3)} ft`,                                 false],
-    [t('slopeTo'),          `${calc.toLabel}${calc.toName ? ' · ' + calc.toName : ''}`,       false],
-    [t('slopeToElev'),      `${calc.toElev.toFixed(3)} ft`,                                   false],
-    [t('slopeElevDiff'),    `${sign(calc.diff)}${calc.diff.toFixed(3)} ft`,                   true ],
-    [t('slopeDistanceLbl'), `${calc.distance.toFixed(2)} ft`,                                 false],
-    [t('slopeSlopePct'),    `${sign(calc.slopePct)}${calc.slopePct.toFixed(2)}%`,             true ],
-    [t('slopeRatioLbl'),    calc.ratio != null ? `1 : ${calc.ratio.toFixed(1)}` : '—',        false],
-    [t('slopeAngleLbl'),    `${calc.angle.toFixed(2)}°`,                                      false],
-    [t('slopeDirection'),   dirLabel(calc.dir),                                               true ],
-    [t('slopeDateTimeLbl'), fmtDateTime(calc.savedAt),                                        false],
-  ];
-
   return (
     <CenteredOverlay onClose={onClose}>
       <div style={{ width: '100%', maxWidth: 430, maxHeight: '92vh', backgroundColor: CARD, borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
@@ -214,18 +199,24 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
           <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{calc.fromLabel} → {calc.toLabel}</span>
         </div>
 
-        {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* Body */}
+        <div style={{ overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-          {/* Graph */}
-          <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '6px 4px 2px' }}>
+          {/* Graph — primary focal point */}
+          <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '8px 4px 4px' }}>
             <CalcProfileChart
               elevA={calc.fromElev} elevB={calc.toElev} distN={calc.distance}
               labelA={calc.fromLabel} labelB={calc.toLabel}
             />
           </div>
 
-          {/* 4 stat chips */}
+          {/* Horizontal Distance card */}
+          <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('slopeDistanceLbl')}</span>
+            <span style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{calc.distance.toFixed(2)} ft</span>
+          </div>
+
+          {/* 4 metric cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
             {([
               { lbl: t('slopeElevDiff'), val: `${sign(calc.diff)}${calc.diff.toFixed(3)}ft`, c: dc },
@@ -240,18 +231,14 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
             ))}
           </div>
 
-          {/* Data rows — high-contrast labels */}
-          <div style={{ backgroundColor: SURFACE, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {rows.map(([lbl, val, hl]) => (
-              <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, flexShrink: 0 }}>{lbl}</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: hl ? dc : TEXT_PRI, fontFamily: 'monospace', textAlign: 'right' as const }}>{val}</span>
-              </div>
-            ))}
+          {/* Date & Time */}
+          <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>{t('slopeDateTimeLbl')}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{fmtDateTime(calc.savedAt)}</span>
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 2, paddingBottom: 4 }}>
+          <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
             <button style={{ flex: 1, height: 42, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }} onClick={onEdit}>{t('edit')}</button>
             <button style={{ flex: 1, height: 42, backgroundColor: RED_DARK, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }} onClick={handleDelete}>{t('delete')}</button>
           </div>
