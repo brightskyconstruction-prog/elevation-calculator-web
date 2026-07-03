@@ -260,33 +260,38 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
   onFtChange: (v:string)=>void;
 }) {
   const [ftFocused, setFtFocused] = useState(false);
+  const borderClr = ftErr ? '#C0392B' : GOLD;
 
   return (
     <>
-      <input
-        style={{ height: 32, borderRadius: 4, border: `1.5px solid ${ftErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
-        value={ft} onChange={e => onFtChange(e.target.value)}
-        inputMode="numeric"
-        placeholder={ftFocused ? '' : 'Feet'}
-        onFocus={() => setFtFocused(true)}
-        onBlur={() => setFtFocused(false)}
-      />
+      <div style={{ border: `1.5px solid ${borderClr}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <input
+          style={{ height: 36, border: 'none', backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' }}
+          value={ft} onChange={e => onFtChange(e.target.value)}
+          inputMode="numeric"
+          placeholder={ftFocused ? '' : 'Feet'}
+          onFocus={() => setFtFocused(true)}
+          onBlur={() => setFtFocused(false)}
+        />
+        <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+        <select
+          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+          value={String(inches)} onChange={e => setInches(parseInt(e.target.value, 10))}
+        >
+          {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+        <select
+          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+          value={frL === 'None' ? '0' : String(frac)} onChange={e => {
+            const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
+            if (opt) { setFrac(parseFloat(opt.value)); setFrL(opt.label); }
+          }}
+        >
+          {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
       {ftErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{ftErr}</span>}
-      <select
-        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
-        value={String(inches)} onChange={e => setInches(parseInt(e.target.value, 10))}
-      >
-        {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <select
-        style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, textAlign: 'center', boxSizing: 'border-box' }}
-        value={frL === 'None' ? '0' : String(frac)} onChange={e => {
-          const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
-          if (opt) { setFrac(parseFloat(opt.value)); setFrL(opt.label); }
-        }}
-      >
-        {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
     </>
   );
 }
@@ -405,26 +410,30 @@ function ConverterView() {
           {/* FIF card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
-            <input
-              style={{ width: '100%', height: 32, borderRadius: 4, border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
-              value={cFt} onChange={e => onCFtChange(e.target.value)}
-              inputMode="numeric"
-              placeholder={cFtFocused ? '' : 'Feet'}
-              onFocus={() => setCFtFocused(true)}
-              onBlur={() => setCFtFocused(false)}
-            />
+            <div style={{ border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <input
+                style={{ width: '100%', height: 36, border: 'none', backgroundColor: '#fff', fontSize: 18, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
+                value={cFt} onChange={e => onCFtChange(e.target.value)}
+                inputMode="numeric"
+                placeholder={cFtFocused ? '' : 'Feet'}
+                onFocus={() => setCFtFocused(true)}
+                onBlur={() => setCFtFocused(false)}
+              />
+              <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
+                {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
+                  const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
+                  if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
+                }}>
+                {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
             {cFtErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
-            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const, padding: '7px 8px', lineHeight: '1' }}
-              value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
-              {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <select style={{ width: '100%', height: 32, borderRadius: 4, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, fontSize: 16, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const, padding: '7px 8px', lineHeight: '1' }}
-              value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
-                const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
-                if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
-              }}>
-              {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
             <button style={{ height: 28, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={clearFIF}>✕ {t('clearBtn')}</button>
           </div>
@@ -462,8 +471,8 @@ function ConverterView() {
           <button
             style={{
               flex: 2, height: 40,
-              backgroundColor: convEnabled ? NAVY : '#CBD5E1',
-              border: `2px solid ${convEnabled ? GOLD : '#9CA3AF'}`,
+              backgroundColor: convEnabled ? NAVY : '#C8C8C8',
+              border: `2px solid ${convEnabled ? GOLD : '#AAAAAA'}`,
               borderRadius: 8,
               color: convEnabled ? '#fff' : '#6B7280',
               fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
@@ -666,8 +675,8 @@ function CalculatorView() {
           <button
             style={{
               flex: 2, height: 40,
-              backgroundColor: calcEnabled ? NAVY : '#CBD5E1',
-              border: `2px solid ${calcEnabled ? GOLD : '#9CA3AF'}`,
+              backgroundColor: calcEnabled ? NAVY : '#C8C8C8',
+              border: `2px solid ${calcEnabled ? GOLD : '#AAAAAA'}`,
               borderRadius: 8,
               color: calcEnabled ? '#fff' : '#6B7280',
               fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
