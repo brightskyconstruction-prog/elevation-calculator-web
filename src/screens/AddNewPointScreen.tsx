@@ -36,7 +36,7 @@ function StackedFIFSpan({ feet, inches, frac, color = '#111827', size = 14 }: {
 
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-      <span style={{ fontSize: size, fontWeight: 700, color }}>{feet}' {inches}{showFrac ? ' ' : '"'}</span>
+      <span style={{ fontSize: size, fontWeight: 700, color }}>{feet}' - {inches}{showFrac ? ' ' : '"'}</span>
       {showFrac && (
         <>
           <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
