@@ -273,14 +273,14 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
           onFocus={() => setFtFocused(true)}
           onBlur={() => setFtFocused(false)}
         />
-        <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+        <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
         <select
           style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
           value={String(inches)} onChange={e => setInches(parseInt(e.target.value, 10))}
         >
           {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+        <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
         <select
           style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
           value={frL === 'None' ? '0' : String(frac)} onChange={e => {
@@ -419,12 +419,12 @@ function ConverterView() {
                 onFocus={() => setCFtFocused(true)}
                 onBlur={() => setCFtFocused(false)}
               />
-              <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+              <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
               <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
                 value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
                 {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <div style={{ height: 1, backgroundColor: BORDER, flexShrink: 0 }} />
+              <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
               <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
                 value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
                   const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
