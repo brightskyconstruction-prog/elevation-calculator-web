@@ -43,6 +43,35 @@ const ELEV_LABEL_KEY: Record<PointType, string> = {
   standalone: 'svsBmElev',
 };
 
+// ─── Stacked fraction display for FIF values ──────────────────────────────────
+function StackedFIFSpan({ feet, inches, frac, color = '#111827', size = 14 }: {
+  feet: string | number; inches: string | number; frac: string;
+  color?: string; size?: number;
+}) {
+  const hasFrac  = !!(frac && frac !== '0' && frac !== 'None');
+  const parts    = hasFrac ? frac.split('/') : [];
+  const num      = parts.length === 2 ? parseInt(parts[0], 10) : NaN;
+  const den      = parts.length === 2 ? parseInt(parts[1], 10) : NaN;
+  const showFrac = hasFrac && !isNaN(num) && !isNaN(den);
+  const tiny     = Math.max(8, Math.round(size * 0.62));
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+      <span style={{ fontSize: size, fontWeight: 700, color }}>{feet}′ {inches}{showFrac ? ' ' : '″'}</span>
+      {showFrac && (
+        <>
+          <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+            <span style={{ fontSize: tiny, fontWeight: 700, color, lineHeight: 1.1 }}>{num}</span>
+            <span style={{ width: '100%', height: 1.5, backgroundColor: color, display: 'block' }} />
+            <span style={{ fontSize: tiny, fontWeight: 700, color, lineHeight: 1.1 }}>{den}</span>
+          </span>
+          <span style={{ fontSize: size, fontWeight: 700, color }}>″</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 // ─── SetDetailView (bottom-sheet) ─────────────────────────────────────────────
 interface SetDetailProps {
   set:     SurveySet;
@@ -74,14 +103,6 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
   const lowElev  = elevs.length > 0 ? Math.min(...elevs) : null;
   const refPt    = sorted.find(p => p.id === referenceId);
 
-  function fmtRod(pt: SurveyPoint): string {
-    const feet   = pt.rodFeet ?? '0';
-    const inches = pt.rodInches ?? 0;
-    const frac   = pt.rodFractionLabel ?? '';
-    if (!inches && (!frac || frac === '0' || frac === 'None')) return `${feet} ft`;
-    if (!frac || frac === '0' || frac === 'None') return `${feet}′ ${inches}″`;
-    return `${feet}′ ${inches} ${frac}″`;
-  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
@@ -163,7 +184,13 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
                   <div style={{ display: 'flex', gap: 7 }}>
                     <div style={sdS.cell}>
                       <span style={sdS.cellLbl}>{t('rodReading')}</span>
-                      <span style={sdS.cellVal}>{fmtRod(pt)}</span>
+                      <StackedFIFSpan
+                        feet={pt.rodFeet ?? '0'}
+                        inches={pt.rodInches ?? 0}
+                        frac={pt.rodFractionLabel ?? ''}
+                        color={TEXT_P}
+                        size={17}
+                      />
                       <span style={sdS.cellSub}>{(pt.engineeringFeet ?? 0).toFixed(2)} ft</span>
                     </div>
                     {hasBm && (
