@@ -900,24 +900,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             >⋮</button>
           )}
         </div>
+
+          {/* Arrow sub-row — only for existing points with prev/next */}
+          {!isNewPoint && setPoints.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 10px 6px' }}>
+              <button
+                style={{ ...s.setNavArrow, opacity: setPointIdx <= 0 ? 0.4 : 1 }}
+                disabled={setPointIdx <= 0}
+                onClick={goPrevInSet}
+              >‹</button>
+              <span style={{ fontSize: 12, color: TEXT_DIS, fontWeight: 600 }}>
+                {setPointIdx >= 0 ? `${setPointIdx + 1} / ${setPoints.length}` : ''}
+              </span>
+              <button
+                style={{ ...s.setNavArrow, opacity: (setPointIdx < 0 || setPointIdx >= setPoints.length - 1) ? 0.4 : 1 }}
+                disabled={setPointIdx < 0 || setPointIdx >= setPoints.length - 1}
+                onClick={goNextInSet}
+              >›</button>
+            </div>
+          )}
       </div>
 
-      {/* Content area — arrows on the sides, scrollable content in the middle */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-
-        {/* Prev arrow — left edge, vertically centered */}
-        {!isNewPoint && setPoints.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 3px' }}>
-            <button
-              style={{ ...s.setNavArrow, opacity: setPointIdx <= 0 ? 0.4 : 1 }}
-              disabled={setPointIdx <= 0}
-              onClick={goPrevInSet}
-            >‹</button>
-          </div>
-        )}
-
-        {/* Scrollable content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 6, display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 56 }}>
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 6, display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 56 }}>
 
         {/* ── Rod Reading + Benchmark card ── */}
         <div style={{ ...s.card, ...(!isEditMode && !isNewPoint ? { gap: 4, padding: '8px 10px' } : {}) }}>
@@ -1295,19 +1300,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             )}
           </div>
         )}
-        </div>{/* end scrollable content */}
-
-        {/* Next arrow — right edge, vertically centered */}
-        {!isNewPoint && setPoints.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 3px' }}>
-            <button
-              style={{ ...s.setNavArrow, opacity: (setPointIdx < 0 || setPointIdx >= setPoints.length - 1) ? 0.4 : 1 }}
-              disabled={setPointIdx < 0 || setPointIdx >= setPoints.length - 1}
-              onClick={goNextInSet}
-            >›</button>
-          </div>
-        )}
-      </div>{/* end content area flex row */}
+      </div>{/* end scrollable content */}
 
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
       {/* ── Modals ── */}
