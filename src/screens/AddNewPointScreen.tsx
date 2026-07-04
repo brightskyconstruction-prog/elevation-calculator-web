@@ -418,45 +418,54 @@ function DupNameModal({ conflict, onClose }: DupNameModalProps) {
   );
 }
 
-// ─── Info tooltip ─────────────────────────────────────────────────────────────
-function InfoTip({ text }: { text: string }) {
+// ─── Info modal card ──────────────────────────────────────────────────────────
+function InfoTip({ text, title }: { text: string; title?: string }) {
   const [open, setOpen] = useState(false);
-  const [tipPos, setTipPos] = useState({ top: 0, left: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
   const { t } = useLang();
 
-  const handleToggle = () => {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      const tipW = 248;
-      const margin = 10;
-      let left = rect.left - tipW / 2 + rect.width / 2;
-      left = Math.max(margin, Math.min(left, window.innerWidth - tipW - margin));
-      setTipPos({ top: rect.bottom + 6, left });
-    }
-    setOpen(v => !v);
-  };
-
   return (
-    <span style={{ position: 'relative', display: 'inline-flex' }}>
+    <span style={{ display: 'inline-flex' }}>
       <button
-        ref={btnRef}
         style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
-        onClick={handleToggle}
+        onClick={() => setOpen(true)}
       >ⓘ</button>
+
       {open && (
-        <div style={{
-          position: 'fixed', top: tipPos.top, left: tipPos.left,
-          backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: 10,
-          padding: '12px 16px', width: 264, fontSize: 14, color: TEXT_SEC,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.18)', zIndex: 9999, lineHeight: 1.6,
-        }}>
-          {text}
-          <br />
-          <button
-            style={{ marginTop: 10, background: BLUE, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 13, cursor: 'pointer', fontWeight: 700 }}
-            onClick={() => setOpen(false)}
-          >{t('gotIt')}</button>
+        /* Full-screen backdrop */
+        <div
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.52)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 18px', boxSizing: 'border-box' }}
+          onClick={() => setOpen(false)}
+        >
+          {/* Card */}
+          <div
+            style={{ backgroundColor: CARD, borderRadius: 20, width: '100%', maxWidth: 390, boxShadow: '0 16px 56px rgba(0,0,0,0.36)', overflow: 'hidden' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            {title && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 20px 14px', borderBottom: `1.5px solid ${BORDER}` }}>
+                <span style={{ width: 34, height: 34, borderRadius: '50%', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontSize: 18, color: '#1D4ED8', lineHeight: 1 }}>ⓘ</span>
+                </span>
+                <span style={{ fontSize: 17, fontWeight: 800, color: TEXT_PRI, lineHeight: 1.2 }}>{title}</span>
+              </div>
+            )}
+
+            {/* Body — each double-newline becomes a new paragraph */}
+            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {text.split('\n\n').map((para, i) => (
+                <p key={i} style={{ margin: 0, fontSize: 15, color: TEXT_SEC, lineHeight: 1.65 }}>{para}</p>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '0 20px 20px' }}>
+              <button
+                style={{ width: '100%', backgroundColor: NAVY, color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' }}
+                onClick={() => setOpen(false)}
+              >{t('gotIt')}</button>
+            </div>
+          </div>
         </div>
       )}
     </span>
@@ -957,7 +966,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {/* Section header row — edit mode */}
           <div style={s.secRow}>
             <span style={s.secLbl}>{t('rodReading')}</span>
-            <InfoTip text={t('rodInfoTip')} />
+            <InfoTip text={t('rodInfoTip')} title={t('rodInfoTitle')} />
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex' }}>
               <button
@@ -1139,7 +1148,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         <div style={{ ...s.card, ...(setWarning && !assignedSetObj ? { border: `1.5px solid #EF4444` } : {}) }}>
           <div style={s.secRow}>
             <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px' }}>{t('setAssignment')}</span>
-            <InfoTip text={t('setInfoTip')} />
+            <InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
