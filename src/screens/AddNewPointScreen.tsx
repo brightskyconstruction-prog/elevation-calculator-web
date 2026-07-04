@@ -922,10 +922,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 6, display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 56 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 56 }}>
 
-        {/* ── Rod Reading + Benchmark card ── */}
-        <div style={{ ...s.card, ...(!isEditMode && !isNewPoint ? { gap: 4, padding: '8px 10px' } : {}) }}>
+        {/* ── Rod Reading + Set Assignment — joined into one visual card ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', border: (setWarning && !assignedSetObj && (isEditMode || isNewPoint)) ? `1.5px solid #EF4444` : `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ ...s.card, border: 'none', borderRadius: 0, ...(!isEditMode && !isNewPoint ? { gap: 4, padding: '8px 10px' } : {}), borderBottom: `1px solid ${BORDER}` }}>
 
           {/* ── READ-ONLY rod display (existing saved point, not editing) ── */}
           {!isEditMode && !isNewPoint ? (
@@ -1146,7 +1147,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         {/* ── Set Assignment ── */}
         {/* Read-only: simple label + set name. Edit mode: full radio card. */}
         {!isEditMode && !isNewPoint ? (
-          <div style={s.card}>
+          <div style={{ ...s.card, border: 'none', borderRadius: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_SEC, letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>{t('assignedSetLabel')}</span>
               <span style={{ fontSize: 15, fontWeight: 700, color: assignedSetObj ? TEXT_PRI : TEXT_DIS }}>
@@ -1158,7 +1159,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           </div>
         ) : (
-        <div style={{ ...s.card, ...(setWarning && !assignedSetObj ? { border: `1.5px solid #EF4444` } : {}) }}>
+        <div style={{ ...s.card, border: 'none', borderRadius: 0 }}>
           <div style={s.secRow}>
             <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px' }}>{t('setAssignment')}</span>
             <InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} />
@@ -1260,6 +1261,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
         </div>
         )} {/* end read-only / edit-mode set assignment conditional */}
+        </div> {/* end rod reading + set assignment combined card */}
 
         {/* ── Save / Update / Post-save actions ── */}
         {(isNewPoint || isEditMode) ? (
