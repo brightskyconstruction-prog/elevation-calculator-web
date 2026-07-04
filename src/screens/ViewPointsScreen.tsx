@@ -4,6 +4,20 @@ import { SurveyPoint, SurveySet, PointsTab } from '../types';
 import { useLang } from '../LangContext';
 import { strings } from '../i18n';
 
+// ─── Modal animation CSS (shared with AddNewPointScreen, injected once) ───────
+if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
+  const _vs = document.createElement('style');
+  _vs.id = 'anp-modal-anim';
+  _vs.textContent = `
+    @keyframes anpModalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+  `;
+  document.head.appendChild(_vs);
+}
+
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const GOLD      = '#F4B02A';
 const NAVY      = '#143A63';
@@ -1418,27 +1432,29 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
         </div>
       </div>
 
-      {/* ── View All Modal (bottom sheet) ── */}
+      {/* ── View All Modal (centered overlay) ── */}
       {showAllModal && (
         <div
-          style={{ position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.46)', zIndex: 200, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'flex-end' }}
+          style={{ position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
           onClick={() => setShowAllModal(false)}
         >
           <div
-            style={{ backgroundColor: CARD, borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' }}
+            className="anp-modal-in"
+            style={{ backgroundColor: CARD, borderRadius: 18, width: '100%', maxWidth: 440, maxHeight: '85vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal header */}
-            <div style={{ padding: '11px 16px 9px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-              <span style={{ fontSize: 18, fontWeight: 800, color: TEXT_PRI }}>
-                {points.length} {t('surveyPoints')}
+            {/* Navy header */}
+            <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>
+                {t('allSurveyPoints')}
               </span>
               <button onClick={() => setShowAllModal(false)}
-                style={{ background: 'none', border: 'none', fontSize: 24, color: TEXT_SEC, cursor: 'pointer', lineHeight: 1, padding: '2px 4px' }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', flexShrink: 0, opacity: 0.85 }}
+                aria-label="Close"
               >✕</button>
             </div>
             {/* Modal list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '6px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {sorted.map((mpt, i) => {
                 const mType  = typeMap.get(mpt.id) ?? 'standalone';
                 const mTheme = TYPE_THEME[mType];

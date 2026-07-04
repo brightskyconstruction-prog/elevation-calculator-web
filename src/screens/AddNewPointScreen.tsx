@@ -553,6 +553,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [dupConflict,       setDupConflict]       = useState<{ name: string; label: string } | null>(null);
   const [showManagePoint,   setShowManagePoint]   = useState(false);
   const [editingFromManage, setEditingFromManage] = useState(false); // true = overlay mounted but hidden while editing a point from it
+  const [showUnsavedWarn,   setShowUnsavedWarn]   = useState(false);
   const [showSetListModal, setShowSetListModal] = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const savedNewPointRef = useRef<{
@@ -937,7 +938,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {isNewPoint && (
             <button
               style={s.dotsBtn}
-              onClick={() => setShowManagePoint(true)}
+              onClick={() => {
+                const dirty = rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '';
+                if (dirty) { setShowUnsavedWarn(true); } else { setShowManagePoint(true); }
+              }}
               title="Manage Point"
               aria-label="Manage Point"
             >⋮</button>
@@ -1382,6 +1386,26 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       {/* ── Duplicate point name alert dialog ── */}
       <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
 
+      {/* ── Unsaved changes warning dialog ── */}
+      <CenteredModal open={showUnsavedWarn} onClose={() => setShowUnsavedWarn(false)}>
+        <ModalHeader title={t('unsavedChangesTitle')} onClose={() => setShowUnsavedWarn(false)} />
+        <div style={{ padding: '20px 20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ margin: 0, fontSize: 15, color: TEXT_SEC, lineHeight: 1.65 }}>
+            {t('unsavedChangesMsg')}
+          </p>
+          {/* Primary: continue editing */}
+          <button
+            style={{ ...c.saveBtn, backgroundColor: NAVY }}
+            onClick={() => setShowUnsavedWarn(false)}
+          >{t('continueEditing')}</button>
+          {/* Secondary: discard and open */}
+          <button
+            style={{ ...c.cancelBtn, color: '#DC2626', borderColor: '#FECACA', fontSize: 14, height: 'auto', padding: '10px 12px', whiteSpace: 'normal' as const, lineHeight: 1.4 }}
+            onClick={() => { clearForm(); setShowUnsavedWarn(false); setShowManagePoint(true); }}
+          >{t('discardAndOpen')}</button>
+        </div>
+      </CenteredModal>
+
       {/* ── Set list modal — centered overlay showing all points in the current set ── */}
       <SetListModal
         open={showSetListModal}
@@ -1410,13 +1434,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           flexDirection: 'column',
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 14px', backgroundColor: NAVY, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', backgroundColor: NAVY, flexShrink: 0, position: 'relative', minHeight: 52 }}>
             <button
-              style={{ background: 'rgba(255,255,255,0.14)', border: '1.5px solid rgba(255,255,255,0.30)', color: '#fff', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: '5px 11px', flexShrink: 0, borderRadius: 8, fontWeight: 800, minWidth: 40, minHeight: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'rgba(255,255,255,0.20)', border: '1.5px solid rgba(255,255,255,0.45)', color: '#fff', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '8px 14px', flexShrink: 0, borderRadius: 10, fontWeight: 800, minWidth: 48, minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
-              aria-label="Close"
+              aria-label="Back"
             >←</button>
-            <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', flex: 1 }}>Manage Point</span>
+            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>Manage Points</span>
           </div>
           {/* Content */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
