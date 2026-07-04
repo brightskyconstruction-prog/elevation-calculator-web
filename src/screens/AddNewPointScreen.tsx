@@ -866,7 +866,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <span style={s.inlineLbl}>{pointName || t('unnamedPoint')}</span>
           ) : (
             <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
-              {pointName || t('pointName')}
+              {pointName || t('pointNameOptional')}
             </button>
           )}
 
@@ -1134,6 +1134,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
                   type="number" step="0.0001" value={bmElevStr}
                   onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                   placeholder="" readOnly={!isEditMode}
                 />
                 <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
@@ -1442,7 +1443,7 @@ const s: Record<string, React.CSSProperties> = {
   inlineBtn: {
     backgroundColor: CARD, borderRadius: 6, padding: '3px 14px',
     border: `1.5px solid ${BLUE_ACC}`, fontSize: 15, fontWeight: 700,
-    color: BLUE, cursor: 'pointer', minWidth: 80,
+    color: BLUE, cursor: 'pointer', minWidth: 140,
     whiteSpace: 'normal' as const, wordBreak: 'break-word' as const,
     textAlign: 'center' as const, lineHeight: '1.2',
   },
