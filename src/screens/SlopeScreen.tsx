@@ -1098,12 +1098,13 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#F5F4F0' }}>
 
-      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '4px 7px', gap: 5, flexShrink: 0 }}>
+      {/* Segmented sub-tab control */}
+      <div style={{ display: 'flex', backgroundColor: '#EAEEf2', borderRadius: 10, padding: 3, margin: '6px 8px', gap: 3, flexShrink: 0 }}>
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
             <button key={tab.id}
-              style={{ flex: 1, minHeight: 34, padding: '5px 6px', borderRadius: 8, border: `1.5px solid ${active ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`, backgroundColor: active ? '#FFFFFF' : GOLD, color: NAVY, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(0,0,0,0.10)' : 'none', transition: 'background-color 0.15s, border-color 0.15s', whiteSpace: 'normal', lineHeight: 1.2 }}
+              style={{ flex: 1, minHeight: 34, padding: '5px 6px', borderRadius: 7, border: 'none', backgroundColor: active ? NAVY : 'transparent', color: active ? '#FFFFFF' : '#374151', fontSize: 15, fontWeight: active ? 700 : 600, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(20,58,99,0.22)' : 'none', transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s', whiteSpace: 'normal', lineHeight: 1.2 }}
               onClick={() => setActiveTab(tab.id)}
             >{tab.label}</button>
           );

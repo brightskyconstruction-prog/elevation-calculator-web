@@ -726,25 +726,25 @@ export default function CalculatorScreen() {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* Gold sub-tab bar — fixed widths, color-only transitions */}
-      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '5px 8px', gap: 6, flexShrink: 0 }}>
+      {/* Segmented sub-tab control */}
+      <div style={{ display: 'flex', backgroundColor: '#EAEEf2', borderRadius: 10, padding: 3, margin: '6px 8px', gap: 3, flexShrink: 0 }}>
         {SUB_TABS.map(tab => {
           const isActive = subTab === tab.id;
           return (
             <button key={tab.id} style={{
               flex: 1,
               height: 36,
-              borderRadius: 8,
-              border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
-              backgroundColor: isActive ? '#FFFFFF' : GOLD,
-              color: '#163A63',
-              fontSize: 16,
-              fontWeight: 700,
+              borderRadius: 7,
+              border: 'none',
+              backgroundColor: isActive ? NAVY : 'transparent',
+              color: isActive ? '#FFFFFF' : '#374151',
+              fontSize: 15,
+              fontWeight: isActive ? 700 : 600,
               cursor: 'pointer',
-              boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+              boxShadow: isActive ? '0 1px 4px rgba(20,58,99,0.22)' : 'none',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
-              transition: 'background-color 0.15s, border-color 0.15s, box-shadow 0.15s',
+              transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
             }} onClick={() => setSubTab(tab.id)}>
               {tab.label}
             </button>

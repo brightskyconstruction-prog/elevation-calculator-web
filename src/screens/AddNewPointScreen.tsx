@@ -982,15 +982,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <span style={s.secLbl}>{t('rodReading')}</span>
             <InfoTip text={t('rodInfoTip')} title={t('rodInfoTitle')} />
             <div style={{ flex: 1 }} />
-            <div style={{ display: 'flex' }}>
+            <div style={{ display: 'flex', backgroundColor: '#EAEEf2', borderRadius: 7, padding: 2, gap: 2 }}>
               <button
-                style={{ ...s.fmtBtn, borderRadius: '4px 0 0 4px', ...(rodFormat === 'fif' ? { ...s.fmtBtnOn, position: 'relative' as const, zIndex: 1 } : {}) }}
+                style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}) }}
                 onClick={() => setRodFormat('fif')}
               >
                 {t('feetInchesBtn')}
               </button>
               <button
-                style={{ ...s.fmtBtn, borderRadius: '0 4px 4px 0', marginLeft: -1, ...(rodFormat === 'eng' ? { ...s.fmtBtnOn, position: 'relative' as const, zIndex: 1 } : {}) }}
+                style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}) }}
                 onClick={() => setRodFormat('eng')}
               >
                 {t('engineeringFtBtn')}
@@ -1465,8 +1465,8 @@ const s: Record<string, React.CSSProperties> = {
   secRow:  { display: 'flex', alignItems: 'center', gap: 4 },
   secLbl:  { fontSize: 16, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase', lineHeight: 1.1 },
 
-  fmtBtn:    { padding: '5px 10px', borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 13, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const, textAlign: 'center' as const, lineHeight: 1.25 },
-  fmtBtnOn:  { backgroundColor: BLUE, border: `1px solid ${BLUE}`, color: '#fff' } as React.CSSProperties,
+  fmtBtn:    { flex: 1, padding: '4px 10px', borderRadius: 5, backgroundColor: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const, textAlign: 'center' as const, lineHeight: 1.25, transition: 'background-color 0.2s, color 0.2s' },
+  fmtBtnOn:  { backgroundColor: NAVY, color: '#fff', fontWeight: 700, boxShadow: '0 1px 3px rgba(20,58,99,0.20)' } as React.CSSProperties,
 
   rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 54 },
   rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', gap: 4 },
