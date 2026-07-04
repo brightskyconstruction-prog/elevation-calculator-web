@@ -1525,11 +1525,11 @@ export default function ViewPointsScreen({ projectId, compareFromId, compareToId
               style={{
                 flex: 1, height: 34, borderRadius: 7,
                 border: 'none',
-                backgroundColor: isActive ? '#DBEAFE' : 'transparent',
-                color: isActive ? NAVY : '#6B7280',
+                backgroundColor: isActive ? NAVY : 'transparent',
+                color: isActive ? '#FFFFFF' : '#6B7280',
                 fontSize: 15, fontWeight: isActive ? 700 : 600,
                 cursor: 'pointer',
-                boxShadow: isActive ? '0 1px 3px rgba(20,58,99,0.12)' : 'none',
+                boxShadow: isActive ? '0 1px 4px rgba(20,58,99,0.30)' : 'none',
                 whiteSpace: 'nowrap', overflow: 'hidden',
                 transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
               }}
