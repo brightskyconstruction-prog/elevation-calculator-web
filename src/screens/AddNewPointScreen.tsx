@@ -22,6 +22,20 @@ const TEXT_PRI  = '#111827';
 const TEXT_SEC  = '#374151';
 const TEXT_DIS  = '#9CA3AF';
 
+// ─── Modal animation CSS (injected once at module load) ──────────────────────
+if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
+  const _s = document.createElement('style');
+  _s.id = 'anp-modal-anim';
+  _s.textContent = `
+    @keyframes anpModalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+  `;
+  document.head.appendChild(_s);
+}
+
 // ─── Stacked fraction display for Feet-Inches values ─────────────────────────
 function StackedFIFSpan({ feet, inches, frac, color = '#111827', size = 14 }: {
   feet: string | number; inches: string | number; frac: string;
@@ -119,6 +133,44 @@ const mStyle: Record<string, React.CSSProperties> = {
   },
 };
 
+// ─── Centered Modal (floating overlay — used by Point Name + Create Set) ─────
+interface CenteredModalProps { open: boolean; onClose: () => void; children: React.ReactNode; }
+function CenteredModal({ open, onClose, children }: CenteredModalProps) {
+  if (!open) return null;
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' }}
+      onClick={onClose}
+    >
+      <div
+        className="anp-modal-in"
+        style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.28)', overflow: 'hidden', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Shared Modal Header (navy bar + white title + optional subtitle + ✕) ─────
+interface ModalHeaderProps { title: string; subtitle?: string; onClose: () => void; }
+function ModalHeader({ title, subtitle, onClose }: ModalHeaderProps) {
+  return (
+    <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{title}</span>
+        {subtitle && <span style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: 500, lineHeight: 1.2 }}>{subtitle}</span>}
+      </div>
+      <button
+        style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', flexShrink: 0, opacity: 0.85 }}
+        onClick={onClose}
+        aria-label="Close"
+      >✕</button>
+    </div>
+  );
+}
+
 // ─── Create Set Modal ─────────────────────────────────────────────────────────
 interface CreateSetProps {
   open: boolean; onClose: () => void;
@@ -131,34 +183,36 @@ function CreateSetModal({ open, onClose, pointLabel, engFt, rodFeet, rodInches, 
   const [name, setName] = useState('');
   const { t, lang } = useLang();
   return (
-    <ModalOverlay open={open} onClose={onClose}>
-      <h3 style={c.modalTitle}>{t('createSetTitle')}</h3>
-      <p style={c.modalDesc}>
-        {lang === 'es' ? 'Punto' : 'Point'} {pointLabel}{' '}(
-        <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={14} />
-        {` | ${isNaN(engFt) || engFt === 0 ? '—' : engFt.toFixed(2)} ft ${lang === 'es' ? 'Ing.' : 'Engineering'})`}{' '}
-        {lang === 'es' ? 'será el primero en este conjunto.' : 'will be the first point in this set.'}
-      </p>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-        <div style={c.setIdBadge}><span style={c.setIdText}>{nextSetId}</span></div>
-        <div style={{ flex: 1 }}>
-          <label style={c.fieldLbl}>{t('setNameLabel')}</label>
-          <input
-            style={c.input} value={name} onChange={e => setName(e.target.value)}
-            placeholder={t('setNamePlaceholder')} autoFocus
-            onKeyDown={e => { if (e.key === 'Enter' && name.trim()) { onCreate(name.trim()); setName(''); onClose(); } }}
-          />
+    <CenteredModal open={open} onClose={onClose}>
+      <ModalHeader title={t('createSetTitle')} onClose={onClose} />
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <p style={{ ...c.modalDesc, textAlign: 'left', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+          {lang === 'es' ? 'Punto' : 'Point'} {pointLabel}{' '}(
+          <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={14} />
+          {` | ${isNaN(engFt) || engFt === 0 ? '—' : engFt.toFixed(2)} ft ${lang === 'es' ? 'Ing.' : 'Engineering'})`}{' '}
+          {lang === 'es' ? 'será el primero en este conjunto.' : 'will be the first point in this set.'}
+        </p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <div style={c.setIdBadge}><span style={c.setIdText}>{nextSetId}</span></div>
+          <div style={{ flex: 1 }}>
+            <label style={c.fieldLbl}>{t('setNameLabel')}</label>
+            <input
+              style={c.input} value={name} onChange={e => setName(e.target.value)}
+              placeholder={t('setNamePlaceholder')} autoFocus
+              onKeyDown={e => { if (e.key === 'Enter' && name.trim()) { onCreate(name.trim()); setName(''); onClose(); } }}
+            />
+          </div>
         </div>
+        <button
+          style={{ ...c.saveBtn, opacity: name.trim() ? 1 : 0.4 }}
+          disabled={!name.trim()}
+          onClick={() => { if (name.trim()) { onCreate(name.trim()); setName(''); onClose(); } }}
+        >
+          {t('createSetBtn')}
+        </button>
+        <button style={c.cancelBtn} onClick={onClose}>{t('cancel')}</button>
       </div>
-      <button
-        style={{ ...c.saveBtn, opacity: name.trim() ? 1 : 0.4 }}
-        disabled={!name.trim()}
-        onClick={() => { if (name.trim()) { onCreate(name.trim()); setName(''); onClose(); } }}
-      >
-        {t('createSetBtn')}
-      </button>
-      <button style={c.cancelBtn} onClick={onClose}>{t('cancel')}</button>
-    </ModalOverlay>
+    </CenteredModal>
   );
 }
 
@@ -227,14 +281,16 @@ interface QuickEditProps {
   open: boolean; title: string; placeholder: string;
   value: string; onClose: () => void;
   onSave: (val: string) => void;
-  /** Optional element rendered to the right of the title (e.g. View All Set Points button) */
+  /** Optional subtitle shown below the title in the header */
+  subtitle?: string;
+  /** Optional element rendered below the header (e.g. View All Set Points button) */
   headerAction?: React.ReactNode;
   /** Optional validation: return an error string to block save, or null to allow */
   validate?: (val: string) => string | null;
-  /** Inline content rendered directly below the title row (e.g. anchored dropdown list) */
+  /** Inline content rendered directly below the header action */
   dropdownContent?: React.ReactNode;
 }
-function QuickEditModal({ open, title, placeholder, value, onClose, onSave, headerAction, validate, dropdownContent }: QuickEditProps) {
+function QuickEditModal({ open, title, subtitle, placeholder, value, onClose, onSave, headerAction, validate, dropdownContent }: QuickEditProps) {
   const [tmp, setTmp]         = useState(value);
   const [validErr, setValidErr] = useState<string | null>(null);
   const { t } = useLang();
@@ -252,46 +308,32 @@ function QuickEditModal({ open, title, placeholder, value, onClose, onSave, head
   };
 
   return (
-    <ModalOverlay open={open} onClose={onClose}>
-      {/* ✕ close — top-right corner, above the title row */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2, marginTop: -4 }}>
+    <CenteredModal open={open} onClose={onClose}>
+      <ModalHeader title={title} subtitle={subtitle} onClose={onClose} />
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Optional action (e.g. View All Set Points button) */}
+        {headerAction && <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{headerAction}</div>}
+        {/* Inline dropdown list */}
+        {dropdownContent}
+        <input
+          style={{ ...c.input, borderColor: BLUE, fontSize: 16, height: 46 }}
+          value={tmp}
+          onChange={e => { setTmp(e.target.value); setValidErr(null); }}
+          placeholder={placeholder} autoFocus
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+        />
+        {/* Duplicate / validation error */}
+        {validErr && (
+          <div style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.4 }}>
+            ⚠ {validErr}
+          </div>
+        )}
         <button
-          style={{
-            background: 'none', border: 'none', color: TEXT_PRI,
-            fontSize: 22, fontWeight: 900, lineHeight: 1,
-            cursor: 'pointer', padding: '2px 4px', flexShrink: 0,
-          }}
-          onClick={onClose}
-          aria-label="Close"
-        >✕</button>
+          style={{ ...c.saveBtn, fontSize: 16, padding: '13px 0', height: 'auto' }}
+          onClick={handleSave}
+        >{t('save')}</button>
       </div>
-      {/* Title row + optional action (e.g. View All Set Points button) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 2 }}>
-        <h3 style={{ ...c.modalTitle, flex: 1, textAlign: 'left', fontSize: 19, margin: 0 }}>
-          {title}
-        </h3>
-        {headerAction}
-      </div>
-      {/* Inline dropdown list — renders immediately below the title row when open */}
-      {dropdownContent}
-      <input
-        style={{ ...c.input, borderColor: BLUE, fontSize: 16, height: 46 }}
-        value={tmp}
-        onChange={e => { setTmp(e.target.value); setValidErr(null); }}
-        placeholder={placeholder} autoFocus
-        onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-      />
-      {/* Duplicate / validation error */}
-      {validErr && (
-        <div style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.4, padding: '2px 0' }}>
-          ⚠ {validErr}
-        </div>
-      )}
-      <button
-        style={{ ...c.saveBtn, fontSize: 16, padding: '13px 0', height: 'auto' }}
-        onClick={handleSave}
-      >{t('save')}</button>
-    </ModalOverlay>
+    </CenteredModal>
   );
 }
 
@@ -433,33 +475,34 @@ function InfoTip({ text, title }: { text: string; title?: string }) {
       {open && (
         /* Full-screen backdrop */
         <div
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.52)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 18px', boxSizing: 'border-box' }}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 18px', boxSizing: 'border-box' }}
           onClick={() => setOpen(false)}
         >
           {/* Card */}
           <div
-            style={{ backgroundColor: CARD, borderRadius: 20, width: '100%', maxWidth: 390, boxShadow: '0 16px 56px rgba(0,0,0,0.36)', overflow: 'hidden' }}
+            className="anp-modal-in"
+            style={{ backgroundColor: CARD, borderRadius: 18, width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.28)', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
-            {title && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 20px 14px', borderBottom: `1.5px solid ${BORDER}` }}>
-                <span style={{ width: 34, height: 34, borderRadius: '50%', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 18, color: '#1D4ED8', lineHeight: 1 }}>ⓘ</span>
-                </span>
-                <span style={{ fontSize: 17, fontWeight: 800, color: TEXT_PRI, lineHeight: 1.2 }}>{title}</span>
-              </div>
-            )}
+            {/* Header — full-width navy bar */}
+            <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{title || 'Information'}</span>
+              <button
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', flexShrink: 0, opacity: 0.85 }}
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+              >✕</button>
+            </div>
 
             {/* Body — each double-newline becomes a new paragraph */}
-            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: '20px 20px 4px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {text.split('\n\n').map((para, i) => (
-                <p key={i} style={{ margin: 0, fontSize: 15, color: TEXT_SEC, lineHeight: 1.65 }}>{para}</p>
+                <p key={i} style={{ margin: 0, fontSize: 15, color: TEXT_SEC, lineHeight: 1.7 }}>{para}</p>
               ))}
             </div>
 
             {/* Footer */}
-            <div style={{ padding: '0 20px 20px' }}>
+            <div style={{ padding: '16px 20px 20px' }}>
               <button
                 style={{ width: '100%', backgroundColor: NAVY, color: '#fff', border: 'none', borderRadius: 10, padding: '13px 0', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' }}
                 onClick={() => setOpen(false)}
@@ -1319,7 +1362,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         pointLabel={currentLabel} onAssign={id => { setAssignedSet(id); setSetWarning(false); }}
       />
       <QuickEditModal
-        open={showNameModal} title={t('pointName')} placeholder={t('pointNamePlaceholder')}
+        open={showNameModal} title={t('pointName')} subtitle={t('optionalLbl')} placeholder={t('pointNamePlaceholder')}
         value={pointName} onClose={() => { setShowNameModal(false); setShowSetListModal(false); }}
         headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
           <button
