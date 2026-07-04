@@ -853,7 +853,44 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       {/* Point nav header */}
       <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
         <div style={s.pointNav}>
-          {/* Left arrow — only for existing points in a set */}
+          {/* Back — far left, shown when navigating from new-point or manage overlay */}
+          {(cameFromNewPoint || (editingFromManage && !isNewPoint)) && (
+            <button style={s.backToMainBtn} onClick={openNewPoint}>
+              ← {t('back')}
+            </button>
+          )}
+
+          {/* Point ID + Point Name */}
+          <span style={s.navLabel}>{currentLabel}</span>
+          {(!isEditMode && !isNewPoint) ? (
+            <span style={s.inlineLbl}>{pointName || t('unnamedPoint')}</span>
+          ) : (
+            <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
+              {pointName || t('pointName')}
+            </button>
+          )}
+
+          <div style={{ flex: 1 }} />
+
+          {/* View Details / Edit Point toggle — existing points only */}
+          {!isNewPoint && (
+            <button
+              style={s.modeToggleBtn}
+              onClick={() => {
+                if (isEditMode && currentPoint) {
+                  loadPoint(currentPoint);
+                  setIsEditMode(false);
+                  setCameFromEditMode(false);
+                } else if (!isEditMode) {
+                  setIsEditMode(true);
+                }
+              }}
+            >
+              {isEditMode ? t('viewDetailsBtn') : t('editPointBtn')}
+            </button>
+          )}
+
+          {/* Prev / Next arrows — far right */}
           {!isNewPoint && setPoints.length > 0 && (
             <button
               style={{ ...s.setNavArrow, opacity: setPointIdx <= 0 ? 0.4 : 1 }}
@@ -861,34 +898,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               onClick={goPrevInSet}
             >‹</button>
           )}
-          <span style={s.navLabel}>{currentLabel}</span>
-          {/* Point Name — read-only span when viewing, button when editing/new */}
-          {(!isEditMode && !isNewPoint) ? (
-            <span style={s.inlineLbl}>
-              {pointName || t('unnamedPoint')}
-            </span>
-          ) : (
-            <button style={s.inlineBtn} onClick={() => setShowNameModal(true)} title="Edit point name">
-              {pointName || t('pointName')}
-            </button>
-          )}
-          {/* Back → shown when viewing/editing an existing point (either flow).
-               Always navigates to the blank new-point state. */}
-          {(cameFromNewPoint || (editingFromManage && !isNewPoint)) && (
-            <button style={s.backToMainBtn} onClick={openNewPoint}>
-              ← {t('back')}
-            </button>
-          )}
-          <div style={{ flex: 1 }} />
-          {!isNewPoint && !isEditMode && (
-            <button style={s.editIconBtn} onClick={() => setIsEditMode(true)} title={t('edit')} aria-label={t('edit')}>
-              ✏
-            </button>
-          )}
-          {!isNewPoint && isEditMode && currentPoint && (
-            <button style={s.undoBtn} onClick={() => { loadPoint(currentPoint); setIsEditMode(false); setCameFromEditMode(false); }}>↩</button>
-          )}
-          {/* Right arrow — same size/style as left, no extra offset */}
           {!isNewPoint && setPoints.length > 0 && (
             <button
               style={{ ...s.setNavArrow, opacity: (setPointIdx < 0 || setPointIdx >= setPoints.length - 1) ? 0.4 : 1 }}
@@ -896,7 +905,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               onClick={goNextInSet}
             >›</button>
           )}
-          {/* ⋮ — only on new-point creation page, opens Manage Point overlay */}
+
+          {/* ⋮ — new-point creation only */}
           {isNewPoint && (
             <button
               style={s.dotsBtn}
@@ -1441,9 +1451,8 @@ const s: Record<string, React.CSSProperties> = {
   },
   newBtn:       { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 },
   newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
-  editBtn:      { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer', flexShrink: 0 },
-  editIconBtn:  { width: 30, height: 30, borderRadius: 6, backgroundColor: BLUE, border: `1px solid ${BLUE_ACC}`, fontSize: 16, cursor: 'pointer', color: '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
-  undoBtn:      { width: 28, height: 28, borderRadius: 6, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, fontSize: 14, cursor: 'pointer', color: TEXT_SEC, flexShrink: 0 },
+  editBtn:        { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer', flexShrink: 0 },
+  modeToggleBtn:  { flexShrink: 0, backgroundColor: NAVY, border: 'none', borderRadius: 6, padding: '0 11px', height: 30, fontSize: 13, fontWeight: 800, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center' },
   dotsBtn:      { width: 30, height: 30, borderRadius: '50%', backgroundColor: NAVY, border: 'none', fontSize: 18, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, letterSpacing: '-1px', padding: 0 },
 
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 6 },
