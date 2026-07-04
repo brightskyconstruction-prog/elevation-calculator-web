@@ -766,16 +766,22 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                 {/* Divider */}
                                 <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 2 }} />
                                 {/* Rod */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
-                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, lineHeight: 1.2, minWidth: 0 }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
+                                    <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700 }}>{t('pickerRod')} -</span>
+                                    <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
+                                    <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
+                                  </div>
+                                  <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_SEC} size={11} />
                                 </div>
                                 {/* Elev */}
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
-                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
-                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, lineHeight: 1.2, minWidth: 0 }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
+                                    <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700 }}>{t('pickerElev')} -</span>
+                                    <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                    {pt.bmElevation > 0 && <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                  </div>
+                                  {pt.bmElevation > 0 && <StackedFIFSpan {...engToFIF(pt.bmElevation)} color={TEXT_SEC} size={11} />}
                                 </div>
                               </div>
                             );
