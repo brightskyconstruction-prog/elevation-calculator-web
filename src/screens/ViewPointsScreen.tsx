@@ -1516,7 +1516,7 @@ export default function ViewPointsScreen({ projectId, compareFromId, compareToId
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Segmented sub-tab control */}
-      <div style={{ display: 'flex', backgroundColor: '#EAEEf2', borderRadius: 10, padding: 3, margin: '6px 8px', gap: 3, flexShrink: 0 }}>
+      <div style={{ display: 'flex', backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: 3, margin: '6px 8px', gap: 3, flexShrink: 0 }}>
         {SUB_TABS.map(tab => {
           const isActive = activeTab === tab.id;
           return (
@@ -1525,11 +1525,11 @@ export default function ViewPointsScreen({ projectId, compareFromId, compareToId
               style={{
                 flex: 1, height: 34, borderRadius: 7,
                 border: 'none',
-                backgroundColor: isActive ? NAVY : 'transparent',
-                color: isActive ? '#FFFFFF' : '#374151',
+                backgroundColor: isActive ? '#DBEAFE' : 'transparent',
+                color: isActive ? NAVY : '#6B7280',
                 fontSize: 15, fontWeight: isActive ? 700 : 600,
                 cursor: 'pointer',
-                boxShadow: isActive ? '0 1px 4px rgba(20,58,99,0.22)' : 'none',
+                boxShadow: isActive ? '0 1px 3px rgba(20,58,99,0.12)' : 'none',
                 whiteSpace: 'nowrap', overflow: 'hidden',
                 transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
               }}

@@ -982,7 +982,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <span style={s.secLbl}>{t('rodReading')}</span>
             <InfoTip text={t('rodInfoTip')} title={t('rodInfoTitle')} />
             <div style={{ flex: 1 }} />
-            <div style={{ display: 'flex', backgroundColor: '#EAEEf2', borderRadius: 7, padding: 2, gap: 2 }}>
+            <div style={{ display: 'flex', backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
               <button
                 style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}) }}
                 onClick={() => setRodFormat('fif')}
@@ -1465,8 +1465,8 @@ const s: Record<string, React.CSSProperties> = {
   secRow:  { display: 'flex', alignItems: 'center', gap: 4 },
   secLbl:  { fontSize: 16, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.8px', textTransform: 'uppercase', lineHeight: 1.1 },
 
-  fmtBtn:    { flex: 1, padding: '4px 10px', borderRadius: 5, backgroundColor: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: TEXT_SEC, cursor: 'pointer', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const, textAlign: 'center' as const, lineHeight: 1.25, transition: 'background-color 0.2s, color 0.2s' },
-  fmtBtnOn:  { backgroundColor: NAVY, color: '#fff', fontWeight: 700, boxShadow: '0 1px 3px rgba(20,58,99,0.20)' } as React.CSSProperties,
+  fmtBtn:    { flex: 1, padding: '4px 10px', borderRadius: 5, backgroundColor: 'transparent', border: 'none', fontSize: 13, fontWeight: 600, color: '#6B7280', cursor: 'pointer', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const, textAlign: 'center' as const, lineHeight: 1.25, transition: 'background-color 0.2s, color 0.2s' },
+  fmtBtnOn:  { backgroundColor: '#DBEAFE', color: NAVY, fontWeight: 700, boxShadow: '0 1px 3px rgba(20,58,99,0.12)' } as React.CSSProperties,
 
   rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 54 },
   rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', gap: 4 },

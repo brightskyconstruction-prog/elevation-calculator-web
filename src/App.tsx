@@ -704,10 +704,10 @@ const styles: Record<string, React.CSSProperties> = {
     transition:      'background-color 0.2s, color 0.2s, box-shadow 0.2s',
   },
   tabActive: {
-    color:           '#FFFFFF',
-    backgroundColor: NAVY,
+    color:           NAVY,
+    backgroundColor: '#DBEAFE',
     fontWeight:      '700',
-    boxShadow:       '0 1px 5px rgba(20,58,99,0.22)',
+    boxShadow:       '0 1px 4px rgba(20,58,99,0.12)',
   },
   content: {
     flex:          1,

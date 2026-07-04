@@ -387,19 +387,20 @@ export default function ViewSetsScreen({ projectId }: Props) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
 
-      {/* ── Gold filter bar — compact ── */}
-      <div style={{ display: 'flex', backgroundColor: GOLD, padding: '5px 8px', gap: 6, flexShrink: 0 }}>
+      {/* Segmented filter control */}
+      <div style={{ display: 'flex', backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: 3, margin: '6px 8px', gap: 3, flexShrink: 0 }}>
         {FILTERS.map(f => {
           const isActive = filter === f.id;
           return (
             <button key={f.id} style={{
-              flex: 1, height: 34, borderRadius: 8,
-              border: `1.5px solid ${isActive ? 'rgba(0,0,0,0.07)' : 'rgba(140,95,0,0.20)'}`,
-              backgroundColor: isActive ? '#FFFFFF' : GOLD,
-              color: '#163A63', fontSize: 16, fontWeight: 700,
-              cursor: 'pointer', boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+              flex: 1, height: 34, borderRadius: 7,
+              border: 'none',
+              backgroundColor: isActive ? '#DBEAFE' : 'transparent',
+              color: isActive ? NAVY : '#6B7280',
+              fontSize: 15, fontWeight: isActive ? 700 : 600,
+              cursor: 'pointer', boxShadow: isActive ? '0 1px 3px rgba(20,58,99,0.12)' : 'none',
               whiteSpace: 'nowrap' as const, overflow: 'hidden',
-              transition: 'background-color 0.15s',
+              transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
             }} onClick={() => setFilter(f.id)}>{f.label}</button>
           );
         })}
