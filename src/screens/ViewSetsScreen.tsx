@@ -6,10 +6,10 @@ import { useLang } from '../LangContext';
 import { strings } from '../i18n';
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
+const NAVY    = '#143A63';
 const BLUE    = '#1E5799';
 const BLUE_A  = '#3B82F6';
 const BLUE_D  = 'rgba(30,87,153,0.12)';
-const GOLD    = '#F4B02A';
 const BORDER  = '#E5E7EB';
 const BORDER_S = '#D1D5DB';
 const SURFACE = '#F0EEE8';
