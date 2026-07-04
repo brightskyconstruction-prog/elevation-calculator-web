@@ -8,7 +8,7 @@ const NAVY      = '#143A63';
 const BLUE      = '#1E5799';
 const BLUE_ACC  = '#3B82F6';
 const BLUE_DEEP = 'rgba(30,87,153,0.10)';
-const GOLD      = '#F4B02A';
+// const GOLD removed — no longer used after tab redesign
 const GREEN_DARK = '#1A7A3F';
 const RED_DARK   = '#B83228';
 const TEXT_PRI  = '#111827';
