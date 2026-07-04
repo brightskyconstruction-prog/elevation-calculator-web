@@ -765,23 +765,18 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                 </div>
                                 {/* Divider */}
                                 <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 2 }} />
-                                {/* Rod */}
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, lineHeight: 1.2, minWidth: 0 }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
-                                    <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700 }}>{t('pickerRod')} -</span>
-                                    <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)}</span>
-                                    <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>
-                                  </div>
-                                  <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_SEC} size={11} />
+                                {/* Rod — decimal ft | FIF, both at size 12 */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, lineHeight: 1.2, flexWrap: 'nowrap' as const, overflow: 'hidden' }}>
+                                  <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{pt.engineeringFeet.toFixed(2)} ft</span>
+                                  <span style={{ fontSize: 10, color: TEXT_DIS, fontWeight: 400, flexShrink: 0 }}>|</span>
+                                  <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_PRI} size={12} />
                                 </div>
-                                {/* Elev */}
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, lineHeight: 1.2, minWidth: 0 }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
-                                    <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700 }}>{t('pickerElev')} -</span>
-                                    <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                    {pt.bmElevation > 0 && <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
-                                  </div>
-                                  {pt.bmElevation > 0 && <StackedFIFSpan {...engToFIF(pt.bmElevation)} color={TEXT_SEC} size={11} />}
+                                {/* Elev — decimal ft only */}
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
+                                  <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
+                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
+                                  {pt.bmElevation > 0 && <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
                                 </div>
                               </div>
                             );
