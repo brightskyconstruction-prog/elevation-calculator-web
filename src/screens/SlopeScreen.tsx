@@ -3,6 +3,20 @@ import { useSurveyStore } from '../stores/surveyStore';
 import { useLang } from '../LangContext';
 import { SurveyPoint, SurveySet } from '../types';
 
+// ─── Modal animation (shared id — injected once across all screens) ────────────
+if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
+  const _ss = document.createElement('style');
+  _ss.id = 'anp-modal-anim';
+  _ss.textContent = `
+    @keyframes anpModalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+  `;
+  document.head.appendChild(_ss);
+}
+
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const NAVY      = '#143A63';
 const BLUE      = '#1E5799';
@@ -274,14 +288,14 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.52)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '16px 16px 0 0', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ alignSelf: 'center', width: 36, height: 4, backgroundColor: BORDER_B, borderRadius: 2, margin: '10px auto 0' }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px 8px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{title}</span>
-          <button style={{ background: 'none', border: 'none', fontSize: 22, color: TEXT_SEC, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={onClose}>✕</button>
+      <div className="anp-modal-in"
+        style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 440, width: '100%', maxHeight: '82vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}>
+        <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>{title}</span>
+          <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }} onClick={onClose}>✕</button>
         </div>
         <div style={{ padding: '8px 12px', flexShrink: 0 }}>
           <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('slopeSearchPts')} autoFocus
