@@ -31,7 +31,6 @@ const TEXT_DIS  = '#9CA3AF';
 const SURFACE   = '#F0EEE8';
 const CARD      = '#FFFFFF';
 const BORDER    = '#E5E7EB';
-const BORDER_B  = '#D1D5DB';
 
 const MAX_HISTORY = 20;
 const HISTORY_VISIBLE = 4; // cards shown on History tab before "View All"
