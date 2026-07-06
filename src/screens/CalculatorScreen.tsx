@@ -613,7 +613,6 @@ function CalculatorView() {
 
   const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); };
   const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); };
-  const handleAllClear = () => { clearA(); clearB(); };
 
   // Feet text input handlers — validate whole numbers
   const onFtChangeA = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only'); resetCalc(); };
