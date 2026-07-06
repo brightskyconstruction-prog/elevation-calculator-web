@@ -969,7 +969,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 56 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 8 }}>
 
         {/* ── Rod Reading + Set Assignment — joined into one visual card ── */}
         <div style={{ display: 'flex', flexDirection: 'column', border: (setWarning && !assignedSetObj && (isEditMode || isNewPoint)) ? `1.5px solid #EF4444` : `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -1311,12 +1311,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         )} {/* end read-only / edit-mode set assignment conditional */}
         </div> {/* end rod reading + set assignment combined card */}
 
-        {/* ── Save / Update / Post-save actions ── */}
-        {(isNewPoint || isEditMode) ? (
-          <button style={s.saveBtn} onClick={handleSave}>
-            {isNewPoint ? t('savePoint') : t('updatePoint')}
-          </button>
-        ) : currentPoint && (
+        {/* ── Post-save actions (compare / slope) — read-only view only ── */}
+        {!isNewPoint && !isEditMode && currentPoint && (
           <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             <button style={s.compareBtn} onClick={handleCompareThis}>
               {t('compareThisReading')}
@@ -1327,8 +1323,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
         )}
 
-        {/* ── Timestamp + Location ── */}
-        {savedAt && (
+        {/* ── Timestamp + Location — read-only view only ── */}
+        {savedAt && !isEditMode && !isNewPoint && (
           <div style={s.timestampCard}>
             <span style={s.savedAt}>{t('recordedLabel')} {fmtTimestamp(savedAt)}</span>
             {locationTxt ? (
@@ -1351,6 +1347,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
         )}
       </div>{/* end scrollable content */}
+
+      {/* ── Sticky Save / Update footer — edit & new-point mode only ── */}
+      {(isNewPoint || isEditMode) && (
+        <div style={{ flexShrink: 0, padding: '8px 4px', backgroundColor: SURFACE, borderTop: `1px solid ${BORDER}` }}>
+          <button style={s.saveBtn} onClick={handleSave}>
+            {isNewPoint ? t('savePoint') : t('updatePoint')}
+          </button>
+        </div>
+      )}
 
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
       {/* ── Modals ── */}
@@ -1525,7 +1530,7 @@ const s: Record<string, React.CSSProperties> = {
   newBtn:       { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 },
   newBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.6, cursor: 'default' },
   editBtn:        { backgroundColor: BLUE, borderRadius: 6, padding: '5px 12px', color: '#fff', fontSize: 13, fontWeight: 700, border: `1px solid ${BLUE_ACC}`, cursor: 'pointer', flexShrink: 0 },
-  modeToggleBtn:  { flexShrink: 0, backgroundColor: NAVY, border: 'none', borderRadius: 6, padding: '0 11px', height: 30, fontSize: 13, fontWeight: 800, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center' },
+  modeToggleBtn:  { flexShrink: 0, backgroundColor: NAVY, border: 'none', borderRadius: 6, padding: '0 8px', height: 30, fontSize: 13, fontWeight: 800, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' as const, display: 'inline-flex', alignItems: 'center' },
   dotsBtn:      { width: 30, height: 30, borderRadius: '50%', backgroundColor: NAVY, border: 'none', fontSize: 18, fontWeight: 900, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1, letterSpacing: '-1px', padding: 0 },
 
   card:    { backgroundColor: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 6 },
