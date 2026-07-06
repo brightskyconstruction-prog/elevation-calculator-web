@@ -5,13 +5,26 @@ import { fmtTimestamp } from '../constants';
 import { useLang } from '../LangContext';
 import { strings } from '../i18n';
 
+// ─── Modal animation (shared id — injected once across all screens) ────────────
+if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
+  const _svs = document.createElement('style');
+  _svs.id = 'anp-modal-anim';
+  _svs.textContent = `
+    @keyframes anpModalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+  `;
+  document.head.appendChild(_svs);
+}
+
 // ─── Colors ───────────────────────────────────────────────────────────────────
 const NAVY    = '#143A63';
 const BLUE    = '#1E5799';
 const BLUE_A  = '#3B82F6';
 const BLUE_D  = 'rgba(30,87,153,0.12)';
 const BORDER  = '#E5E7EB';
-const BORDER_S = '#D1D5DB';
 const SURFACE = '#F0EEE8';
 const CARD    = '#FFFFFF';
 const SCREEN  = '#F5F4F0';
@@ -105,22 +118,19 @@ function SetDetailView({ set, points, onClose }: SetDetailProps) {
 
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '0 16px', boxSizing: 'border-box' as const }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, borderRadius: '20px 20px 0 0', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="anp-modal-in"
+        style={{ backgroundColor: SCREEN, borderRadius: 18, maxWidth: 440, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}>
 
-        <div style={{ alignSelf: 'center', width: 40, height: 4, backgroundColor: BORDER, borderRadius: 2, margin: '10px auto 4px' }} />
-
-        <div style={{ display: 'flex', alignItems: 'flex-start', padding: '10px 14px', gap: 10, borderBottom: `1px solid ${BORDER}` }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-              {set.setLabel && (
-                <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{set.setLabel}</span>
-              )}
-              <span style={{ fontSize: 17, fontWeight: 700, color: TEXT_P }}>{set.name}</span>
-            </div>
+        <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+            {set.setLabel && (
+              <span style={{ backgroundColor: 'rgba(255,255,255,0.20)', borderRadius: 4, padding: '2px 8px', fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: 0.4 }}>{set.setLabel}</span>
+            )}
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>{set.name}</span>
           </div>
-          <button style={{ padding: '6px 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, color: TEXT_S, fontSize: 14, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
+          <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85, flexShrink: 0 }} onClick={onClose}>✕</button>
         </div>
 
         <div style={{ display: 'flex', padding: '7px 12px', gap: 7, borderBottom: `1px solid ${BORDER}`, flexWrap: 'wrap' as const }}>
@@ -248,13 +258,13 @@ interface ViewAllSetsModalProps {
 function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: ViewAllSetsModalProps) {
   const { t, lang } = useLang();
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '0 16px', boxSizing: 'border-box' as const }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, borderRadius: '18px 18px 0 0', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ alignSelf: 'center', width: 38, height: 4, backgroundColor: BORDER_S, borderRadius: 2, margin: '10px auto 4px' }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px 6px', borderBottom: `1px solid ${BORDER}` }}>
-          <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_P }}>{t('viewAllSets')}</span>
-          <button style={{ padding: '6px 12px', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 14, fontWeight: 700, color: TEXT_S, cursor: 'pointer' }} onClick={onClose}>{t('close')}</button>
+      <div className="anp-modal-in"
+        style={{ backgroundColor: SCREEN, borderRadius: 18, maxWidth: 440, width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}>
+        <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>{t('viewAllSets')}</span>
+          <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }} onClick={onClose}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
           {sets.map((s, idx) => {
@@ -292,11 +302,15 @@ interface ManageSheetProps {
 function ManageSheet({ hasSet, onDeleteThis, onDeleteAll, onClose }: ManageSheetProps) {
   const { t } = useLang();
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-end', zIndex: 200 }}
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '0 16px', boxSizing: 'border-box' as const }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '16px 16px 0 0', overflow: 'hidden' }}>
-        <div style={{ alignSelf: 'center', width: 38, height: 4, backgroundColor: BORDER_S, borderRadius: 2, margin: '10px auto 4px' }} />
-        <div style={{ padding: '4px 12px 14px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <div className="anp-modal-in"
+        style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 440, width: '100%', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}>
+        <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>{t('manageSets')}</span>
+          <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }} onClick={onClose}>✕</button>
+        </div>
+        <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {hasSet && (
             <button
               style={{ width: '100%', padding: '12px 14px', backgroundColor: 'rgba(192,57,43,0.06)', border: `1px solid rgba(192,57,43,0.25)`, borderRadius: 10, fontSize: 14, fontWeight: 700, color: RED, cursor: 'pointer', textAlign: 'left' as const }}
