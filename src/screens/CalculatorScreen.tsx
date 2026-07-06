@@ -525,42 +525,51 @@ function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
   suggestedOp?: Op;
 }) {
   const { t } = useLang();
-  const ops: { op: Op; emoji: string; label: string }[] = [
-    { op: '+', emoji: '➕', label: t('additionBtn') },
-    { op: '-', emoji: '➖', label: t('subtractionBtn') },
+  const ops: { op: Op; sym: string; label: string }[] = [
+    { op: '+', sym: '+', label: t('additionBtn') },
+    { op: '-', sym: '−', label: t('subtractionBtn') },
   ];
   return (
     <div
       style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="anp-modal-in" style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 360, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.30)', overflow: 'hidden' }}>
+      <div className="anp-modal-in" style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.30)', overflow: 'hidden' }}>
         {/* Header */}
-        <div style={{ backgroundColor: NAVY, padding: '15px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{t('chooseOpTitle')}</span>
-          <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, fontWeight: 700, cursor: 'pointer', padding: '4px 6px', opacity: 0.85, lineHeight: 1 }} onClick={onClose}>✕</button>
+        <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{t('chooseOpTitle')}</span>
+          <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: 24, fontWeight: 700, cursor: 'pointer', padding: '4px 8px', opacity: 0.85, lineHeight: 1 }} onClick={onClose}>✕</button>
         </div>
         {/* Body */}
-        <div style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <p style={{ margin: 0, fontSize: 13, color: TEXT_S, lineHeight: 1.55, textAlign: 'center' }}>{t('chooseOpDesc')}</p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {ops.map(({ op, emoji, label }) => {
+        <div style={{ padding: '18px 18px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <p style={{ margin: 0, fontSize: 15, color: TEXT_S, lineHeight: 1.6, textAlign: 'center' }}>{t('chooseOpDesc')}</p>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {ops.map(({ op, sym, label }) => {
               const active = suggestedOp === op;
               return (
                 <button
                   key={op}
                   style={{
-                    flex: 1, height: 72,
-                    backgroundColor: active ? NAVY : SURFACE,
-                    border: `2px solid ${active ? GOLD : BORDER}`,
-                    borderRadius: 12, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-                    transition: 'background-color 0.15s, border-color 0.15s',
+                    flex: 1, height: 96,
+                    backgroundColor: active ? NAVY : CARD,
+                    border: `2.5px solid ${active ? GOLD : '#C5D2E4'}`,
+                    borderRadius: 14, cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    boxShadow: active ? '0 4px 14px rgba(20,58,99,0.22)' : '0 2px 6px rgba(0,0,0,0.07)',
+                    transition: 'background-color 0.15s, border-color 0.15s, box-shadow 0.15s',
                   }}
                   onClick={() => onSelect(op)}
                 >
-                  <span style={{ fontSize: 24, lineHeight: 1 }}>{emoji}</span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: active ? '#fff' : TEXT_P, letterSpacing: 0.3 }}>{label}</span>
+                  {/* Symbol badge */}
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 12,
+                    backgroundColor: active ? GOLD : '#DDE6F0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: 30, fontWeight: 900, color: active ? NAVY : NAVY, lineHeight: 1, fontFamily: 'monospace' }}>{sym}</span>
+                  </div>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: active ? '#fff' : TEXT_P, letterSpacing: 0.3 }}>{label}</span>
                 </button>
               );
             })}
