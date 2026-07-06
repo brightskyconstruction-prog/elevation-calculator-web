@@ -493,9 +493,7 @@ interface SettingsPanelProps {
 function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: SettingsPanelProps) {
   return (
     <div style={spS.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={spS.sheet}>
-        {/* Drag handle */}
-        <div style={spS.handle} />
+      <div className="anp-modal-in" style={spS.sheet}>
 
         {/* Title row */}
         <div style={spS.titleRow}>
@@ -751,53 +749,47 @@ const spS: Record<string, React.CSSProperties> = {
     inset:           0,
     backgroundColor: 'rgba(0,0,0,0.55)',
     display:         'flex',
-    alignItems:      'flex-end',
+    alignItems:      'center',
+    justifyContent:  'center',
+    padding:         '0 20px',
+    boxSizing:       'border-box' as const,
     zIndex:          500,
   },
   sheet: {
+    maxWidth:        440,
     width:           '100%',
-    maxWidth:        480,
-    margin:          '0 auto',
     backgroundColor: '#FFFFFF',
-    borderRadius:    '20px 20px 0 0',
-    padding:         '0 0 24px',
+    borderRadius:    18,
+    overflow:        'hidden',
+    boxShadow:       '0 20px 60px rgba(0,0,0,0.28)',
     display:         'flex',
-    flexDirection:   'column',
+    flexDirection:   'column' as const,
     gap:             0,
-  },
-  handle: {
-    alignSelf:       'center',
-    width:           40,
-    height:          4,
-    backgroundColor: BDR,
-    borderRadius:    2,
-    margin:          '10px auto 0',
   },
   titleRow: {
     display:         'flex',
     alignItems:      'center',
     justifyContent:  'space-between',
-    padding:         '14px 20px 10px',
-    borderBottom:    `1px solid ${BDR}`,
+    padding:         '16px 20px',
+    backgroundColor: NAVY2,
+    flexShrink:      0,
   },
   title: {
-    fontSize:  18,
-    fontWeight: 800,
-    color:     '#111827',
+    fontSize:   18,
+    fontWeight:  800,
+    color:      '#FFFFFF',
+    lineHeight:  1.2,
   },
   closeBtn: {
-    width:           32,
-    height:          32,
-    borderRadius:    16,
-    backgroundColor: SURF,
-    border:          `1px solid ${BDR}`,
-    color:           '#374151',
-    fontSize:        14,
-    fontWeight:      700,
-    cursor:          'pointer',
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
+    background:  'none',
+    border:      'none',
+    color:       '#FFFFFF',
+    fontSize:    24,
+    fontWeight:  700,
+    lineHeight:  1,
+    cursor:      'pointer',
+    padding:     '4px 6px',
+    opacity:     0.85,
   },
   section: {
     padding:         '16px 20px',
