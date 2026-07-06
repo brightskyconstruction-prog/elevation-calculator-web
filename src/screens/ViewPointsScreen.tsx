@@ -960,27 +960,31 @@ function GraphTab({ points, sets }: GraphTabProps) {
     return sets.find(s => s.id === effectiveSet)?.name ?? '';
   }, [effectiveSet, sets]);
 
-  // First 3 sets visible; rest accessible via "More Sets" overlay
-  const VISIBLE = 3;
+  // First 2 sets visible; rest accessible via "More Sets" overlay
+  const VISIBLE = 2;
   const visibleChips = availableSets.slice(0, VISIBLE);
   const hiddenChips  = availableSets.slice(VISIBLE);
 
+  // Number of columns: up to 2 chips + "More Sets" button (if any hidden)
+  const chipCols = visibleChips.length + (hiddenChips.length > 0 ? 1 : 0);
+  const chipBtnStyle: React.CSSProperties = { minHeight: 38, padding: '6px 8px', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'normal', textAlign: 'center', lineHeight: 1.25, wordBreak: 'break-word', border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC };
+
   const ChipsRow = availableSets.length > 0 ? (
     <>
-      <div style={{ display: 'flex', gap: 5, marginBottom: 10, flexWrap: 'nowrap' as const, alignItems: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${chipCols}, 1fr)`, gap: 6, marginBottom: 10 }}>
         {visibleChips.map(s => {
           const active = effectiveSet === s.id;
           const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
           return (
             <button key={s.id}
-              style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 14, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+              style={{ ...chipBtnStyle, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontWeight: active ? 700 : 600 }}
               onClick={() => setSelectedSet(s.id)}
             >{label}</button>
           );
         })}
         {hiddenChips.length > 0 && (
           <button
-            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+            style={chipBtnStyle}
             onClick={() => setShowMoreSets(true)}
           >▲ {t('moreSets')}</button>
         )}
