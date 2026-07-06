@@ -76,6 +76,13 @@ const en = {
   decimalFeetLabel:   'DECIMAL FEET',
   deleteCalcsConfirm: 'Delete all calculations?',
   deleteConvsConfirm: 'Delete all conversions?',
+  chooseOpTitle:      'Choose Operation',
+  chooseOpDesc:       'Select whether to add or subtract the two entered values.',
+  additionBtn:        'Addition',
+  subtractionBtn:     'Subtraction',
+  editCalcBtn:        'Edit Calculation',
+  deleteCalcBtn:      'Delete Calculation',
+  deleteCalcConfirm:  'Delete this calculation from history?',
 
   // ── View Points sub-tabs ─────────────────────────────────────────
   comparePoints:      'Compare Points',
@@ -448,6 +455,13 @@ const es: typeof en = {
   decimalFeetLabel:   'PIES DECIMALES',
   deleteCalcsConfirm: '¿Eliminar todos los cálculos?',
   deleteConvsConfirm: '¿Eliminar todas las conversiones?',
+  chooseOpTitle:      'Elegir Operación',
+  chooseOpDesc:       'Selecciona si deseas sumar o restar los dos valores ingresados.',
+  additionBtn:        'Adición',
+  subtractionBtn:     'Sustracción',
+  editCalcBtn:        'Editar Cálculo',
+  deleteCalcBtn:      'Eliminar Cálculo',
+  deleteCalcConfirm:  '¿Eliminar este cálculo del historial?',
 
   // ── View Points sub-tabs ─────────────────────────────────────────
   comparePoints:      'Comparar Puntos',

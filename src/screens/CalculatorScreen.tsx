@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { INCHES_OPTIONS, FRACTION_OPTIONS } from '../constants';
 import { useLang } from '../LangContext';
 
+// ─── Modal animation (idempotent injection) ───────────────────────────────────
+if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
+  const _s = document.createElement('style');
+  _s.id = 'anp-modal-anim';
+  _s.textContent = `
+    @keyframes anpModalIn { from { opacity: 0; transform: scale(0.92) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+  `;
+  document.head.appendChild(_s);
+}
+
 // ─── Colors ───────────────────────────────────────────────────────────────────
 const GOLD  = '#F4B02A';
 const NAVY  = '#163A63';
@@ -507,6 +518,59 @@ function ConverterView() {
   );
 }
 
+// ─── Operation Selection Modal ────────────────────────────────────────────────
+function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
+  onSelect: (op: Op) => void;
+  onClose: () => void;
+  suggestedOp?: Op;
+}) {
+  const { t } = useLang();
+  const ops: { op: Op; emoji: string; label: string }[] = [
+    { op: '+', emoji: '➕', label: t('additionBtn') },
+    { op: '-', emoji: '➖', label: t('subtractionBtn') },
+  ];
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="anp-modal-in" style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 360, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.30)', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ backgroundColor: NAVY, padding: '15px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{t('chooseOpTitle')}</span>
+          <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, fontWeight: 700, cursor: 'pointer', padding: '4px 6px', opacity: 0.85, lineHeight: 1 }} onClick={onClose}>✕</button>
+        </div>
+        {/* Body */}
+        <div style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ margin: 0, fontSize: 13, color: TEXT_S, lineHeight: 1.55, textAlign: 'center' }}>{t('chooseOpDesc')}</p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {ops.map(({ op, emoji, label }) => {
+              const active = suggestedOp === op;
+              return (
+                <button
+                  key={op}
+                  style={{
+                    flex: 1, height: 72,
+                    backgroundColor: active ? NAVY : SURFACE,
+                    border: `2px solid ${active ? GOLD : BORDER}`,
+                    borderRadius: 12, cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                    transition: 'background-color 0.15s, border-color 0.15s',
+                  }}
+                  onClick={() => onSelect(op)}
+                >
+                  <span style={{ fontSize: 24, lineHeight: 1 }}>{emoji}</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: active ? '#fff' : TEXT_P, letterSpacing: 0.3 }}>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CALCULATOR VIEW
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -531,11 +595,14 @@ function CalculatorView() {
   const [bFtErr, setBFtErr] = useState('');
 
   const [result,       setResult]       = useState<number | null>(null);
-  const [calcDone,     setCalcDone]     = useState(false);   // change 4: disable after calc
-  const [aEngFocused,  setAEngFocused]  = useState(false);   // change 1: placeholder on focus
-  const [bEngFocused,  setBEngFocused]  = useState(false);   // change 1: placeholder on focus
+  const [calcDone,     setCalcDone]     = useState(false);
+  const [aEngFocused,  setAEngFocused]  = useState(false);
+  const [bEngFocused,  setBEngFocused]  = useState(false);
   const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(KEY_CALC, []));
   const [showAllCalcs, setShowAllCalcs] = useState(false);
+  const [showOpModal,  setShowOpModal]  = useState(false);
+  const [menuOpenId,   setMenuOpenId]   = useState<string | null>(null);
+
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CALC, JSON.stringify(history)); } catch {}
@@ -546,7 +613,7 @@ function CalculatorView() {
 
   const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); };
   const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); };
-  const handleAllClear = () => { clearA(); clearB(); setOp('+'); };
+  const handleAllClear = () => { clearA(); clearB(); };
 
   // Feet text input handlers — validate whole numbers
   const onFtChangeA = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only'); resetCalc(); };
@@ -559,14 +626,22 @@ function CalculatorView() {
   const calcEnabled = canCalc && !calcDone;
   const resultFif = result !== null ? engToFif(Math.abs(result)) : null;
 
-  const handleCalculate = () => {
+  // Open the op-selection modal (if inputs are valid and not already calculated)
+  const triggerCalculate = () => {
     if (!calcEnabled) return;
-    const raw = op === '+' ? valA + valB : valA - valB;
+    setShowOpModal(true);
+  };
+
+  // Called from OpSelectionModal with the chosen operation
+  const handleOpSelect = (selectedOp: Op) => {
+    setShowOpModal(false);
+    setOp(selectedOp);
+    const raw = selectedOp === '+' ? valA + valB : valA - valB;
     if (isNaN(raw)) return;
     setResult(raw);
-    setCalcDone(true);  // disable button until inputs change
+    setCalcDone(true);
     const item: CalcHistItem = {
-      id: uid(), modeA, modeB, op,
+      id: uid(), modeA, modeB, op: selectedOp,
       aFt, aIn, aFr, aFrL, aEng,
       bFt, bIn, bFr, bFrL, bEng,
       valA, valB, valR: raw,
@@ -577,6 +652,24 @@ function CalculatorView() {
   const handleDeleteAll = () => {
     if (!window.confirm(t('deleteCalcsConfirm'))) return;
     setHistory([]); setShowAllCalcs(false);
+  };
+
+  // Restore a history item into the input cards for editing
+  const handleEditItem = (item: CalcHistItem) => {
+    setModeA(item.modeA); setModeB(item.modeB);
+    setAFt(item.aFt); setAIn(item.aIn); setAFr(item.aFr); setAFrL(item.aFrL); setAEng(item.aEng);
+    setBFt(item.bFt); setBIn(item.bIn); setBFr(item.bFr); setBFrL(item.bFrL); setBEng(item.bEng);
+    setAFtErr(''); setBFtErr('');
+    setOp(item.op); // remember previous op as default suggestion in modal
+    resetCalc();
+    setMenuOpenId(null);
+  };
+
+  // Delete a single history item (with confirmation)
+  const handleDeleteItem = (item: CalcHistItem) => {
+    if (!window.confirm(t('deleteCalcConfirm'))) return;
+    setHistory(prev => prev.filter(h => h.id !== item.id));
+    setMenuOpenId(null);
   };
 
   return (
@@ -609,19 +702,6 @@ function CalculatorView() {
               />
             )}
             <button style={{ height: 26, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
-          </div>
-
-          {/* Operator column — change 5: "OR" between + and − */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            <button
-              style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === '+' ? NAVY : CARD, border: `2px solid ${op === '+' ? GOLD : BORDER}`, color: op === '+' ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
-              onClick={() => { setOp('+'); resetCalc(); }}
-            >+</button>
-            <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_S, letterSpacing: 0.5, lineHeight: 1 }}>OR</span>
-            <button
-              style={{ width: '100%', height: 44, borderRadius: 6, backgroundColor: op === '-' ? NAVY : CARD, border: `2px solid ${op === '-' ? GOLD : BORDER}`, color: op === '-' ? GOLD : TEXT_S, fontSize: 22, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }}
-              onClick={() => { setOp('-'); resetCalc(); }}
-            >−</button>
           </div>
 
           {/* Input B */}
@@ -666,26 +746,20 @@ function CalculatorView() {
           </div>
         </div>
 
-        {/* Action buttons — changes 2, 3, 4: larger font, shorter height, disable after calc */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 15, fontWeight: 800, letterSpacing: 1, cursor: 'pointer' }}
-            onClick={handleAllClear}
-          >{t('allClear')}</button>
-          <button
-            style={{
-              flex: 2, height: 40,
-              backgroundColor: calcEnabled ? NAVY : '#E8EFF7',
-              border: `2px solid ${calcEnabled ? GOLD : '#C5D2E4'}`,
-              borderRadius: 8,
-              color: calcEnabled ? '#fff' : '#7B96B8',
-              fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
-              cursor: calcEnabled ? 'pointer' : 'default',
-            }}
-            onClick={handleCalculate}
-            disabled={!calcEnabled}
-          >{t('calculate')}</button>
-        </div>
+        {/* Primary action — full-width Calculate */}
+        <button
+          style={{
+            width: '100%', height: 40,
+            backgroundColor: calcEnabled ? NAVY : '#E8EFF7',
+            border: `2px solid ${calcEnabled ? GOLD : '#C5D2E4'}`,
+            borderRadius: 8,
+            color: calcEnabled ? '#fff' : '#7B96B8',
+            fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
+            cursor: calcEnabled ? 'pointer' : 'default',
+          }}
+          onClick={triggerCalculate}
+          disabled={!calcEnabled}
+        >{t('calculate')}</button>
 
         {/* Recent Calculations */}
         {history.length > 0 && (
@@ -696,16 +770,48 @@ function CalculatorView() {
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
             </div>
             {history.slice(0, 2).map((item, i) => (
-              <div key={item.id} style={{ padding: '10px 12px', borderBottom: i === 0 && history.length > 1 ? `1px solid ${BORDER}` : 'none' }}>
-                <CompactCalcRow item={item} compact />
+              <div key={item.id} style={{ padding: '8px 12px', borderBottom: i === 0 && history.length > 1 ? `1px solid ${BORDER}` : 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <CompactCalcRow item={item} compact />
+                </div>
+                {/* ⋮ overflow menu */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <button
+                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: menuOpenId === item.id ? SURFACE : 'transparent', border: `1px solid ${menuOpenId === item.id ? BORDER : 'transparent'}`, fontSize: 16, fontWeight: 900, color: TEXT_S, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-1px', lineHeight: 1, padding: 0 }}
+                    onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === item.id ? null : item.id); }}
+                  >⋮</button>
+                  {menuOpenId === item.id && (
+                    <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 50, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', minWidth: 160, overflow: 'hidden' }}>
+                      <button
+                        style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
+                        onClick={() => handleEditItem(item)}
+                      >✏️ {t('editCalcBtn')}</button>
+                      <button
+                        style={{ width: '100%', padding: '10px 14px', border: 'none', backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: '#C0392B', cursor: 'pointer' }}
+                        onClick={() => handleDeleteItem(item)}
+                      >🗑️ {t('deleteCalcBtn')}</button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
+      {showOpModal && (
+        <OpSelectionModal
+          onSelect={handleOpSelect}
+          onClose={() => setShowOpModal(false)}
+          suggestedOp={op}
+        />
+      )}
       {showAllCalcs && (
         <AllCalcsModal history={history} onClose={() => setShowAllCalcs(false)} onDeleteAll={handleDeleteAll} />
+      )}
+      {/* Close ⋮ menu when tapping outside */}
+      {menuOpenId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setMenuOpenId(null)} />
       )}
     </>
   );
