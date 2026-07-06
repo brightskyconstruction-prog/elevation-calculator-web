@@ -471,10 +471,10 @@ function ConverterView() {
           <button
             style={{
               flex: 2, height: 40,
-              backgroundColor: convEnabled ? NAVY : '#C8C8C8',
-              border: `2px solid ${convEnabled ? GOLD : '#AAAAAA'}`,
+              backgroundColor: convEnabled ? NAVY : '#E8EFF7',
+              border: `2px solid ${convEnabled ? GOLD : '#C5D2E4'}`,
               borderRadius: 8,
-              color: convEnabled ? '#fff' : '#6B7280',
+              color: convEnabled ? '#fff' : '#7B96B8',
               fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
               cursor: convEnabled ? 'pointer' : 'default',
             }}
@@ -675,10 +675,10 @@ function CalculatorView() {
           <button
             style={{
               flex: 2, height: 40,
-              backgroundColor: calcEnabled ? NAVY : '#C8C8C8',
-              border: `2px solid ${calcEnabled ? GOLD : '#AAAAAA'}`,
+              backgroundColor: calcEnabled ? NAVY : '#E8EFF7',
+              border: `2px solid ${calcEnabled ? GOLD : '#C5D2E4'}`,
               borderRadius: 8,
-              color: calcEnabled ? '#fff' : '#6B7280',
+              color: calcEnabled ? '#fff' : '#7B96B8',
               fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
               cursor: calcEnabled ? 'pointer' : 'default',
             }}
