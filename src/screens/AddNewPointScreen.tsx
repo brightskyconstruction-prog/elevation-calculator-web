@@ -1107,7 +1107,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <>
                     <div style={s.rodDiv} />
                     <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, '0/0')}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const }}>{t('clearBtn')}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const, whiteSpace: 'nowrap' as const }}>{t('clearBtn')}</span>
                     </button>
                   </>
                 )}
@@ -1545,7 +1545,7 @@ const s: Record<string, React.CSSProperties> = {
   rodFeetInput:{ width: '100%', height: 34, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 19, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
   rodSelect:   { width: '100%', height: 32, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
   rodDiv:      { width: 1, backgroundColor: '#F3F4F6', flexShrink: 0 },
-  clearAllBtn: { width: 40, border: 'none', borderLeft: `1px solid #F3F4F6`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: `${SURFACE}88` },
+  clearAllBtn: { minWidth: 44, padding: '0 8px', flexShrink: 0, border: 'none', borderLeft: `1px solid #F3F4F6`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backgroundColor: `${SURFACE}88` },
 
   engInput:   { height: 36, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 19, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
   autoGenRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap' as const },
@@ -1570,7 +1570,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '7px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 46, boxSizing: 'border-box' as const },
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '7px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 68, boxSizing: 'border-box' as const },
   setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
