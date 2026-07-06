@@ -960,46 +960,65 @@ function GraphTab({ points, sets }: GraphTabProps) {
     return sets.find(s => s.id === effectiveSet)?.name ?? '';
   }, [effectiveSet, sets]);
 
-  // First 3 sets visible; rest behind "More Sets" dropdown
+  // First 3 sets visible; rest accessible via "More Sets" overlay
   const VISIBLE = 3;
   const visibleChips = availableSets.slice(0, VISIBLE);
   const hiddenChips  = availableSets.slice(VISIBLE);
 
   const ChipsRow = availableSets.length > 0 ? (
-    <div style={{ display: 'flex', gap: 5, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-      {visibleChips.map(s => {
-        const active = effectiveSet === s.id;
-        const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
-        return (
-          <button key={s.id}
-            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 14, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
-            onClick={() => { setSelectedSet(s.id); setShowMoreSets(false); }}
-          >{label}</button>
-        );
-      })}
-      {hiddenChips.length > 0 && (
-        <div style={{ position: 'relative' as const }}>
+    <>
+      <div style={{ display: 'flex', gap: 5, marginBottom: 10, flexWrap: 'nowrap' as const, alignItems: 'center' }}>
+        {visibleChips.map(s => {
+          const active = effectiveSet === s.id;
+          const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
+          return (
+            <button key={s.id}
+              style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${active ? BLUE : BORDER}`, backgroundColor: active ? BLUE : SURFACE, color: active ? '#fff' : TEXT_SEC, fontSize: 14, fontWeight: active ? 700 : 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+              onClick={() => setSelectedSet(s.id)}
+            >{label}</button>
+          );
+        })}
+        {hiddenChips.length > 0 && (
           <button
-            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
-            onClick={() => setShowMoreSets(v => !v)}
-          >{showMoreSets ? '▲' : '▼'} {t('moreSets')}</button>
-          {showMoreSets && (
-            <div style={{ position: 'absolute' as const, top: 36, left: 0, backgroundColor: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.12)', zIndex: 10, minWidth: 150, overflow: 'hidden' }}>
+            style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${BORDER}`, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 14, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' as const, flexShrink: 0 }}
+            onClick={() => setShowMoreSets(true)}
+          >▲ {t('moreSets')}</button>
+        )}
+      </div>
+
+      {/* More Sets centered overlay */}
+      {showMoreSets && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
+          onClick={() => setShowMoreSets(false)}>
+          <div className="anp-modal-in"
+            style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.28)', overflow: 'hidden', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>{t('moreSets')}</span>
+              <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }} onClick={() => setShowMoreSets(false)}>✕</button>
+            </div>
+            <div style={{ overflowY: 'auto' as const, padding: '6px 0' }}>
               {hiddenChips.map(s => {
                 const active = effectiveSet === s.id;
                 const label  = s.setLabel ? `${s.setLabel} ${s.name}` : s.name;
                 return (
                   <button key={s.id}
-                    style={{ display: 'block', width: '100%', padding: '8px 12px', textAlign: 'left' as const, background: active ? '#EEF4FF' : 'none', border: 'none', color: active ? BLUE : TEXT_PRI, fontSize: 14, fontWeight: active ? 700 : 500, cursor: 'pointer' }}
+                    style={{ display: 'flex', width: '100%', padding: '13px 20px', textAlign: 'left' as const, background: active ? '#EEF4FF' : 'none', border: 'none', borderBottom: `1px solid #F0F2F5`, color: active ? BLUE : TEXT_PRI, fontSize: 16, fontWeight: active ? 700 : 500, cursor: 'pointer', alignItems: 'center', gap: 10, boxSizing: 'border-box' as const }}
                     onClick={() => { setSelectedSet(s.id); setShowMoreSets(false); }}
-                  >{label}</button>
+                  >
+                    {s.setLabel && (
+                      <span style={{ backgroundColor: BLUE, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{s.setLabel}</span>
+                    )}
+                    <span style={{ flex: 1 }}>{s.name || label}</span>
+                    {active && <span style={{ fontSize: 16, color: BLUE, flexShrink: 0 }}>✓</span>}
+                  </button>
                 );
               })}
             </div>
-          )}
+          </div>
         </div>
       )}
-    </div>
+    </>
   ) : null;
 
   if (filtered.length === 0) {
@@ -1020,7 +1039,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
   const W       = 380;
   const PAD_B   = n <= 6 ? 62 : 56;   // extra room: point labels + x-axis title
   const PAD_L   = 46, PAD_R = 10, PAD_T = 32;
-  const H       = 320 + PAD_B;
+  const H       = 265 + PAD_B;
   const PLOT_W  = W - PAD_L - PAD_R;
   const PLOT_H  = H - PAD_T - PAD_B;
 
@@ -1129,7 +1148,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
 
             {/* LASER label — right side, aligned with laser line */}
             <text x={PAD_L + PLOT_W - 3} y={laserY - 5} textAnchor="end"
-              fontSize="13.5" fontWeight="800" fill={GOLD_SVG} letterSpacing="1.5">
+              fontSize="15" fontWeight="800" fill="#C47D0A" letterSpacing="1.5">
               {t('laserLabel')}
             </text>
 
