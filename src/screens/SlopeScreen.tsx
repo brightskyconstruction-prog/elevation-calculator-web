@@ -297,7 +297,7 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
           <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }} onClick={onClose}>✕</button>
         </div>
         <div style={{ padding: '8px 12px', flexShrink: 0 }}>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('slopeSearchPts')} autoFocus
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('slopeSearchPts')}
             style={{ width: '100%', height: 36, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 13, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
