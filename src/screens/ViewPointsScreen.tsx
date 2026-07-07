@@ -1262,8 +1262,8 @@ function exportPointsCSV(pts: SurveyPoint[], sets: SurveySet[]): void {
         pt.elevation   != null ? pt.elevation.toFixed(4) : '',
         setObj?.setLabel ?? '',
         setObj?.name    ?? '',
-        pt.gpsLat  ?? '',
-        pt.gpsLon  ?? '',
+        pt.createdLatitude  ?? '',
+        pt.createdLongitude ?? '',
         pt.createdAt ? new Date(pt.createdAt).toISOString() : '',
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
     });

@@ -1,7 +1,6 @@
 import React from 'react';
 
 const NAVY = '#143A63';
-const GOLD = '#F4B02A';
 
 type Tab = 'privacy' | 'terms';
 
