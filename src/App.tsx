@@ -9,7 +9,10 @@ import CalculatorScreen   from './screens/CalculatorScreen';
 import SplashScreenWeb    from './screens/SplashScreenWeb';
 import LoginScreenWeb     from './screens/LoginScreenWeb';
 import SlopeScreen        from './screens/SlopeScreen';
-import { isFirebaseConfigured } from './firebase';
+import OfflineIndicator   from './components/OfflineIndicator';
+import OnboardingOverlay  from './components/OnboardingOverlay';
+import PrivacyPolicyModal from './components/PrivacyPolicyModal';
+import { isFirebaseConfigured, ensureAnonymousAuth } from './firebase';
 import {
   loadUserData,
   saveUserData,
@@ -64,8 +67,10 @@ function AppInner() {
     return 'app';
   });
 
-  const [email,        setEmail]        = useState<string>(() => readEmail() ?? '');
-  const [activeTab,    setActiveTab]    = useState<MainTab>('add');
+  const [email,           setEmail]           = useState<string>(() => readEmail() ?? '');
+  const [activeTab,       setActiveTab]       = useState<MainTab>('add');
+  const [showPrivacy,     setShowPrivacy]     = useState(false);
+  const [privacyInitTab,  setPrivacyInitTab]  = useState<'privacy' | 'terms'>('privacy');
   const addScreenDirty = useRef(false);
 
   // ── Global back-navigation refs ─────────────────────────────────────────────
@@ -110,6 +115,16 @@ function AppInner() {
   const clearProfile = useProfileStore(s => s.clearProfile);
 
   useEffect(() => { ensureDefaultProject(); }, []);
+
+  // ── Anonymous Firebase Auth — provides request.auth token for Firestore ──────
+  // Called once on mount. Silently signs the session in anonymously so Firestore
+  // security rules (`request.auth != null`) pass without any UX change.
+  // Errors are swallowed — the app works offline/guest if this fails.
+  useEffect(() => {
+    if (isFirebaseConfigured()) {
+      ensureAnonymousAuth().catch(() => {});
+    }
+  }, []);
 
   // ── Cloud sync ──────────────────────────────────────────────────
   // Tracks the currently-authenticated email for sync operations.
@@ -470,27 +485,42 @@ function AppInner() {
           onSetLang={setLang}
           onLogout={handleLogout}
           onClose={() => setShowSettings(false)}
+          onOpenPrivacy={() => { setPrivacyInitTab('privacy'); setShowPrivacy(true); }}
+          onOpenTerms={() => { setPrivacyInitTab('terms'); setShowPrivacy(true); }}
           t={t}
         />
       )}
 
-      {/* Exit dialog removed — the Point ⊕ tab is now the home screen.
-           Back from the blank new-point form does nothing. */}
+      {/* ── Privacy Policy / Terms of Service modal ─────────────── */}
+      {showPrivacy && (
+        <PrivacyPolicyModal
+          initialTab={privacyInitTab}
+          onClose={() => setShowPrivacy(false)}
+        />
+      )}
+
+      {/* ── First-run onboarding ─────────────────────────────────── */}
+      <OnboardingOverlay />
+
+      {/* ── Offline banner (fixed, renders above everything) ────── */}
+      <OfflineIndicator />
     </div>
   );
 }
 
 // ─── Settings panel (bottom-sheet) ───────────────────────────────────────────
 interface SettingsPanelProps {
-  email:     string;
-  lang:      'en' | 'es';
-  onSetLang: (l: 'en' | 'es') => void;
-  onLogout:  () => void;
-  onClose:   () => void;
-  t:         (key: string) => string;
+  email:          string;
+  lang:           'en' | 'es';
+  onSetLang:      (l: 'en' | 'es') => void;
+  onLogout:       () => void;
+  onClose:        () => void;
+  onOpenPrivacy:  () => void;
+  onOpenTerms:    () => void;
+  t:              (key: string) => string;
 }
 
-function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: SettingsPanelProps) {
+function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivacy, onOpenTerms, t }: SettingsPanelProps) {
   return (
     <div style={spS.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="anp-modal-in" style={spS.sheet}>
@@ -498,7 +528,7 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: Setting
         {/* Title row */}
         <div style={spS.titleRow}>
           <span style={spS.title}>{t('settingsTitle')}</span>
-          <button style={spS.closeBtn} onClick={onClose}>✕</button>
+          <button style={spS.closeBtn} onClick={onClose} aria-label="Close settings">✕</button>
         </div>
 
         {/* ── Account section ─────────────────────────────────── */}
@@ -536,12 +566,31 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, t }: Setting
                     ...(lang === l ? spS.langOptActive : {}),
                   }}
                   onClick={() => onSetLang(l)}
+                  aria-pressed={lang === l}
                 >
                   {l === 'en' ? t('english') : t('spanish')}
                 </button>
               ))}
             </div>
           </div>
+        </div>
+
+        {/* ── Legal section ────────────────────────────────────── */}
+        <div style={{ ...spS.section, borderBottom: 'none' }}>
+          <span style={spS.sectionLabel}>{t('settingsLegal')}</span>
+          <button style={spS.legalBtn} onClick={onOpenPrivacy}>
+            <span>{t('settingsPrivacy')}</span>
+            <span style={spS.legalArrow}>›</span>
+          </button>
+          <button style={spS.legalBtn} onClick={onOpenTerms}>
+            <span>{t('settingsTerms')}</span>
+            <span style={spS.legalArrow}>›</span>
+          </button>
+        </div>
+
+        {/* ── App version ──────────────────────────────────────── */}
+        <div style={spS.versionRow}>
+          <span style={spS.versionText}>Grade and Elevation Calculator · v1.0</span>
         </div>
       </div>
     </div>
@@ -893,6 +942,35 @@ const spS: Record<string, React.CSSProperties> = {
     backgroundColor: NAVY2,
     color:           '#FFFFFF',
     fontWeight:      800,
+  },
+  legalBtn: {
+    height:          44,
+    borderRadius:    10,
+    backgroundColor: SURF,
+    border:          `1px solid ${BDR}`,
+    color:           '#374151',
+    fontSize:        14,
+    fontWeight:      600,
+    cursor:          'pointer',
+    padding:         '0 14px',
+    display:         'flex',
+    alignItems:      'center',
+    justifyContent:  'space-between',
+    transition:      'background-color 0.15s',
+  },
+  legalArrow: {
+    fontSize:   18,
+    color:      '#9CA3AF',
+    lineHeight: 1,
+  },
+  versionRow: {
+    padding:    '12px 20px',
+    textAlign:  'center' as const,
+  },
+  versionText: {
+    fontSize:   11,
+    color:      '#9CA3AF',
+    fontWeight: 500,
   },
 };
 

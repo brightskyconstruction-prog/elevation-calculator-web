@@ -378,6 +378,41 @@ const en = {
   slopeRecentCalcs:    'Recent Calculations',
   slopeClearBtn:       'Clear',
   slopeBackBtn:        'Back',
+
+  // ── Settings — Legal section ───────────────────────────────────────
+  settingsLegal:       'Legal',
+  settingsPrivacy:     'Privacy Policy',
+  settingsTerms:       'Terms of Service',
+
+  // ── Offline indicator ─────────────────────────────────────────────
+  offlineMsg:          '📡 No internet connection — changes saved locally',
+  backOnlineMsg:       '✓ Back online — syncing your changes',
+
+  // ── Error boundary ────────────────────────────────────────────────
+  errorTitle:          'Something went wrong',
+  errorBody:           "The app hit an unexpected error. Your saved data is safe — it's stored locally on your device.",
+  errorReload:         'Reload App',
+  errorClearReload:    'Clear cache & reload',
+  errorTechDetails:    'Technical details',
+
+  // ── Onboarding overlay ────────────────────────────────────────────
+  onbAriaLabel:        'Welcome to Elevation Calculator',
+  onbSkip:             'Skip',
+  onbBack:             '← Back',
+  onbNext:             'Next →',
+  onbGetStarted:       'Get Started',
+  onbStepDot:          (n: number) => `Step ${n}`,
+  onbStepOf:           (step: number, total: number) => `${step} of ${total}`,
+  onbStep1Title:       'Add Survey Points',
+  onbStep1Body:        'Record each point by entering its rod reading in feet-inches or decimal feet. The app automatically calculates elevation from your benchmark.',
+  onbStep2Title:       'Calculate Benchmark Elevations',
+  onbStep2Body:        'Set a benchmark elevation for your first point. Every subsequent point in the same set derives its elevation automatically — no manual math needed.',
+  onbStep3Title:       'Compare, Slope & Export',
+  onbStep3Body:        'Use Compare Height to see elevation differences between any two points, Slope to calculate grade, and the export button to download your data as CSV.',
+
+  // ── CSV export ────────────────────────────────────────────────────
+  csvExportBtn:        '↓ CSV',
+  csvExportLabel:      'Export points as CSV',
 };
 
 const es: typeof en = {
@@ -757,6 +792,41 @@ const es: typeof en = {
   slopeRecentCalcs:    'Cálculos Recientes',
   slopeClearBtn:       'Limpiar',
   slopeBackBtn:        'Atrás',
+
+  // ── Settings — Legal section ───────────────────────────────────────
+  settingsLegal:       'Legal',
+  settingsPrivacy:     'Política de Privacidad',
+  settingsTerms:       'Términos de Servicio',
+
+  // ── Offline indicator ─────────────────────────────────────────────
+  offlineMsg:          '📡 Sin conexión a internet — los cambios se guardan localmente',
+  backOnlineMsg:       '✓ Conexión restaurada — sincronizando tus cambios',
+
+  // ── Error boundary ────────────────────────────────────────────────
+  errorTitle:          'Algo salió mal',
+  errorBody:           'La aplicación encontró un error inesperado. Tus datos guardados están seguros — se almacenan localmente en tu dispositivo.',
+  errorReload:         'Recargar Aplicación',
+  errorClearReload:    'Borrar caché y recargar',
+  errorTechDetails:    'Detalles técnicos',
+
+  // ── Onboarding overlay ────────────────────────────────────────────
+  onbAriaLabel:        'Bienvenido a la Calculadora de Elevación',
+  onbSkip:             'Omitir',
+  onbBack:             '← Atrás',
+  onbNext:             'Siguiente →',
+  onbGetStarted:       'Comenzar',
+  onbStepDot:          (n: number) => `Paso ${n}`,
+  onbStepOf:           (step: number, total: number) => `${step} de ${total}`,
+  onbStep1Title:       'Agregar Puntos de Levantamiento',
+  onbStep1Body:        'Registra cada punto ingresando su lectura de varilla en pies-pulgadas o pies decimales. La aplicación calcula automáticamente la elevación desde tu referencia.',
+  onbStep2Title:       'Calcular Elevaciones de Referencia',
+  onbStep2Body:        'Establece una elevación de referencia para tu primer punto. Cada punto siguiente en el mismo conjunto deriva su elevación automáticamente — sin necesidad de cálculos manuales.',
+  onbStep3Title:       'Comparar, Pendiente y Exportar',
+  onbStep3Body:        'Usa Comparar Altura para ver diferencias de elevación entre dos puntos, Pendiente para calcular el grado, y el botón de exportar para descargar tus datos como CSV.',
+
+  // ── CSV export ────────────────────────────────────────────────────
+  csvExportBtn:        '↓ CSV',
+  csvExportLabel:      'Exportar puntos como CSV',
 };
 
 export const strings: Record<Lang, typeof en> = { en, es };

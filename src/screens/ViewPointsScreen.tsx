@@ -1229,6 +1229,55 @@ interface SinglePointTabProps {
 }
 
 
+// ─── CSV export helper ────────────────────────────────────────────────────────
+function exportPointsCSV(pts: SurveyPoint[], sets: SurveySet[]): void {
+  const setMap: Record<string, SurveySet> = {};
+  sets.forEach(s => { setMap[s.id] = s; });
+
+  const headers = [
+    'Label', 'Name', 'Type',
+    'Rod Feet', 'Rod Inches', 'Rod Fraction', 'Engineering Feet',
+    'BM Elevation (ft)', 'Elevation (ft)',
+    'Set Label', 'Set Name',
+    'GPS Lat', 'GPS Lon',
+    'Created At',
+  ];
+
+  const rows = pts
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }))
+    .map(pt => {
+      const setObj = pt.setId ? setMap[pt.setId] : null;
+      const hasBm  = (pt.bmElevation ?? 0) > 0;
+      return [
+        pt.label,
+        pt.pointName ?? '',
+        hasBm && setObj ? 'derived'
+          : hasBm ? 'benchmark'
+          : 'standalone',
+        pt.rodFeet     ?? 0,
+        pt.rodInches   ?? 0,
+        pt.rodFractionLabel ?? '',
+        pt.engineeringFeet.toFixed(4),
+        hasBm ? (pt.bmElevation ?? 0).toFixed(4) : '',
+        pt.elevation   != null ? pt.elevation.toFixed(4) : '',
+        setObj?.setLabel ?? '',
+        setObj?.name    ?? '',
+        pt.gpsLat  ?? '',
+        pt.gpsLon  ?? '',
+        pt.createdAt ? new Date(pt.createdAt).toISOString() : '',
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `survey-points-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
   const { t, lang } = useLang();
   const { deletePoint } = useSurveyStore();
@@ -1320,23 +1369,45 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
 
       {/* ── Compact top bar ── */}
       <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '5px 10px 6px', display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.7, textTransform: 'uppercase' as const }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.7, textTransform: 'uppercase' as const, flex: 1, minWidth: 0 }}>
             {points.length} {t('surveyPoints')}
           </span>
           {points.length > 0 && (
-            <button
-              style={{ height: 28, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
-              onClick={() => setShowAllModal(true)}
-            >{t('viewAllPoints')}</button>
+            <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+              <button
+                title={t('csvExportLabel')}
+                aria-label={t('csvExportLabel')}
+                style={{ height: 28, padding: '0 10px', backgroundColor: 'rgba(26,122,63,0.10)', border: '1px solid rgba(26,122,63,0.35)', borderRadius: 6, fontSize: 12, fontWeight: 800, color: '#1A7A3F', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const }}
+                onClick={() => exportPointsCSV(points, sets)}
+              >
+                {t('csvExportBtn')}
+              </button>
+              <button
+                style={{ height: 28, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
+                onClick={() => setShowAllModal(true)}
+              >{t('viewAllPoints')}</button>
+            </div>
           )}
         </div>
-        <input
-          style={{ height: 38, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 12px', fontSize: 15, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' as const, width: '100%' }}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={t('searchPlaceholder')}
-        />
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: TEXT_DIS, pointerEvents: 'none' }}>🔍</span>
+          <input
+            style={{ height: 38, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 36px 0 30px', fontSize: 15, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' as const, width: '100%' }}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t('searchPlaceholder')}
+            aria-label="Search survey points"
+            type="search"
+          />
+          {search.length > 0 && (
+            <button
+              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', fontSize: 16, color: TEXT_DIS, cursor: 'pointer', padding: '4px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+              onClick={() => setSearch('')}
+              aria-label="Clear search"
+            >✕</button>
+          )}
+        </div>
       </div>
 
       {/* ── Main scrollable body ── */}

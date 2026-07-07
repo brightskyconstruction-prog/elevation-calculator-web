@@ -40,8 +40,30 @@ button {
   outline: none;
 }
 
+/* ─── Accessible focus indicators ─────────────────────────────────────────── */
+/* Only show focus ring when navigating by keyboard (not on mouse click)     */
+:focus-visible {
+  outline: 2.5px solid #3B82F6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove default outline — we use :focus-visible above */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 input:focus, textarea:focus, select:focus {
   outline: none;
+}
+
+/* Inputs get a blue border on focus for visible feedback */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18) !important;
 }
 
 /* ─── Utility classes ──────────────────────────────────────────────────────── */
@@ -99,6 +121,18 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
+/* ─── Button press feedback ────────────────────────────────────────────────── */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+/* ─── Disabled state ────────────────────────────────────────────────────────── */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 /* ─── Animations ────────────────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -107,4 +141,17 @@ input:focus, textarea:focus, select:focus {
 
 .fade-in {
   animation: fadeIn 0.2s ease-out;
+}
+
+/* ─── Skeleton loading animation ───────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
 }

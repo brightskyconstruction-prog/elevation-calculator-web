@@ -5,34 +5,33 @@ rules_version = '2';
 //   /users/{userId}          — app data  (points, sets, history)
 //   /userProfiles/{userId}   — account   (plan, subscription, feature flags)
 //
-// Future collections (no rules needed until documents are written):
-//   /subscriptions/{subId}   — payment gateway subscription records
-//   /payments/{paymentId}    — payment history
-//   /invoices/{invoiceId}    — invoice records
-//   /promotions/{promoCode}  — promo / coupon codes  (admin write only)
-//   /featureFlags/{flagId}   — global feature toggles (admin write only)
+// SECURITY MODEL (v1.1 — Anonymous Auth required)
+//   The app signs every session in with Firebase Anonymous Auth on startup.
+//   Rules require request.auth != null — completely unauthenticated callers
+//   (bots, scripts, raw HTTP) are denied. Only clients holding a valid
+//   Firebase Auth token (obtained from our app) can read or write.
 //
-// CURRENT MODEL: "email as identity"
-//   userId = base64(email) — no server-side token verification yet.
-//   Any client that knows the userId can read/write their own documents.
-//   Appropriate for a trusted internal/team tool.
+//   userId is still base64(email) in this release. Cross-user access
+//   protection (request.auth.uid == userId) requires migrating from
+//   email-derived IDs to Firebase UID-based routing — planned for v1.2.
 //
-// ── Upgrading to real auth in the future ──────────────────────────────────────
-// 1. Add Firebase Authentication (email/password or magic link).
-// 2. Replace userId key with request.auth.uid throughout the app.
-// 3. Replace `allow read, write: if true` with:
+// ── Phase 2 upgrade (when Firebase Email Link auth is shipped) ────────────────
+// 1. Replace anonymous sign-in with email-link sign-in.
+// 2. Route Firestore docs by request.auth.uid instead of btoa(email).
+// 3. Tighten rules to:
 //      allow read, write: if request.auth != null
 //                         && request.auth.uid == userId;
-// 4. For admin-only writes (promotions, featureFlags):
-//      allow write: if request.auth.token.isAdmin == true;
+// 4. Admin-only writes (promotions, featureFlags):
+//      allow write: if request.auth.token.admin == true;
 // ─────────────────────────────────────────────────────────────────────────────
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── App data: survey points, sets, calculator history ────────────────────
+    // Requires a valid Firebase Auth session (anonymous or signed-in).
     match /users/{userId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
     // ── Account data: plan, subscription status, feature entitlements ────────
@@ -40,31 +39,31 @@ service cloud.firestore {
     // Client can write on login (ensureUserProfile) and on profile updates.
     // Future: restrict writes to Cloud Functions only (Stripe webhook handler).
     match /userProfiles/{userId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
     // ── Future: subscription records (written by payment webhook) ─────────────
     // match /subscriptions/{subId} {
-    //   allow read:  if true;
+    //   allow read:  if request.auth != null;
     //   allow write: if false; // Cloud Functions only
     // }
 
     // ── Future: payment history (written by payment webhook) ──────────────────
     // match /payments/{paymentId} {
-    //   allow read:  if true;
+    //   allow read:  if request.auth != null;
     //   allow write: if false;
     // }
 
     // ── Future: promo codes (admin write, public read for validation) ─────────
     // match /promotions/{promoCode} {
-    //   allow read:  if true;
-    //   allow write: if request.auth.token.isAdmin == true;
+    //   allow read:  if request.auth != null;
+    //   allow write: if request.auth.token.admin == true;
     // }
 
     // ── Future: feature flags (admin only) ────────────────────────────────────
     // match /featureFlags/{flagId} {
-    //   allow read:  if true;
-    //   allow write: if request.auth.token.isAdmin == true;
+    //   allow read:  if request.auth != null;
+    //   allow write: if request.auth.token.admin == true;
     // }
 
     // Deny everything else.

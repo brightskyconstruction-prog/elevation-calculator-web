@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLang } from '../LangContext';
+import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
 
 interface Props {
   onLogin:      (email: string) => void;
@@ -47,9 +48,11 @@ function MeasureTicks() {
 // ─── Login screen ─────────────────────────────────────────────────────────────
 export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
   const { t } = useLang();
-  const [email,   setEmail]   = useState('');
-  const [error,   setError]   = useState('');
-  const [loading, setLoading] = useState(false);
+  const [email,        setEmail]        = useState('');
+  const [error,        setError]        = useState('');
+  const [loading,      setLoading]      = useState(false);
+  const [showPrivacy,  setShowPrivacy]  = useState(false);
+  const [privacyTab,   setPrivacyTab]   = useState<'privacy' | 'terms'>('privacy');
   const inputRef  = useRef<HTMLInputElement>(null);
   const rootRef   = useRef<HTMLDivElement>(null);
   const cardRef   = useRef<HTMLDivElement>(null);
@@ -226,12 +229,37 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
         >
           {t('continueAsGuest')}
         </button>
+
+        {/* Privacy / Terms links */}
+        <div style={styles.legalRow}>
+          <button
+            style={styles.legalLink}
+            onClick={() => { setPrivacyTab('privacy'); setShowPrivacy(true); }}
+          >
+            {t('settingsPrivacy')}
+          </button>
+          <span style={styles.legalDot}>·</span>
+          <button
+            style={styles.legalLink}
+            onClick={() => { setPrivacyTab('terms'); setShowPrivacy(true); }}
+          >
+            {t('settingsTerms')}
+          </button>
+        </div>
       </div>
 
       {/* Footer */}
       <p style={styles.footer}>
         {t('appTitle')} · {t('version')}
       </p>
+
+      {/* Privacy / Terms modal */}
+      {showPrivacy && (
+        <PrivacyPolicyModal
+          initialTab={privacyTab}
+          onClose={() => setShowPrivacy(false)}
+        />
+      )}
     </div>
   );
 }
@@ -476,6 +504,30 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 0.4,
     cursor:        'pointer',
     transition:    'background-color 0.15s, opacity 0.15s',
+  },
+  legalRow: {
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+    gap:            8,
+    padding:        '2px 24px 0',
+    marginTop:      -4,
+  },
+  legalLink: {
+    background:  'none',
+    border:      'none',
+    color:       '#9CA3AF',
+    fontSize:    11,
+    fontWeight:  600,
+    cursor:      'pointer',
+    padding:     '4px 0',
+    textDecoration: 'underline',
+    textUnderlineOffset: '2px',
+    letterSpacing: 0.2,
+  },
+  legalDot: {
+    fontSize: 11,
+    color:    '#9CA3AF',
   },
   footer: {
     // Absolute so it doesn't participate in flex centering (which would throw
