@@ -1351,7 +1351,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                    : t('spStandaloneBadge');
 
   const handleDeleteSingle = useCallback((delPt: SurveyPoint) => {
-    if (!window.confirm(`Delete ${delPt.label}${delPt.pointName ? ` ("${delPt.pointName}")` : ''}? This action cannot be undone.`)) return;
+    if (!window.confirm(strings[lang].deletePointConfirmLabel(delPt.label, delPt.pointName))) return;
     const prevLen = sorted.length;
     deletePoint(projectId, delPt.id);
     setRawIdx(prev => {

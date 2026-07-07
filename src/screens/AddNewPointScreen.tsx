@@ -22,7 +22,7 @@ const TEXT_PRI  = '#111827';
 const TEXT_SEC  = '#374151';
 const TEXT_DIS  = '#9CA3AF';
 
-// ─── Modal animation CSS (injected once at module load) ──────────────────────
+// ─── Modal + toast animation CSS (injected once at module load) ──────────────
 if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
   const _s = document.createElement('style');
   _s.id = 'anp-modal-anim';
@@ -32,6 +32,11 @@ if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim'
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
     .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes anpToastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .anp-toast { animation: anpToastIn 0.22s cubic-bezier(0.22,1,0.36,1) both; }
   `;
   document.head.appendChild(_s);
 }
@@ -550,6 +555,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [setWarning,        setSetWarning]        = useState(false);
   const [newSetElevWarn,    setNewSetElevWarn]    = useState(false);
   const [rodReadingWarn,    setRodReadingWarn]    = useState(false);
+  const [rodSaveWarn,       setRodSaveWarn]       = useState(false);
   const [dupConflict,       setDupConflict]       = useState<{ name: string; label: string } | null>(null);
   const [showManagePoint,   setShowManagePoint]   = useState(false);
   const [editingFromManage, setEditingFromManage] = useState(false); // true = overlay mounted but hidden while editing a point from it
@@ -721,6 +727,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     const eng = toEngFt(feet, inches, frac);
     setEngFtStr(isNaN(eng) || (feet === '' && inches === 0 && frac === 0) ? '' : eng.toFixed(2));
     setRodReadingWarn(false);
+    setRodSaveWarn(false);
     lockRef.current = false;
   };
 
@@ -735,6 +742,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       lockRef.current = false;
     }
     setRodReadingWarn(false);
+    setRodSaveWarn(false);
   };
 
   // ── Duplicate-name helpers ─────────────────────────────────────────────────
@@ -759,7 +767,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     const eng = parseFloat(engFtStr);
-    if (isNaN(eng) || eng <= 0) { alert(t('rodReadingAlert')); return; }
+    if (isNaN(eng) || eng <= 0) { setRodSaveWarn(true); return; }
+    setRodSaveWarn(false);
     if (!assignedSet) { setSetWarning(true); return; }
     setSetWarning(false);
     // Duplicate point-name check — opens modal dialog on conflict
@@ -886,12 +895,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
       {/* Save toast */}
       {saveMsg && (
-        <div style={{
+        <div className="anp-toast" style={{
           position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: '#16A34A', color: '#fff', padding: '8px 20px',
+          backgroundColor: '#16A34A', color: '#fff', padding: '9px 22px',
           borderRadius: 20, fontSize: 13, fontWeight: 700, zIndex: 200,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-        }}>{saveMsg}</div>
+          boxShadow: '0 4px 16px rgba(0,0,0,0.22)',
+          display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' as const,
+        }}>
+          <span style={{ fontSize: 15 }}>✓</span>
+          {saveMsg}
+        </div>
       )}
 
       {/* Point nav header */}
@@ -1313,9 +1326,14 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
         {/* ── Save / Update button — immediately below the set card ── */}
         {(isNewPoint || isEditMode) && (
-          <button style={s.saveBtn} onClick={handleSave}>
-            {isNewPoint ? t('savePoint') : t('updatePoint')}
-          </button>
+          <>
+            {rodSaveWarn && (
+              <div style={{ ...s.warnMsg, marginBottom: 0 }}>⚠ {t('rodReadingAlert')}</div>
+            )}
+            <button style={s.saveBtn} onClick={handleSave}>
+              {isNewPoint ? t('savePoint') : t('updatePoint')}
+            </button>
+          </>
         )}
 
         {/* ── Post-save actions (compare / slope) — read-only view only ── */}
@@ -1443,12 +1461,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
               aria-label="Back"
             >←</button>
-            <span style={{ flex: 1, textAlign: 'center' as const, fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 8px' }}>Manage Points</span>
+            <span style={{ flex: 1, textAlign: 'center' as const, fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 8px' }}>{t('managePointsTitle')}</span>
             <button
               style={{ background: GOLD, border: 'none', color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '7px 12px', flexShrink: 0, borderRadius: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.18)', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
-              aria-label="Add New Point"
-            >+ Add New Point</button>
+              aria-label={t('addNewPointBtn')}
+            >{t('addNewPointBtn')}</button>
           </div>
           {/* Content */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

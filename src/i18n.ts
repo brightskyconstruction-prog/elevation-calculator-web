@@ -423,6 +423,12 @@ const en = {
   // ── CSV export ────────────────────────────────────────────────────
   csvExportBtn:        '↓ CSV',
   csvExportLabel:      'Export points as CSV',
+
+  // ── Manage Points overlay ─────────────────────────────────────────
+  managePointsTitle:   'Manage Points',
+  addNewPointBtn:      '+ Add New Point',
+  deletePointConfirmLabel: (label: string, name?: string) =>
+    `Delete ${label}${name ? ` ("${name}")` : ''}? This action cannot be undone.`,
 };
 
 const es: typeof en = {
@@ -847,6 +853,12 @@ const es: typeof en = {
   // ── CSV export ────────────────────────────────────────────────────
   csvExportBtn:        '↓ CSV',
   csvExportLabel:      'Exportar puntos como CSV',
+
+  // ── Manage Points overlay ─────────────────────────────────────────
+  managePointsTitle:   'Gestionar Puntos',
+  addNewPointBtn:      '+ Nuevo Punto',
+  deletePointConfirmLabel: (label: string, name?: string) =>
+    `¿Eliminar ${label}${name ? ` ("${name}")` : ''}? Esta acción no se puede deshacer.`,
 };
 
 export const strings: Record<Lang, typeof en> = { en, es };
