@@ -1444,6 +1444,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               aria-label="Back"
             >←</button>
             <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>Manage Points</span>
+            <div style={{ flex: 1 }} />
+            <button
+              style={{ background: GOLD, border: 'none', color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '7px 12px', flexShrink: 0, borderRadius: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.18)', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const }}
+              onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
+              aria-label="Add New Point"
+            >+ Add New Point</button>
           </div>
           {/* Content */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -1579,7 +1585,7 @@ const s: Record<string, React.CSSProperties> = {
   savedAt:      { fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
-  saveBtn:    { height: 38, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' },
+  saveBtn:    { minHeight: 48, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px', flexShrink: 0 },
   compareBtn: { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
   slopeBtn:   { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };

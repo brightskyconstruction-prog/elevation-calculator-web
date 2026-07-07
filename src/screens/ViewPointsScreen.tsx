@@ -1362,7 +1362,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
             {/* Header: label + name + Edit/Delete */}
             <div style={{ padding: '10px 12px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-                <span style={{ fontSize: 20, fontWeight: 900, color: BLUE_ACC, letterSpacing: 0.3 }}>{pt.label}</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: NAVY, letterSpacing: 0.3 }}>{pt.label}</span>
                 {pt.pointName && <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>• {pt.pointName}</span>}
                 <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '2px 7px' }}>
                   <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: theme.badgeTxt }}>{badgeLabel}</span>
