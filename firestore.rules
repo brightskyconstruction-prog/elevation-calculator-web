@@ -5,41 +5,45 @@ rules_version = '2';
 //   /users/{userId}          — app data  (points, sets, history)
 //   /userProfiles/{userId}   — account   (plan, subscription, feature flags)
 //
-// SECURITY MODEL (v1.1 — Anonymous Auth required)
-//   The app signs every session in with Firebase Anonymous Auth on startup.
-//   Rules require request.auth != null — completely unauthenticated callers
-//   (bots, scripts, raw HTTP) are denied. Only clients holding a valid
-//   Firebase Auth token (obtained from our app) can read or write.
+// SECURITY MODEL (v1.2 — Firebase Email Link Auth + per-user isolation)
+//   Authentication:
+//     Users sign in via Firebase Email Link (passwordless).
+//     Firebase assigns each user a stable, random UID.
+//     That UID is used as the Firestore document key in both collections.
 //
-//   userId is still base64(email) in this release. Cross-user access
-//   protection (request.auth.uid == userId) requires migrating from
-//   email-derived IDs to Firebase UID-based routing — planned for v1.2.
+//   Per-user isolation:
+//     request.auth.uid == userId ensures each authenticated user can ONLY
+//     read and write their own document. No user can access another user's
+//     data — even if they somehow know the path.
 //
-// ── Phase 2 upgrade (when Firebase Email Link auth is shipped) ────────────────
-// 1. Replace anonymous sign-in with email-link sign-in.
-// 2. Route Firestore docs by request.auth.uid instead of btoa(email).
-// 3. Tighten rules to:
-//      allow read, write: if request.auth != null
-//                         && request.auth.uid == userId;
-// 4. Admin-only writes (promotions, featureFlags):
-//      allow write: if request.auth.token.admin == true;
+//   Guest users:
+//     Guests have no Firebase Auth session. All Firestore reads/writes are
+//     denied. Guests use local storage only — no cloud sync.
+//
+// ── Future hardening ──────────────────────────────────────────────────────────
+//   Admin-only writes (promotions, featureFlags, plan upgrades):
+//     allow write: if request.auth.token.admin == true;
+//
+//   Stripe webhook writes (server-side only):
+//     allow write: if false; // Cloud Functions only
 // ─────────────────────────────────────────────────────────────────────────────
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── App data: survey points, sets, calculator history ────────────────────
-    // Requires a valid Firebase Auth session (anonymous or signed-in).
+    // Only the owning user (matched by Firebase UID) can read or write.
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
     }
 
     // ── Account data: plan, subscription status, feature entitlements ────────
-    // Client can read its own profile to check features.
-    // Client can write on login (ensureUserProfile) and on profile updates.
-    // Future: restrict writes to Cloud Functions only (Stripe webhook handler).
+    // Only the owning user can read or write their own profile.
+    // Future: tighten writes to Cloud Functions only (Stripe webhook handler).
     match /userProfiles/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
     }
 
     // ── Future: subscription records (written by payment webhook) ─────────────

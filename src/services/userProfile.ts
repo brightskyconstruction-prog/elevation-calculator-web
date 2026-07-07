@@ -1,10 +1,11 @@
 /**
  * userProfile.ts
  *
- * Manages the /userProfiles/{userId} Firestore collection.
+ * Manages the /userProfiles/{uid} Firestore collection.
  *
- * Each document is keyed with the same base64(email) ID used by /users,
- * so a single key lookup ties app data + account metadata together.
+ * Documents are now keyed by the Firebase Auth UID (stable, random string)
+ * rather than base64(email), matching the /users/{uid} collection.
+ * Firestore rules enforce request.auth.uid == userId for both collections.
  *
  * CURRENT BEHAVIOUR
  *   - On first login  → create profile with free plan + full access
@@ -32,26 +33,15 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Same encoding used by cloudSync.ts so keys are consistent. */
-function emailToDocId(email: string): string {
-  return btoa(email.toLowerCase().trim()).replace(/=/g, '');
-}
-
-function profileDocRef(email: string): DocumentReference {
-  return doc(getDb(), 'userProfiles', emailToDocId(email));
+function profileDocRef(uid: string): DocumentReference {
+  return doc(getDb(), 'userProfiles', uid);
 }
 
 // ─── Default profile factory ──────────────────────────────────────────────────
-
-/**
- * Builds a brand-new UserProfile for a first-time user.
- * Plan = 'free', but features = FULL_ACCESS until paid plans are introduced.
- * Flip features to FREE_PLAN_FEATURES when gating begins.
- */
-function buildDefaultProfile(email: string): UserProfile {
+function buildDefaultProfile(email: string, uid: string): UserProfile {
   const now = Date.now();
   return {
-    userId:             emailToDocId(email),
+    userId:             uid,
     email,
     createdAt:          now,
     updatedAt:          now,
@@ -78,7 +68,6 @@ function buildDefaultProfile(email: string): UserProfile {
     promoExpiresAt:     null,
 
     // FULL_ACCESS until subscription tiers are introduced.
-    // When ready: swap to computeFeaturesForPlan(profile.plan, profile)
     features:           FULL_ACCESS_FEATURES,
 
     isAdmin:            false,
@@ -91,29 +80,29 @@ function buildDefaultProfile(email: string): UserProfile {
  * Called once per login session.
  * - Creates the profile document if it does not exist (first-time user).
  * - Updates only `lastLoginAt` + `updatedAt` if it already exists.
- * Returns the current (possibly newly created) profile.
+ * @param email  The user's email address (stored in the profile for display).
+ * @param uid    The Firebase Auth UID (used as the Firestore document ID).
  */
-export async function ensureUserProfile(email: string): Promise<UserProfile | null> {
+export async function ensureUserProfile(
+  email: string,
+  uid: string,
+): Promise<UserProfile | null> {
   if (!isFirebaseConfigured()) return null;
 
   try {
-    const ref  = profileDocRef(email);
+    const ref  = profileDocRef(uid);
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-      // First login — create the profile
-      const profile = buildDefaultProfile(email);
+      const profile = buildDefaultProfile(email, uid);
       await setDoc(ref, profile);
       return profile;
     }
 
-    // Repeat login — refresh timestamps only
     const now = Date.now();
     await updateDoc(ref, { lastLoginAt: now, updatedAt: now });
-
     return snap.data() as UserProfile;
   } catch (err) {
-    // Non-fatal: app works without the profile document
     console.warn('[UserProfile] ensureUserProfile failed:', err);
     return null;
   }
@@ -121,12 +110,11 @@ export async function ensureUserProfile(email: string): Promise<UserProfile | nu
 
 /**
  * Read the profile without modifying it.
- * Useful for admin panels or settings screens in the future.
  */
-export async function getUserProfile(email: string): Promise<UserProfile | null> {
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   if (!isFirebaseConfigured()) return null;
   try {
-    const snap = await getDoc(profileDocRef(email));
+    const snap = await getDoc(profileDocRef(uid));
     return snap.exists() ? (snap.data() as UserProfile) : null;
   } catch (err) {
     console.warn('[UserProfile] getUserProfile failed:', err);
@@ -136,23 +124,14 @@ export async function getUserProfile(email: string): Promise<UserProfile | null>
 
 /**
  * Partial update — for future admin panel or Stripe webhook handler.
- * Only the supplied fields are written; everything else is preserved.
- *
- * Example (future Stripe webhook):
- *   await updateUserProfile(email, {
- *     plan: 'premium',
- *     subscriptionStatus: 'active',
- *     planExpiresAt: stripeCurrentPeriodEnd * 1000,
- *     features: computeFeaturesForPlan('premium'),
- *   });
  */
 export async function updateUserProfile(
-  email: string,
+  uid: string,
   changes: Partial<UserProfile>,
 ): Promise<void> {
   if (!isFirebaseConfigured()) return;
   try {
-    await updateDoc(profileDocRef(email), {
+    await updateDoc(profileDocRef(uid), {
       ...changes,
       updatedAt: Date.now(),
     });
@@ -163,16 +142,11 @@ export async function updateUserProfile(
 
 /**
  * Compute the feature entitlements for a given plan.
- * Centralises the plan→features mapping so future tiers only need
- * to be added here.
- *
- * NOT YET CALLED — wired in when gating begins.
  */
 export function computeFeaturesForPlan(
   plan: UserProfile['plan'],
   profile?: Partial<UserProfile>,
 ): UserProfile['features'] {
-  // Admin manual override always gets full access
   if (profile?.manualOverride) return FULL_ACCESS_FEATURES;
 
   switch (plan) {
@@ -189,8 +163,6 @@ export function computeFeaturesForPlan(
 
     case 'free':
     default:
-      // During the free-for-all phase, return full access.
-      // When ready to gate: return FREE_PLAN_FEATURES;
       return FULL_ACCESS_FEATURES;
   }
 }

@@ -12,7 +12,7 @@ import SlopeScreen        from './screens/SlopeScreen';
 import OfflineIndicator   from './components/OfflineIndicator';
 import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
-import { isFirebaseConfigured, ensureAnonymousAuth } from './firebase';
+import { isFirebaseConfigured, onAuthChanged, signOutFirebase } from './firebase';
 import {
   loadUserData,
   saveUserData,
@@ -20,6 +20,7 @@ import {
   applyLocalData,
   clearLocalData,
   patchLocalStorage,
+  migrateUserData,
 } from './services/cloudSync';
 import { ensureUserProfile } from './services/userProfile';
 import { useProfileStore } from './stores/profileStore';
@@ -116,19 +117,10 @@ function AppInner() {
 
   useEffect(() => { ensureDefaultProject(); }, []);
 
-  // ── Anonymous Firebase Auth — provides request.auth token for Firestore ──────
-  // Called once on mount. Silently signs the session in anonymously so Firestore
-  // security rules (`request.auth != null`) pass without any UX change.
-  // Errors are swallowed — the app works offline/guest if this fails.
-  useEffect(() => {
-    if (isFirebaseConfigured()) {
-      ensureAnonymousAuth().catch(() => {});
-    }
-  }, []);
-
   // ── Cloud sync ──────────────────────────────────────────────────
-  // Tracks the currently-authenticated email for sync operations.
-  const syncEmailRef  = useRef<string | null>(null);
+  // Tracks the Firebase UID of the currently-authenticated user.
+  // Set in loginUser and cleared in logoutUser.
+  const syncEmailRef  = useRef<string | null>(null); // kept as "syncRef" for compat; now stores UID
   // Debounce timer for writes.
   const syncTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Stable ref to scheduleSync so the patched setItem can always call latest.
@@ -138,11 +130,11 @@ function AppInner() {
     if (!syncEmailRef.current) return;
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(async () => {
-      const email = syncEmailRef.current;
-      if (!email) return;
+      const uid = syncEmailRef.current; // now stores Firebase UID
+      if (!uid) return;
       try {
         const data = collectLocalData();
-        await saveUserData(email, data);
+        await saveUserData(uid, data);
       } catch (err) {
         console.warn('[CloudSync] write failed:', err);
       }
@@ -213,18 +205,21 @@ function AppInner() {
    * Load a user's cloud data and hydrate the app.
    * Called on login and on mount when already authenticated.
    */
-  const loginUser = useCallback(async (userEmail: string) => {
-    syncEmailRef.current = userEmail;
-    if (!isFirebaseConfigured()) return;
+  const loginUser = useCallback(async (userEmail: string, uid: string) => {
+    // uid is the Firebase Auth UID — used as the Firestore document key.
+    // When Firebase is not configured, uid is '' and cloud sync is skipped.
+    syncEmailRef.current = uid || null;
+    if (!isFirebaseConfigured() || !uid) return;
 
     try {
-      const cloudData = await loadUserData(userEmail);
+      // Migrate data from legacy btoa(email) path on first login with new auth
+      await migrateUserData(userEmail, uid);
+
+      const cloudData = await loadUserData(uid);
       if (!cloudData) return; // first-time user — local (empty) state is fine
 
-      // Restore all localStorage entries (calc history, conv history, slope calcs)
       applyLocalData(cloudData);
 
-      // Hydrate the Zustand store in-memory from the survey store key
       const surveyRaw = cloudData['elevation-calculator-v1'];
       if (surveyRaw) {
         try {
@@ -247,15 +242,10 @@ function AppInner() {
       console.warn('[CloudSync] load failed, using local data:', err);
     }
 
-    // Load / create the user's profile (subscription + feature flags).
-    // Non-blocking — runs in parallel with data hydration above.
-    // The profile store starts with isLoaded=false so usePermissions()
-    // returns full access until the profile arrives.
-    ensureUserProfile(userEmail).then(profile => {
+    // Load / create the user's profile (non-blocking)
+    ensureUserProfile(userEmail, uid).then(profile => {
       setProfile(profile);
     }).catch(() => {
-      // If profile fetch fails, set isLoaded=true with null so the app
-      // doesn't stay in a perpetual loading state.
       setProfile(null);
     });
   }, [hydrateStore, setProfile]);
@@ -265,17 +255,17 @@ function AppInner() {
    * Called on logout. Cloud data is never deleted.
    */
   const logoutUser = useCallback(async () => {
-    const userEmail = syncEmailRef.current;
+    const uid = syncEmailRef.current;
 
     // Flush pending debounced sync immediately
     if (syncTimerRef.current) {
       clearTimeout(syncTimerRef.current);
       syncTimerRef.current = null;
     }
-    if (userEmail) {
+    if (uid) {
       try {
         const data = collectLocalData();
-        await saveUserData(userEmail, data);
+        await saveUserData(uid, data);
       } catch (err) {
         console.warn('[CloudSync] final flush failed:', err);
       }
@@ -283,17 +273,38 @@ function AppInner() {
 
     syncEmailRef.current = null;
 
+    // Sign out from Firebase so auth state is cleared
+    await signOutFirebase();
+
     // Clear device-local cache so next user on this device starts fresh
     clearLocalData();
     resetSurveyData();
     clearProfile();
   }, [resetSurveyData, clearProfile]);
 
-  // On mount: if the user is already authenticated, load their cloud data.
+  // On mount: subscribe to Firebase Auth state.
+  // If the user has a persisted session (from a previous Email Link sign-in),
+  // Firebase fires onAuthStateChanged immediately with the restored user.
+  // This wires up cloud sync without requiring a new sign-in link.
   useEffect(() => {
     const storedEmail = readEmail();
-    if (storedEmail) loginUser(storedEmail);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    if (!isFirebaseConfigured()) {
+      // No Firebase — use local data only (no UID needed)
+      if (storedEmail) loginUser(storedEmail, '');
+      return;
+    }
+
+    // Subscribe to Firebase auth state
+    const unsub = onAuthChanged((user) => {
+      if (user && !user.isAnonymous && storedEmail) {
+        // Persisted real auth — restore cloud sync with their UID
+        loginUser(storedEmail, user.uid);
+      }
+    });
+
+    return unsub;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount
 
   // ── Flow handlers ───────────────────────────────────────────────
@@ -302,12 +313,10 @@ function AppInner() {
     else              setAppState('app');
   }, []);
 
-  const handleLogin = useCallback(async (e: string) => {
+  const handleLogin = useCallback(async (e: string, uid: string) => {
     setEmail(e);
-    // Load cloud data BEFORE transitioning to the app so the UI never
-    // renders with an empty store. loginUser catches all errors internally
-    // and always resolves, so setAppState('app') is always reached.
-    await loginUser(e);
+    // LoginScreenWeb already stored auth:email — just sync cloud data
+    await loginUser(e, uid);
     setAppState('app');
   }, [loginUser]);
 

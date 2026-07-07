@@ -35,12 +35,22 @@ const en = {
 
   // ── Login ───────────────────────────────────────────────────────
   loginTitle:         'Welcome Back',
-  loginSubtitle:      'Enter your email to continue',
+  loginSubtitle:      'Enter your email to receive a sign-in link',
   emailLabel:         'Email Address',
   emailPlaceholder:   'you@example.com',
   continueBtn:        'Continue',
+  sendLinkBtn:        'Send Sign-In Link',
   continueAsGuest:    'Continue as Guest',
   invalidEmail:       'Please enter a valid email address.',
+  checkEmailTitle:    'Check Your Email',
+  checkEmailMsg:      (email: string) => `We sent a sign-in link to ${email}. Tap the link in your email to sign in.`,
+  resendLink:         'Resend Link',
+  completingSignIn:   'Signing you in…',
+  confirmEmailTitle:  'Confirm Your Email',
+  confirmEmailMsg:    'You opened the sign-in link on a different device. Enter your email address to continue.',
+  confirmAndSignIn:   'Sign In',
+  sendLinkError:      'Could not send email. Please check your address and try again.',
+  signInLinkExpired:  'Sign-in link expired or already used. Please request a new one.',
 
   // ── Main tabs ───────────────────────────────────────────────────
   tabAdd:             'Point ⊕',
@@ -449,12 +459,22 @@ const es: typeof en = {
 
   // ── Login ───────────────────────────────────────────────────────
   loginTitle:         'Bienvenido',
-  loginSubtitle:      'Ingresa tu correo para continuar',
+  loginSubtitle:      'Ingresa tu correo para recibir un enlace de acceso',
   emailLabel:         'Correo Electrónico',
   emailPlaceholder:   'tu@ejemplo.com',
   continueBtn:        'Continuar',
+  sendLinkBtn:        'Enviar Enlace de Acceso',
   continueAsGuest:    'Continuar como Invitado',
   invalidEmail:       'Por favor ingresa un correo electrónico válido.',
+  checkEmailTitle:    'Revisa tu Correo',
+  checkEmailMsg:      (email: string) => `Enviamos un enlace de acceso a ${email}. Toca el enlace en tu correo para iniciar sesión.`,
+  resendLink:         'Reenviar Enlace',
+  completingSignIn:   'Iniciando sesión…',
+  confirmEmailTitle:  'Confirma tu Correo',
+  confirmEmailMsg:    'Abriste el enlace en otro dispositivo. Ingresa tu dirección de correo para continuar.',
+  confirmAndSignIn:   'Iniciar Sesión',
+  sendLinkError:      'No se pudo enviar el correo. Verifica tu dirección e intenta de nuevo.',
+  signInLinkExpired:  'El enlace expiró o ya fue usado. Solicita uno nuevo.',
 
   // ── Main tabs ───────────────────────────────────────────────────
   tabAdd:             'Punto ⊕',
