@@ -1437,14 +1437,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           flexDirection: 'column',
         }}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', backgroundColor: NAVY, flexShrink: 0, position: 'relative', minHeight: 52 }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '8px 14px', backgroundColor: NAVY, flexShrink: 0, minHeight: 52 }}>
             <button
-              style={{ background: 'rgba(255,255,255,0.20)', border: '1.5px solid rgba(255,255,255,0.45)', color: '#fff', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '8px 14px', flexShrink: 0, borderRadius: 10, fontWeight: 800, minWidth: 48, minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}
+              style={{ background: 'rgba(255,255,255,0.20)', border: '1.5px solid rgba(255,255,255,0.45)', color: '#fff', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '8px 14px', flexShrink: 0, borderRadius: 10, fontWeight: 900, minWidth: 48, minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
               aria-label="Back"
             >←</button>
-            <span style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>Manage Points</span>
-            <div style={{ flex: 1 }} />
+            <span style={{ flex: 1, textAlign: 'center' as const, fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 8px' }}>Manage Points</span>
             <button
               style={{ background: GOLD, border: 'none', color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '7px 12px', flexShrink: 0, borderRadius: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.18)', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
