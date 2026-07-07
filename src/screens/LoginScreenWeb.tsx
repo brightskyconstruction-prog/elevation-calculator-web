@@ -30,7 +30,6 @@ const GOLD2      = '#F4B02A';
 const GOLD_LIGHT = 'rgba(244,176,42,0.18)';
 const BORDER     = '#D1D5DB';
 const ERR        = '#DC2626';
-const GREEN      = '#065F46';
 
 // ─── Decorative measurement tick strip ───────────────────────────────────────
 function MeasureTicks() {
