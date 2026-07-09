@@ -712,6 +712,34 @@ function CalculatorView() {
             <button style={{ height: 26, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
           </div>
 
+          {/* Op selector column */}
+          <div style={{ width: 34, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {(['+', '-'] as Op[]).map(o => (
+              <button
+                key={o}
+                onClick={() => { setOp(o); resetCalc(); }}
+                style={{
+                  width: 34, height: 38,
+                  borderRadius: 8,
+                  border: `2px solid ${op === o ? GOLD : BORDER}`,
+                  backgroundColor: op === o ? NAVY : CARD,
+                  color: op === o ? '#FFFFFF' : TEXT_S,
+                  fontSize: o === '+' ? 24 : 28,
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'monospace',
+                  lineHeight: 1,
+                  padding: 0,
+                  transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
+                  flexShrink: 0,
+                }}
+                aria-label={o === '+' ? 'Addition' : 'Subtraction'}
+                aria-pressed={op === o}
+              >{o === '+' ? '+' : '−'}</button>
+            ))}
+          </div>
+
           {/* Input B */}
           <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
             <ModeToggle mode={modeB} onChange={m => { setModeB(m); resetCalc(); }} />

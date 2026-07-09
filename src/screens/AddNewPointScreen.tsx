@@ -1463,7 +1463,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             >←</button>
             <span style={{ flex: 1, textAlign: 'center' as const, fontSize: 20, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 8px' }}>{t('managePointsTitle')}</span>
             <button
-              style={{ background: GOLD, border: 'none', color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '7px 12px', flexShrink: 0, borderRadius: 8, minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.18)', letterSpacing: '0.2px', whiteSpace: 'nowrap' as const }}
+              style={{ background: GOLD, border: 'none', color: NAVY, fontSize: 12, fontWeight: 800, cursor: 'pointer', padding: '6px 10px', flexShrink: 0, borderRadius: 8, minHeight: 36, maxWidth: 86, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.18)', letterSpacing: '0.2px', whiteSpace: 'normal' as const, textAlign: 'center' as const, lineHeight: 1.25 }}
               onClick={() => { setShowManagePoint(false); setEditingFromManage(false); openNewPoint(); }}
               aria-label={t('addNewPointBtn')}
             >{t('addNewPointBtn')}</button>
