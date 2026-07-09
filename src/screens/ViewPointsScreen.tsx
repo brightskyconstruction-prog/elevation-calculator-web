@@ -1339,13 +1339,6 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
   const ptType  = pt ? (typeMap.get(pt.id) ?? 'standalone') : 'standalone';
   const theme   = TYPE_THEME[ptType];
   const setObj  = pt?.setId ? setMap[pt.setId] : null;
-  const hasBm   = (pt?.bmElevation ?? 0) > 0;
-
-  const fif    = pt ? engToFIF(pt.engineeringFeet) : { feet: 0, inches: '0', frac: '0' };
-  const rFeet  = pt?.rodFeet ?? fif.feet;
-  const rInch  = pt?.rodInches != null ? String(pt.rodInches) : fif.inches;
-  const rFrac  = (pt?.rodFractionLabel && pt.rodFractionLabel !== '0')
-                 ? pt.rodFractionLabel : (fif.frac !== '0' ? fif.frac : '');
 
   const badgeLabel = ptType === 'benchmark' ? t('spBenchmarkBadge')
                    : ptType === 'derived'   ? t('spDerivedBadge')
