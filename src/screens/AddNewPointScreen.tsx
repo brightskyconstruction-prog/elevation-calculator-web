@@ -613,27 +613,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const isDirty = isEditMode && (rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '');
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
-  // ── Equal-height set-assignment buttons ──────────────────────────────────
-  // Runs synchronously before paint so there is never a visible flash.
-  useLayoutEffect(() => {
-    const sync = () => {
-      const b1 = setBtn1Ref.current;
-      const b2 = setBtn2Ref.current;
-      if (!b1 && !b2) return;
-      // Reset to auto so we can read natural content heights
-      if (b1) b1.style.height = 'auto';
-      if (b2) b2.style.height = 'auto';
-      const h = Math.max(b1?.offsetHeight ?? 0, b2?.offsetHeight ?? 0);
-      if (h > 0) {
-        if (b1) b1.style.height = `${h}px`;
-        if (b2) b2.style.height = `${h}px`;
-      }
-    };
-    sync();
-    window.addEventListener('resize', sync);
-    return () => window.removeEventListener('resize', sync);
-  }, [lastUsedSet?.id, assignedSetObj?.id, setAssignMethod, sets.length]);
-
   // ── Set-point panel helpers ───────────────────────────────────────────────
   // setPoints: used for nav arrows (only points in the *assigned* set)
   const setPoints = assignedSet
@@ -662,6 +641,26 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     const mostRecent = pointsWithSet.reduce((a, b) => (a.updatedAt > b.updatedAt ? a : b));
     return sets.find(s => s.id === mostRecent.setId) ?? sets[0] ?? null;
   })();
+
+  // ── Equal-height set-assignment buttons ──────────────────────────────────
+  // Runs synchronously before paint so there is never a visible flash.
+  useLayoutEffect(() => {
+    const sync = () => {
+      const b1 = setBtn1Ref.current;
+      const b2 = setBtn2Ref.current;
+      if (!b1 && !b2) return;
+      if (b1) b1.style.height = 'auto';
+      if (b2) b2.style.height = 'auto';
+      const h = Math.max(b1?.offsetHeight ?? 0, b2?.offsetHeight ?? 0);
+      if (h > 0) {
+        if (b1) b1.style.height = `${h}px`;
+        if (b2) b2.style.height = `${h}px`;
+      }
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, [lastUsedSet?.id, assignedSetObj?.id, setAssignMethod, sets.length]);
 
   // dropdownSetId / dropdownPoints: what the "View All Points Of This Set" dropdown shows.
   // On a new-point page (assignedSet = null), falls back to lastUsedSet so the button
