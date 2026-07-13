@@ -1240,7 +1240,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     type="number" step="0.0001" value={bmElevStr}
                     onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder="0.0000" readOnly={!isEditMode}
+                    placeholder="0.00" readOnly={!isEditMode}
                   />
                   <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
                 </div>
@@ -1278,7 +1278,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               <button
                 style={{
                   ...s.setAssignBtn,
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  display: 'flex', alignItems: 'center', gap: 10,
                   ...(setAssignMethod === 'existing'
                     ? s.setAssignBtnActive
                     : setAssignMethod === 'new' ? s.setAssignBtnDim : {}),
@@ -1311,10 +1311,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   )}
                 </span>
                 <span style={{ flex: 1, textAlign: 'left' as const }}>
-                  {setAssignMethod === 'existing' && assignedSetObj
-                    ? `${t('currentSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
-                    : `${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`
-                  }
+                  {`${t('currentSetLabel')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
                 </span>
               </button>
             )}
@@ -1323,7 +1320,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <button
               style={{
                 ...s.setAssignBtn,
-                display: 'flex', alignItems: 'flex-start', gap: 10,
+                display: 'flex', alignItems: 'center', gap: 10,
                 ...(setAssignMethod === 'new'
                   ? s.setAssignBtnActive
                   : setAssignMethod === 'existing' ? s.setAssignBtnDim : {}),
@@ -1655,7 +1652,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '7px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 48, boxSizing: 'border-box' as const },
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '5px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 44, boxSizing: 'border-box' as const },
   setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
@@ -1664,7 +1661,7 @@ const s: Record<string, React.CSSProperties> = {
   savedAt:      { fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
-  saveBtn:    { minHeight: 48, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px', flexShrink: 0 },
+  saveBtn:    { minHeight: 44, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px', flexShrink: 0 },
   compareBtn: { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
   slopeBtn:   { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };
