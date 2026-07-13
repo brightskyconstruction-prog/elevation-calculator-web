@@ -1187,17 +1187,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, flex: 1 }}>{t('bmLabel')}</span>
-              <InfoTip text={t('benchmarkText')} title={t('bmLabel')} />
-              <input
-                style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
-                type="number" step="0.0001" value={bmElevStr}
-                onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                placeholder="" readOnly={!isEditMode}
-              />
-              <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
+            <div style={s.bmRow}>
+              <span style={s.bmTxt}>{t('benchmarkText')}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <input
+                  style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
+                  type="number" step="0.0001" value={bmElevStr}
+                  onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                  placeholder="" readOnly={!isEditMode}
+                />
+                <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
+              </div>
             </div>
           )}
           </>
@@ -1226,63 +1227,94 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-
-            {/* ── Segmented toggle: Current Set | New Set ── */}
-            <div style={{ display: 'flex', backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
-              {/* Option 1: Add to Current Set (only shown when a set exists) */}
-              {sets.length > 0 && lastUsedSet && (
-                <button
-                  style={{ ...s.fmtBtn, flex: 1, fontSize: 14, fontWeight: setAssignMethod === 'existing' ? 700 : 600,
-                    ...(setAssignMethod === 'existing' ? s.fmtBtnOn : {}),
-                  }}
-                  onClick={() => {
-                    if (setAssignMethod === 'existing') {
-                      setAssignedSet(null);
-                      setSetAssignMethod(null);
-                    } else {
-                      if (!hasRodReading) { setRodReadingWarn(true); return; }
-                      setRodReadingWarn(false);
-                      setDupConflict(null);
-                      setPendingNewSet(null);
-                      setAssignedSet(lastUsedSet.id);
-                      setSetAssignMethod('existing');
-                      setSetWarning(false);
-                    }
-                  }}
-                >{t('currentSetLabel')}</button>
-              )}
-              {/* Option 2: Create New Set */}
+            {/* Option 1: Add to Current Set — radio row, only shown when a set exists */}
+            {sets.length > 0 && lastUsedSet && (
               <button
-                style={{ ...s.fmtBtn, flex: 1, fontSize: 14, fontWeight: setAssignMethod === 'new' ? 700 : 600,
-                  ...(setAssignMethod === 'new' ? s.fmtBtnOn : {}),
+                style={{
+                  ...s.setAssignBtn,
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  ...(setAssignMethod === 'existing'
+                    ? s.setAssignBtnActive
+                    : setAssignMethod === 'new' ? s.setAssignBtnDim : {}),
                 }}
                 onClick={() => {
-                  if (setAssignMethod === 'new') {
+                  if (setAssignMethod === 'existing') {
+                    // Single tap deselects
                     setAssignedSet(null);
                     setSetAssignMethod(null);
-                    setPendingNewSet(null);
                   } else {
                     if (!hasRodReading) { setRodReadingWarn(true); return; }
                     setRodReadingWarn(false);
                     setDupConflict(null);
-                    setNewSetElevWarn(false);
-                    setShowCreate(true);
+                    setPendingNewSet(null);
+                    setAssignedSet(lastUsedSet.id);
+                    setSetAssignMethod('existing');
+                    setSetWarning(false);
                   }
                 }}
-              >{t('newSetLabel')}</button>
-            </div>
-
-            {/* Selected set name badge */}
-            {assignedSetObj && (setAssignMethod === 'existing' || setAssignMethod === 'new') && (
-              <div style={{ backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '5px 10px', border: `1px solid ${BLUE}`, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 13, color: BLUE_ACC, fontWeight: 800 }}>
-                  {setAssignMethod === 'existing' ? t('currentSetLabel') : t('newSetLabel')}:
+              >
+                {/* Radio dot */}
+                <span style={{
+                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                  border: `2px solid ${NAVY}`,
+                  backgroundColor: setAssignMethod === 'existing' ? NAVY : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {setAssignMethod === 'existing' && (
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
+                  )}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: NAVY, flex: 1 }}>
-                  {[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}
+                <span style={{ flex: 1, textAlign: 'left' as const }}>
+                  {setAssignMethod === 'existing' && assignedSetObj
+                    ? `${t('currentSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                    : `${t('addToExistingSet')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`
+                  }
                 </span>
-              </div>
+              </button>
             )}
+
+            {/* Option 2: Create New Set — radio row */}
+            <button
+              style={{
+                ...s.setAssignBtn,
+                display: 'flex', alignItems: 'flex-start', gap: 10,
+                ...(setAssignMethod === 'new'
+                  ? s.setAssignBtnActive
+                  : setAssignMethod === 'existing' ? s.setAssignBtnDim : {}),
+              }}
+              onClick={() => {
+                if (setAssignMethod === 'new') {
+                  // Single tap deselects
+                  setAssignedSet(null);
+                  setSetAssignMethod(null);
+                  setPendingNewSet(null);
+                } else {
+                  if (!hasRodReading) { setRodReadingWarn(true); return; }
+                  setRodReadingWarn(false);
+                  setDupConflict(null);
+                  setNewSetElevWarn(false);
+                  setShowCreate(true);
+                }
+              }}
+            >
+              {/* Radio dot */}
+              <span style={{
+                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                border: `2px solid ${NAVY}`,
+                backgroundColor: setAssignMethod === 'new' ? NAVY : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {setAssignMethod === 'new' && (
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
+                )}
+              </span>
+              <span style={{ flex: 1, textAlign: 'left' as const }}>
+                {setAssignMethod === 'new' && assignedSetObj
+                  ? `${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                  : t('createNewSetBtn')
+                }
+              </span>
+            </button>
 
             {rodReadingWarn && <div style={s.warnMsg}>⚠ {t('rodReadingRequiredForSet')}</div>}
             {newSetElevWarn && <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>}
