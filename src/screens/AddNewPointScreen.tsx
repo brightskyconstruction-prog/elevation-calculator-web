@@ -538,7 +538,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [engFtStr,    setEngFtStr]    = useState('');
   const [bmElevStr,   setBmElevStr]   = useState('');
   const [bmExpanded,  setBmExpanded]  = useState(false);
-  const [bmFocused,   setBmFocused]   = useState(false);
+  const [showBmModal, setShowBmModal] = useState(false);
+  const [bmDraft,     setBmDraft]     = useState('');
   const [pointName,   setPointName]   = useState('');
   const [takenBy,     setTakenBy]     = useState('');
   const [savedAt,     setSavedAt]     = useState<string | null>(null);
@@ -788,6 +789,20 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     const conflict = findDupConflict(name, setId, selfId);
     if (!conflict) return null;
     return `Point name already exists in this set. "${name.trim()}" is already assigned to ${conflict.label}. Please choose a different name.`;
+  };
+
+  // ── Benchmark modal handlers ───────────────────────────────────────────────
+  const openBmModal  = () => { setBmDraft(bmElevStr); setShowBmModal(true); };
+  const closeBmModal = () => { setShowBmModal(false); if (!bmElevStr) setBmExpanded(false); };
+  const confirmBm    = () => {
+    const v = bmDraft.trim();
+    const n = parseFloat(v);
+    if (v && !isNaN(n) && n > 0) {
+      setBmElevStr(v); setBmExpanded(true); setNewSetElevWarn(false);
+    } else {
+      setBmElevStr(''); setBmExpanded(false);
+    }
+    setShowBmModal(false);
   };
 
   // ── Save ──────────────────────────────────────────────────────────────────
@@ -1213,65 +1228,44 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {/* Label + Yes / No row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: TEXT_PRI, lineHeight: 1.35 }}>
-                  {t('benchmarkToggle')}
-                </span>
-                {/* Segmented Yes/No */}
-                <div style={{
-                  display: 'flex', flexShrink: 0,
-                  borderRadius: 8, overflow: 'hidden',
-                  border: `1.5px solid ${NAVY}`,
-                }}>
-                  {/* Yes */}
-                  <button
-                    onClick={() => { if (!isEditMode) return; setBmExpanded(true); }}
-                    style={{
-                      padding: '6px 18px',
-                      backgroundColor: bmExpanded ? NAVY : 'transparent',
-                      color: bmExpanded ? '#FFFFFF' : NAVY,
-                      fontSize: 14, fontWeight: 800,
-                      border: 'none',
-                      borderRight: `1px solid ${NAVY}`,
-                      cursor: isEditMode ? 'pointer' : 'default',
-                      letterSpacing: '0.3px',
-                      transition: 'background-color 0.15s, color 0.15s',
-                    }}
-                  >{t('yesBtn')}</button>
-                  {/* No */}
-                  <button
-                    onClick={() => { if (!isEditMode) return; if (bmExpanded) setBmElevStr(''); setBmExpanded(false); }}
-                    style={{
-                      padding: '6px 18px',
-                      backgroundColor: !bmExpanded ? NAVY : 'transparent',
-                      color: !bmExpanded ? '#FFFFFF' : NAVY,
-                      fontSize: 14, fontWeight: 800,
-                      border: 'none',
-                      cursor: isEditMode ? 'pointer' : 'default',
-                      letterSpacing: '0.3px',
-                      transition: 'background-color 0.15s, color 0.15s',
-                    }}
-                  >{t('noBtn')}</button>
+            <>
+              {/* Compact value card — shown once a benchmark is confirmed */}
+              {bmExpanded && bmElevStr ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, backgroundColor: NAVY, borderRadius: 8, padding: '8px 10px 8px 14px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.60)', letterSpacing: '0.9px', textTransform: 'uppercase' as const, marginBottom: 2 }}>
+                      {t('benchmarkToggle')}
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'monospace', letterSpacing: '-0.3px' }}>
+                      {parseFloat(bmElevStr).toFixed(2)} <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>ft</span>
+                    </div>
+                  </div>
+                  {isEditMode && (
+                    <button
+                      onClick={openBmModal}
+                      style={{ background: 'none', border: `1.5px solid ${GOLD}`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '5px 12px', letterSpacing: '0.3px', flexShrink: 0 }}
+                    >✏ {t('editBtn')}</button>
+                  )}
                 </div>
-              </div>
-              {/* Elevation input — only when Yes */}
-              {bmExpanded && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
-                    type="number" step="0.0001" value={bmElevStr}
-                    onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
-                    onFocus={() => setBmFocused(true)}
-                    onBlur={() => setBmFocused(false)}
-                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder={bmFocused ? '' : '0.00'} readOnly={!isEditMode}
-                  />
-                  <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
+              ) : (
+                /* Yes / No toggle — Yes launches the modal */
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: TEXT_PRI, lineHeight: 1.35 }}>
+                    {t('benchmarkQuestion')}
+                  </span>
+                  <div style={{ display: 'flex', flexShrink: 0, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${NAVY}` }}>
+                    <button
+                      onClick={() => { if (!isEditMode) return; openBmModal(); }}
+                      style={{ padding: '6px 18px', backgroundColor: 'transparent', color: NAVY, fontSize: 14, fontWeight: 800, border: 'none', borderRight: `1px solid ${NAVY}`, cursor: isEditMode ? 'pointer' : 'default', letterSpacing: '0.3px', transition: 'background-color 0.15s, color 0.15s' }}
+                    >{t('yesBtn')}</button>
+                    <button
+                      onClick={() => { if (!isEditMode) return; setBmElevStr(''); setBmExpanded(false); }}
+                      style={{ padding: '6px 18px', backgroundColor: NAVY, color: '#FFFFFF', fontSize: 14, fontWeight: 800, border: 'none', cursor: isEditMode ? 'pointer' : 'default', letterSpacing: '0.3px', transition: 'background-color 0.15s, color 0.15s' }}
+                    >{t('noBtn')}</button>
+                  </div>
                 </div>
               )}
-            </div>
+            </>
           )}
           </>
           )} {/* end read-only / edit-mode ternary */}
@@ -1461,6 +1455,54 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
+      {/* ── Benchmark elevation modal ── */}
+      {showBmModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}>
+          <div
+            className="bm-modal-in"
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 20, maxWidth: 420, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.30)', overflow: 'hidden' }}
+          >
+            {/* Navy header */}
+            <div style={{ backgroundColor: NAVY, padding: '16px 20px' }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+                {t('benchmarkToggle')}
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', fontWeight: 500, marginTop: 4, lineHeight: 1.45 }}>
+                {t('bmModalDesc')}
+              </div>
+            </div>
+            {/* Body */}
+            <div style={{ padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Input row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                  type="number" inputMode="decimal" step="0.0001"
+                  value={bmDraft}
+                  onChange={e => setBmDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') confirmBm(); }}
+                  style={{ flex: 1, height: 58, border: `2px solid ${BLUE_ACC}`, borderRadius: 10, textAlign: 'center' as const, fontSize: 26, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 12px', boxSizing: 'border-box' as const, fontFamily: 'monospace' }}
+                  placeholder="0.00"
+                />
+                <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_PRI, flexShrink: 0 }}>ft</span>
+              </div>
+              {/* Cancel / OK */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={closeBmModal}
+                  style={{ flex: 1, height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 10, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 16, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.2px' }}
+                >{t('cancelBtn')}</button>
+                <button
+                  onClick={confirmBm}
+                  style={{ flex: 1, height: 48, border: 'none', borderRadius: 10, backgroundColor: NAVY, color: '#FFFFFF', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' }}
+                >{t('okBtn')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Modals ── */}
       <CreateSetModal
         open={showCreate} onClose={() => setShowCreate(false)}

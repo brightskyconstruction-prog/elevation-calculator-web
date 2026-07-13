@@ -143,6 +143,15 @@ button:disabled {
   animation: fadeIn 0.2s ease-out;
 }
 
+@keyframes bmModalIn {
+  from { opacity: 0; transform: scale(0.93) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.bm-modal-in {
+  animation: bmModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* ─── Skeleton loading animation ───────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
