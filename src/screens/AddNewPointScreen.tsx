@@ -982,7 +982,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 100 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '3px 4px', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 16 }}>
 
         {/* ── Rod Reading + Set Assignment — joined into one visual card ── */}
         <div style={{ display: 'flex', flexDirection: 'column', border: (setWarning && !assignedSetObj && (isEditMode || isNewPoint)) ? `1.5px solid #EF4444` : `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
@@ -1373,6 +1373,21 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         )}
       </div>{/* end scrollable content */}
 
+      {/* ── Ad strip — always visible at the bottom, never scrolls ── */}
+      <div style={{
+        flexShrink: 0,
+        height: 72,
+        borderTop: `1px solid ${BORDER}`,
+        backgroundColor: SURFACE,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <span style={{ fontSize: 10, color: '#C4BAA8', letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase' as const }}>
+          Advertisement
+        </span>
+      </div>
+
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
       {/* ── Modals ── */}
       <CreateSetModal
@@ -1593,7 +1608,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '7px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 68, boxSizing: 'border-box' as const },
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '7px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 56, boxSizing: 'border-box' as const },
   setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
