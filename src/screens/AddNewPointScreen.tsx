@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useSurveyStore } from '../stores/surveyStore';
 import { SurveyPoint, SurveySet } from '../types';
 import {
@@ -572,6 +572,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const lockRef        = useRef(false);
   const isNewPointRef  = useRef(true);  // mirror of isNewPoint for imperative API
+  // Refs for equal-height set selection buttons
+  const setBtn1Ref     = useRef<HTMLButtonElement>(null);
+  const setBtn2Ref     = useRef<HTMLButtonElement>(null);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const currentPoint  = currentIdx >= 0 && currentIdx < points.length ? points[currentIdx] : null;
@@ -609,6 +612,27 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   // ── Dirty detection (unsaved data in edit mode) ───────────────────────────
   const isDirty = isEditMode && (rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '');
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+
+  // ── Equal-height set-assignment buttons ──────────────────────────────────
+  // Runs synchronously before paint so there is never a visible flash.
+  useLayoutEffect(() => {
+    const sync = () => {
+      const b1 = setBtn1Ref.current;
+      const b2 = setBtn2Ref.current;
+      if (!b1 && !b2) return;
+      // Reset to auto so we can read natural content heights
+      if (b1) b1.style.height = 'auto';
+      if (b2) b2.style.height = 'auto';
+      const h = Math.max(b1?.offsetHeight ?? 0, b2?.offsetHeight ?? 0);
+      if (h > 0) {
+        if (b1) b1.style.height = `${h}px`;
+        if (b2) b2.style.height = `${h}px`;
+      }
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, [lastUsedSet?.id, assignedSetObj?.id, setAssignMethod, sets.length]);
 
   // ── Set-point panel helpers ───────────────────────────────────────────────
   // setPoints: used for nav arrows (only points in the *assigned* set)
@@ -1279,6 +1303,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             {/* Option 1: Add to Current Set — radio row, only shown when a set exists */}
             {sets.length > 0 && lastUsedSet && (
               <button
+                ref={setBtn1Ref}
                 style={{
                   ...s.setAssignBtn,
                   display: 'flex', alignItems: 'center', gap: 10,
@@ -1321,6 +1346,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
             {/* Option 2: Create New Set — radio row */}
             <button
+              ref={setBtn2Ref}
               style={{
                 ...s.setAssignBtn,
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -1655,7 +1681,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '5px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.3, minHeight: 44, boxSizing: 'border-box' as const },
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '6px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.35, boxSizing: 'border-box' as const, overflow: 'hidden' },
   setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
