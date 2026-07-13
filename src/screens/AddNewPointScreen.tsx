@@ -538,6 +538,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [engFtStr,    setEngFtStr]    = useState('');
   const [bmElevStr,   setBmElevStr]   = useState('');
   const [bmExpanded,  setBmExpanded]  = useState(false);
+  const [bmFocused,   setBmFocused]   = useState(false);
   const [pointName,   setPointName]   = useState('');
   const [takenBy,     setTakenBy]     = useState('');
   const [savedAt,     setSavedAt]     = useState<string | null>(null);
@@ -1239,8 +1240,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
                     type="number" step="0.0001" value={bmElevStr}
                     onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
+                    onFocus={() => setBmFocused(true)}
+                    onBlur={() => setBmFocused(false)}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder="0.00" readOnly={!isEditMode}
+                    placeholder={bmFocused ? '' : '0.00'} readOnly={!isEditMode}
                   />
                   <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
                 </div>
