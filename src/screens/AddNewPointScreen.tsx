@@ -1324,18 +1324,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         )} {/* end read-only / edit-mode set assignment conditional */}
         </div> {/* end rod reading + set assignment combined card */}
 
-        {/* ── Save / Update button — immediately below the set card ── */}
-        {(isNewPoint || isEditMode) && (
-          <>
-            {rodSaveWarn && (
-              <div style={{ ...s.warnMsg, marginBottom: 0 }}>⚠ {t('rodReadingAlert')}</div>
-            )}
-            <button style={s.saveBtn} onClick={handleSave}>
-              {isNewPoint ? t('savePoint') : t('updatePoint')}
-            </button>
-          </>
-        )}
-
         {/* ── Post-save actions (compare / slope) — read-only view only ── */}
         {!isNewPoint && !isEditMode && currentPoint && (
           <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -1373,15 +1361,28 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
         )}
       </div>{/* end scrollable content */}
 
-      {/* ── Ad strip — always visible at the bottom, never scrolls ── */}
+      {/* ── Save / Update button — outside scroll, always visible ── */}
+      {(isNewPoint || isEditMode) && (
+        <div style={{ flexShrink: 0, padding: '6px 4px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {rodSaveWarn && (
+            <div style={{ ...s.warnMsg, marginBottom: 0, paddingLeft: 4 }}>⚠ {t('rodReadingAlert')}</div>
+          )}
+          <button style={s.saveBtn} onClick={handleSave}>
+            {isNewPoint ? t('savePoint') : t('updatePoint')}
+          </button>
+        </div>
+      )}
+
+      {/* ── Ad strip — fills ALL remaining space below Save Point, never scrolls ── */}
       <div style={{
-        flexShrink: 0,
-        height: 72,
+        flex: 1,
+        minHeight: 80,
         borderTop: `1px solid ${BORDER}`,
         backgroundColor: SURFACE,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 6,
       }}>
         <span style={{ fontSize: 10, color: '#C4BAA8', letterSpacing: 1.2, fontWeight: 700, textTransform: 'uppercase' as const }}>
           Advertisement
