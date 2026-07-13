@@ -537,6 +537,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [rodFracLbl,  setRodFracLbl]  = useState('0/0');
   const [engFtStr,    setEngFtStr]    = useState('');
   const [bmElevStr,   setBmElevStr]   = useState('');
+  const [bmExpanded,  setBmExpanded]  = useState(false);
   const [pointName,   setPointName]   = useState('');
   const [takenBy,     setTakenBy]     = useState('');
   const [savedAt,     setSavedAt]     = useState<string | null>(null);
@@ -654,6 +655,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodFracLbl(pt.rodFractionLabel ?? '0/0');
     setEngFtStr(pt.engineeringFeet > 0 ? String(pt.engineeringFeet) : '');
     setBmElevStr(pt.bmElevation > 0 ? String(pt.bmElevation) : '');
+    setBmExpanded(pt.bmElevation > 0);
     setPointName(pt.pointName ?? '');
     setTakenBy(pt.takenBy ?? '');
     setSavedAt(pt.savedAt ?? null);
@@ -1187,18 +1189,44 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
             </div>
           ) : (
-            <div style={s.bmRow}>
-              <span style={s.bmTxt}>{t('benchmarkText')}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input
-                  style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
-                  type="number" step="0.0001" value={bmElevStr}
-                  onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
-                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                  placeholder="" readOnly={!isEditMode}
-                />
-                <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Toggle pill — always shown in edit/new mode; in read-only only if value exists */}
+              {(isEditMode || bmExpanded) && (
+                <button
+                  onClick={() => {
+                    if (!isEditMode) return;
+                    if (bmExpanded) setBmElevStr('');
+                    setBmExpanded(v => !v);
+                  }}
+                  style={{
+                    alignSelf: 'flex-start',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    backgroundColor: bmExpanded ? NAVY : '#EEF4FF',
+                    border: `1.5px solid ${bmExpanded ? NAVY : '#BFDBFE'}`,
+                    borderRadius: 20, padding: '5px 14px',
+                    color: bmExpanded ? '#FFFFFF' : NAVY,
+                    fontSize: 13, fontWeight: 700,
+                    cursor: isEditMode ? 'pointer' : 'default',
+                    letterSpacing: '0.2px', lineHeight: 1.25,
+                  }}
+                >
+                  <span style={{ fontSize: 15, lineHeight: 1 }}>{bmExpanded ? '✓' : '+'}</span>
+                  {t('benchmarkToggle')}
+                </button>
+              )}
+              {/* Expanded: elevation input */}
+              {bmExpanded && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
+                    type="number" step="0.0001" value={bmElevStr}
+                    onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    placeholder="" readOnly={!isEditMode}
+                  />
+                  <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
+                </div>
+              )}
             </div>
           )}
           </>
