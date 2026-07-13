@@ -1231,19 +1231,19 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <>
               {/* Compact value card — shown once a benchmark is confirmed */}
               {bmExpanded && bmElevStr ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, backgroundColor: NAVY, borderRadius: 8, padding: '8px 10px 8px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 10, padding: '10px 12px 10px 16px' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.60)', letterSpacing: '0.9px', textTransform: 'uppercase' as const, marginBottom: 2 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#FFFFFF', letterSpacing: '1.2px', textTransform: 'uppercase' as const, marginBottom: 3 }}>
                       {t('benchmarkToggle')}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'monospace', letterSpacing: '-0.3px' }}>
-                      {parseFloat(bmElevStr).toFixed(2)} <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.8 }}>ft</span>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', fontFamily: 'monospace', letterSpacing: '-0.3px' }}>
+                      {parseFloat(bmElevStr).toFixed(2)} <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>ft</span>
                     </div>
                   </div>
                   {isEditMode && (
                     <button
                       onClick={openBmModal}
-                      style={{ background: 'none', border: `1.5px solid ${GOLD}`, borderRadius: 7, color: GOLD, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '5px 12px', letterSpacing: '0.3px', flexShrink: 0 }}
+                      style={{ backgroundColor: '#FFFFFF', border: `1.5px solid ${NAVY}`, borderRadius: 7, color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '6px 14px', letterSpacing: '0.3px', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
                     >✏ {t('editBtn')}</button>
                   )}
                 </div>
@@ -1457,45 +1457,43 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       {/* ── Set points dropdown overlay (position:fixed, no layout shift) ── */}
       {/* ── Benchmark elevation modal ── */}
       {showBmModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px', boxSizing: 'border-box' as const }}>
           <div
             className="bm-modal-in"
-            style={{ backgroundColor: '#FFFFFF', borderRadius: 20, maxWidth: 420, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.30)', overflow: 'hidden' }}
+            style={{ backgroundColor: '#FFFFFF', borderRadius: 20, maxWidth: 420, width: '100%', boxShadow: '0 28px 72px rgba(0,0,0,0.32)', overflow: 'hidden' }}
           >
             {/* Navy header */}
-            <div style={{ backgroundColor: NAVY, padding: '16px 20px' }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25 }}>
+            <div style={{ backgroundColor: NAVY, padding: '20px 24px' }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25, letterSpacing: '0.1px' }}>
                 {t('benchmarkToggle')}
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.70)', fontWeight: 500, marginTop: 4, lineHeight: 1.45 }}>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500, marginTop: 5, lineHeight: 1.5 }}>
                 {t('bmModalDesc')}
               </div>
             </div>
             {/* Body */}
-            <div style={{ padding: '20px 20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* Input row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <input
-                  // eslint-disable-next-line jsx-a11y/no-autofocus
-                  autoFocus
-                  type="number" inputMode="decimal" step="0.0001"
-                  value={bmDraft}
-                  onChange={e => setBmDraft(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') confirmBm(); }}
-                  style={{ flex: 1, height: 58, border: `2px solid ${BLUE_ACC}`, borderRadius: 10, textAlign: 'center' as const, fontSize: 26, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 12px', boxSizing: 'border-box' as const, fontFamily: 'monospace' }}
-                  placeholder="0.00"
-                />
-                <span style={{ fontSize: 18, fontWeight: 700, color: TEXT_PRI, flexShrink: 0 }}>ft</span>
-              </div>
+            <div style={{ padding: '24px 24px 28px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+              {/* Input — full-width, placeholder disappears on type */}
+              <input
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                type="text" inputMode="decimal"
+                value={bmDraft}
+                onChange={e => setBmDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') confirmBm(); }}
+                className="bm-elev-input"
+                style={{ width: '100%', height: 62, border: `2px solid ${BLUE_ACC}`, borderRadius: 12, textAlign: 'center' as const, fontSize: 28, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 16px', boxSizing: 'border-box' as const, fontFamily: 'monospace', backgroundColor: '#FFFFFF' }}
+                placeholder="0.00 ft"
+              />
               {/* Cancel / OK */}
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
                 <button
                   onClick={closeBmModal}
-                  style={{ flex: 1, height: 48, border: `1.5px solid ${BORDER}`, borderRadius: 10, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 16, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.2px' }}
+                  style={{ flex: 1, height: 50, border: `1.5px solid ${BORDER}`, borderRadius: 12, backgroundColor: SURFACE, color: TEXT_SEC, fontSize: 16, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.2px' }}
                 >{t('cancelBtn')}</button>
                 <button
                   onClick={confirmBm}
-                  style={{ flex: 1, height: 48, border: 'none', borderRadius: 10, backgroundColor: NAVY, color: '#FFFFFF', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' }}
+                  style={{ flex: 1, height: 50, border: 'none', borderRadius: 12, backgroundColor: NAVY, color: '#FFFFFF', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px' }}
                 >{t('okBtn')}</button>
               </div>
             </div>

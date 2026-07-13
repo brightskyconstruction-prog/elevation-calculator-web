@@ -152,6 +152,14 @@ button:disabled {
   animation: bmModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Benchmark elevation input — light gray placeholder */
+.bm-elev-input::placeholder {
+  color: #B0B7C3;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 20px;
+}
+
 /* ─── Skeleton loading animation ───────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
