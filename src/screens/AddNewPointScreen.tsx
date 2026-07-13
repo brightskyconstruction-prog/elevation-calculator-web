@@ -1189,40 +1189,58 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* Toggle pill — always shown in edit/new mode; in read-only only if value exists */}
-              {(isEditMode || bmExpanded) && (
-                <button
-                  onClick={() => {
-                    if (!isEditMode) return;
-                    if (bmExpanded) setBmElevStr('');
-                    setBmExpanded(v => !v);
-                  }}
-                  style={{
-                    alignSelf: 'flex-start',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    backgroundColor: bmExpanded ? NAVY : '#EEF4FF',
-                    border: `1.5px solid ${bmExpanded ? NAVY : '#BFDBFE'}`,
-                    borderRadius: 20, padding: '5px 14px',
-                    color: bmExpanded ? '#FFFFFF' : NAVY,
-                    fontSize: 13, fontWeight: 700,
-                    cursor: isEditMode ? 'pointer' : 'default',
-                    letterSpacing: '0.2px', lineHeight: 1.25,
-                  }}
-                >
-                  <span style={{ fontSize: 15, lineHeight: 1 }}>{bmExpanded ? '✓' : '+'}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Label + Yes / No row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ flex: 1, fontSize: 15, fontWeight: 700, color: TEXT_PRI, lineHeight: 1.35 }}>
                   {t('benchmarkToggle')}
-                </button>
-              )}
-              {/* Expanded: elevation input */}
+                </span>
+                {/* Segmented Yes/No */}
+                <div style={{
+                  display: 'flex', flexShrink: 0,
+                  borderRadius: 8, overflow: 'hidden',
+                  border: `1.5px solid ${NAVY}`,
+                }}>
+                  {/* Yes */}
+                  <button
+                    onClick={() => { if (!isEditMode) return; setBmExpanded(true); }}
+                    style={{
+                      padding: '6px 18px',
+                      backgroundColor: bmExpanded ? NAVY : 'transparent',
+                      color: bmExpanded ? '#FFFFFF' : NAVY,
+                      fontSize: 14, fontWeight: 800,
+                      border: 'none',
+                      borderRight: `1px solid ${NAVY}`,
+                      cursor: isEditMode ? 'pointer' : 'default',
+                      letterSpacing: '0.3px',
+                      transition: 'background-color 0.15s, color 0.15s',
+                    }}
+                  >{t('yesBtn')}</button>
+                  {/* No */}
+                  <button
+                    onClick={() => { if (!isEditMode) return; if (bmExpanded) setBmElevStr(''); setBmExpanded(false); }}
+                    style={{
+                      padding: '6px 18px',
+                      backgroundColor: !bmExpanded ? NAVY : 'transparent',
+                      color: !bmExpanded ? '#FFFFFF' : NAVY,
+                      fontSize: 14, fontWeight: 800,
+                      border: 'none',
+                      cursor: isEditMode ? 'pointer' : 'default',
+                      letterSpacing: '0.3px',
+                      transition: 'background-color 0.15s, color 0.15s',
+                    }}
+                  >{t('noBtn')}</button>
+                </div>
+              </div>
+              {/* Elevation input — only when Yes */}
               {bmExpanded && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     style={{ ...s.bmInput, opacity: isEditMode ? 1 : 0.7 }}
                     type="number" step="0.0001" value={bmElevStr}
                     onChange={e => { setBmElevStr(e.target.value); setNewSetElevWarn(false); }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                    placeholder="" readOnly={!isEditMode}
+                    placeholder="0.0000" readOnly={!isEditMode}
                   />
                   <span style={{ fontSize: 16, color: TEXT_PRI, fontWeight: 700 }}>ft</span>
                 </div>
