@@ -1289,7 +1289,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           </div>
         ) : (
-        <div style={{ ...s.card, border: 'none', borderRadius: 0, paddingTop: 4 }}>
+        <div style={{ ...s.card, border: 'none', borderRadius: 0, paddingTop: 4, paddingBottom: 4, gap: 3 }}>
           <div style={s.secRow}>
             <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px' }}>{t('setAssignment')}</span>
             <InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} />
@@ -1306,7 +1306,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     ...s.setAssignBtn,
                     display: 'flex', alignItems: 'center', gap: 10,
                     border: 'none',
-                    borderBottom: `1px solid rgba(22,58,99,0.18)`,
+                    borderBottom: `2px solid rgba(22,58,99,0.45)`,
                     borderLeft: `3.5px solid ${setAssignMethod === 'existing' ? GOLD : 'transparent'}`,
                     borderRadius: 0,
                     backgroundColor: setAssignMethod === 'existing' ? '#FEFBF2' : '#F3F4F6',
