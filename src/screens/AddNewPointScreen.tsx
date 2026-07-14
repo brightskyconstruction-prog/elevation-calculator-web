@@ -1364,7 +1364,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     <button
                       onClick={openBmModal}
                       style={{ backgroundColor: '#FFFFFF', border: `1.5px solid ${NAVY}`, borderRadius: 7, color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '6px 14px', letterSpacing: '0.3px', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
-                    ><span style={{ display: 'inline-block', transform: 'rotate(60deg)', marginRight: 5 }}>✏</span>{t('editBtn')}</button>
+                    ><span style={{ display: 'inline-block', transform: 'rotate(-60deg)', marginRight: 5 }}>✏</span>{t('editBtn')}</button>
                   )}
                 </div>
               ) : (
@@ -1407,9 +1407,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           </div>
         ) : (
         <div style={{ ...s.card, border: 'none', borderRadius: 0, paddingTop: 4, paddingBottom: 4, gap: 3 }}>
-          <div style={s.secRow}>
-            <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px' }}>{t('setAssignment')}</span>
-            <InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} />
+          <div style={{ ...s.secRow, alignItems: 'flex-start', gap: 6 }}>
+            <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px', whiteSpace: 'normal' as const, flexShrink: 1, lineHeight: 1.3 }}>{t('setAssignment')}</span>
+            <span style={{ flexShrink: 0, marginTop: 1 }}><InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} /></span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1421,7 +1421,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   ref={setBtn1Ref}
                   style={{
                     ...s.setAssignBtn,
-                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                    display: 'flex', alignItems: 'center', gap: 10,
                     border: 'none',
                     borderBottom: `2px solid rgba(22,58,99,0.45)`,
                     borderLeft: `3.5px solid ${setAssignMethod === 'existing' ? GOLD : 'transparent'}`,
@@ -1445,9 +1445,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     }
                   }}
                 >
-                  {/* Radio dot — top-aligned with first text line */}
+                  {/* Radio dot */}
                   <span style={{
-                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                     border: `2px solid ${NAVY}`,
                     backgroundColor: setAssignMethod === 'existing' ? NAVY : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1457,7 +1457,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     )}
                   </span>
                   <span style={{ flex: 1, textAlign: 'left' as const }}>
-                    {`${t('currentSetLabel')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
+                    {`${t('currentSetLabel')}: ${lastUsedSet.setLabel ? lastUsedSet.setLabel.replace(/^SET-/i, 'Set-') + ' — ' + lastUsedSet.name : lastUsedSet.name}`}
                   </span>
                 </button>
               )}
@@ -1467,7 +1467,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 ref={setBtn2Ref}
                 style={{
                   ...s.setAssignBtn,
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  display: 'flex', alignItems: 'center', gap: 10,
                   border: 'none',
                   borderLeft: `3.5px solid ${setAssignMethod === 'new' ? GOLD : 'transparent'}`,
                   borderRadius: 0,
@@ -1489,9 +1489,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   }
                 }}
               >
-                {/* Radio dot — top-aligned with first text line */}
+                {/* Radio dot */}
                 <span style={{
-                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                   border: `2px solid ${NAVY}`,
                   backgroundColor: setAssignMethod === 'new' ? NAVY : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
