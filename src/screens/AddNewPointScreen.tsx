@@ -288,15 +288,15 @@ interface QuickEditProps {
   onSave: (val: string) => void;
   /** Optional subtitle shown below the title in the header */
   subtitle?: string;
-  /** Optional element rendered below the header (e.g. View All Set Points button) */
-  headerAction?: React.ReactNode;
   /** Optional validation: return an error string to block save, or null to allow */
   validate?: (val: string) => string | null;
-  /** Inline content rendered directly below the header action */
-  dropdownContent?: React.ReactNode;
+  /** Called when "View All Points Of This Set" button is tapped */
+  onViewSetPoints?: () => void;
+  /** Called when "View All Points Of All Sets" button is tapped */
+  onViewAllSets?: () => void;
 }
-function QuickEditModal({ open, title, subtitle, placeholder, value, onClose, onSave, headerAction, validate, dropdownContent }: QuickEditProps) {
-  const [tmp, setTmp]         = useState(value);
+function QuickEditModal({ open, title, subtitle, placeholder, value, onClose, onSave, validate, onViewSetPoints, onViewAllSets }: QuickEditProps) {
+  const [tmp, setTmp]           = useState(value);
   const [validErr, setValidErr] = useState<string | null>(null);
   const { t } = useLang();
   useEffect(() => { if (open) { setTmp(value); setValidErr(null); } }, [open, value]);
@@ -315,11 +315,8 @@ function QuickEditModal({ open, title, subtitle, placeholder, value, onClose, on
   return (
     <CenteredModal open={open} onClose={onClose}>
       <ModalHeader title={title} subtitle={subtitle} onClose={onClose} />
-      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Optional action (e.g. View All Set Points button) */}
-        {headerAction && <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{headerAction}</div>}
-        {/* Inline dropdown list */}
-        {dropdownContent}
+      <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Name input */}
         <input
           style={{ ...c.input, borderColor: BLUE, fontSize: 16, height: 46 }}
           value={tmp}
@@ -327,16 +324,30 @@ function QuickEditModal({ open, title, subtitle, placeholder, value, onClose, on
           placeholder={placeholder} autoFocus
           onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
         />
-        {/* Duplicate / validation error */}
+        {/* Validation error */}
         {validErr && (
-          <div style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.4 }}>
+          <div style={{ fontSize: 13, color: '#DC2626', lineHeight: 1.4, marginTop: -4 }}>
             ⚠ {validErr}
           </div>
         )}
+        {/* Save — prominent primary button */}
         <button
-          style={{ ...c.saveBtn, fontSize: 16, padding: '13px 0', height: 'auto' }}
+          style={{ ...c.saveBtn, fontSize: 18, padding: '11px 0', height: 'auto' }}
           onClick={handleSave}
         >{t('save')}</button>
+        {/* Browse buttons — shown only when context allows */}
+        {onViewSetPoints && (
+          <button
+            style={{ width: '100%', padding: '12px 0', height: 'auto', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 8, backgroundColor: '#EEF4FF', color: NAVY, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.15px' }}
+            onClick={onViewSetPoints}
+          >{t('viewAllSetPoints')}</button>
+        )}
+        {onViewAllSets && (
+          <button
+            style={{ width: '100%', padding: '12px 0', height: 'auto', border: `1.5px solid ${BORDER}`, borderRadius: 8, backgroundColor: SURFACE, color: TEXT_PRI, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.15px' }}
+            onClick={onViewAllSets}
+          >{t('viewAllPointsAllSets')}</button>
+        )}
       </div>
     </CenteredModal>
   );
@@ -406,6 +417,92 @@ function SetListModal({ open, onClose, points, currentPointId, t, onSelectPoint 
               </div>
             ))
           }
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── All Sets + Points browse modal ──────────────────────────────────────────
+interface AllSetsModalProps {
+  open: boolean;
+  onClose: () => void;
+  sets: SurveySet[];
+  points: SurveyPoint[];
+  t: (k: string) => string;
+  onSelectPoint: (pt: SurveyPoint) => void;
+}
+function AllSetsModal({ open, onClose, sets, points, t, onSelectPoint }: AllSetsModalProps) {
+  const [expandedSetId, setExpandedSetId] = useState<string | null>(null);
+  useEffect(() => { if (open) setExpandedSetId(null); }, [open]);
+  if (!open) return null;
+
+  const sortedSets = [...sets].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 410, backgroundColor: 'rgba(0,0,0,0.62)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}
+      onClick={onClose}
+    >
+      <div
+        className="bm-modal-in"
+        style={{ backgroundColor: CARD, borderRadius: 20, maxWidth: 420, width: '100%', maxHeight: '80vh', boxShadow: '0 16px 56px rgba(0,0,0,0.36)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px 14px', borderBottom: `1px solid ${BORDER}`, flexShrink: 0, backgroundColor: NAVY }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#FFFFFF' }}>{t('viewAllPointsAllSets')}</h3>
+          <button
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#FFFFFF', fontSize: 18, fontWeight: 900, lineHeight: 1, cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+            onClick={onClose}
+            aria-label="Close"
+          >✕</button>
+        </div>
+        {/* Scrollable list */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {sortedSets.length === 0 ? (
+            <div style={{ padding: '28px 20px', color: TEXT_DIS, fontSize: 15, textAlign: 'center', fontStyle: 'italic' }}>{t('noSetsYet')}</div>
+          ) : (
+            sortedSets.map(set => {
+              const setPoints = points.filter(p => p.setId === set.id).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+              const isExpanded = expandedSetId === set.id;
+              return (
+                <div key={set.id}>
+                  {/* Set header row */}
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}`, backgroundColor: isExpanded ? '#EEF4FF' : 'transparent', gap: 10, userSelect: 'none' as const, WebkitUserSelect: 'none' as const }}
+                    onClick={() => setExpandedSetId(isExpanded ? null : set.id)}
+                  >
+                    <span style={{ fontSize: 13, color: NAVY, flexShrink: 0, lineHeight: 1, fontWeight: 700 }}>{isExpanded ? '▾' : '▸'}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                        {set.setLabel && (
+                          <span style={{ fontSize: 11, fontWeight: 800, backgroundColor: NAVY, color: '#fff', borderRadius: 4, padding: '1px 6px', letterSpacing: '0.4px' }}>{set.setLabel}</span>
+                        )}
+                        <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_PRI }}>{set.name}</span>
+                        <span style={{ fontSize: 13, color: TEXT_SEC }}>({setPoints.length} {setPoints.length === 1 ? 'pt' : 'pts'})</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Expanded: point rows */}
+                  {isExpanded && (
+                    setPoints.length === 0
+                      ? <div style={{ padding: '10px 16px 10px 36px', color: TEXT_DIS, fontSize: 14, fontStyle: 'italic', borderBottom: `1px solid ${BORDER}`, backgroundColor: '#F8FAFE' }}>{t('noSetPointsYet')}</div>
+                      : setPoints.map(pt => (
+                        <div
+                          key={pt.id}
+                          style={{ display: 'flex', alignItems: 'center', padding: '12px 16px 12px 36px', cursor: 'pointer', borderBottom: `1px solid ${BORDER}`, backgroundColor: '#F8FAFE' }}
+                          onClick={() => onSelectPoint(pt)}
+                        >
+                          <span style={{ fontWeight: 700, color: BLUE_ACC, fontSize: 15, flexShrink: 0, minWidth: 46 }}>{pt.label}</span>
+                          <span style={{ color: TEXT_SEC, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, flex: 1 }}> — {pt.pointName || t('unnamedPoint')}</span>
+                        </div>
+                      ))
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -563,7 +660,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [showManagePoint,   setShowManagePoint]   = useState(false);
   const [editingFromManage, setEditingFromManage] = useState(false); // true = overlay mounted but hidden while editing a point from it
   const [showUnsavedWarn,   setShowUnsavedWarn]   = useState(false);
-  const [showSetListModal, setShowSetListModal] = useState(false);
+  const [showSetListModal,  setShowSetListModal]  = useState(false);
+  const [showAllSetsModal,  setShowAllSetsModal]  = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
   const savedNewPointRef = useRef<{
     rodFeet: string; rodInches: number; rodFracDec: number; rodFracLbl: string;
@@ -1545,21 +1643,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       />
       <QuickEditModal
         open={showNameModal} title={t('pointName')} subtitle={t('optionalLbl')} placeholder={t('pointNamePlaceholder')}
-        value={pointName} onClose={() => { setShowNameModal(false); setShowSetListModal(false); }}
-        headerAction={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? (
-          <button
-            style={{ ...s.viewSetDropBtn, fontSize: 14, maxWidth: 220 }}
-            onClick={() => setShowSetListModal(true)}
-          >
-            {t('viewAllSetPoints')}
-          </button>
-        ) : undefined}
+        value={pointName} onClose={() => { setShowNameModal(false); setShowSetListModal(false); setShowAllSetsModal(false); }}
         validate={(name) => assignedSet ? checkDupName(name, assignedSet, currentPoint?.id) : null}
         onSave={v => {
           setPointName(v);
           setDupConflict(null);
           if (currentPoint) updatePoint(projectId, currentPoint.id, { pointName: v || undefined });
         }}
+        onViewSetPoints={(!cameFromNewPoint && dropdownSetId && !cameFromEditMode) ? () => setShowSetListModal(true) : undefined}
+        onViewAllSets={() => setShowAllSetsModal(true)}
       />
       {/* ── Duplicate point name alert dialog ── */}
       <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
@@ -1599,6 +1691,25 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           const gi = points.findIndex(p => p.id === pt.id);
           if (gi >= 0) goTo(gi);
           setShowSetListModal(false);
+          setShowNameModal(false);
+        }}
+      />
+
+      {/* ── All Sets browse modal — lists every set; expands to show its points ── */}
+      <AllSetsModal
+        open={showAllSetsModal}
+        onClose={() => setShowAllSetsModal(false)}
+        sets={sets}
+        points={points}
+        t={t}
+        onSelectPoint={(pt) => {
+          if (isNewPoint && !cameFromNewPoint) {
+            savedNewPointRef.current = { rodFeet, rodInches, rodFracDec, rodFracLbl, engFtStr, bmElevStr, pointName, takenBy, assignedSet };
+            setCameFromNewPoint(true);
+          }
+          const gi = points.findIndex(p => p.id === pt.id);
+          if (gi >= 0) goTo(gi);
+          setShowAllSetsModal(false);
           setShowNameModal(false);
         }}
       />
