@@ -1078,23 +1078,39 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </>
           ) : (
           <>
-          {/* Compact 3-column rod reading layout — no heading */}
+          {/* 3-column layout: rod image | format toggle | entry fields */}
           <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'stretch', minHeight: 54 }}>
 
-            {/* Left: vertical rod image */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 26 }}>
-              <img src="/rod.png" alt="" aria-hidden="true" style={{ width: 'auto', height: 50, objectFit: 'contain', display: 'block' }} />
+            {/* Left: vertical rod image — height matches entry box */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 30 }}>
+              <img src="/rod.png" alt="" aria-hidden="true" style={{ width: 'auto', height: 54, objectFit: 'contain', display: 'block' }} />
             </div>
 
-            {/* Middle: input fields */}
+            {/* Center: vertically stacked format toggle — equal-height, equal-width buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
+              <button
+                style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
+                onClick={() => setRodFormat('fif')}
+              >
+                {t('feetInchesBtn')}
+              </button>
+              <button
+                style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
+                onClick={() => setRodFormat('eng')}
+              >
+                {t('engineeringFtBtn')}
+              </button>
+            </div>
+
+            {/* Right: entry fields with slightly reduced font sizes */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               {rodFormat === 'fif' ? (
                 <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
                   {/* Feet */}
                   <div style={s.rodPart}>
-                    <span style={s.rodPartLbl}>{t('feetLabel')}</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('feetLabel')}</span>
                     <input
-                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7 }}
+                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 16 }}
                       type="text" inputMode="numeric" pattern="[0-9]*" value={rodFeet}
                       onChange={e => {
                         const v = e.target.value;
@@ -1118,9 +1134,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodDiv} />
                   {/* Inches */}
                   <div style={s.rodPart}>
-                    <span style={s.rodPartLbl}>{t('inchesLabel')}</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('inchesLabel')}</span>
                     <select
-                      style={s.rodSelect} value={String(rodInches)}
+                      style={{ ...s.rodSelect, fontSize: 15 }} value={String(rodInches)}
                       onChange={e => updateFromFI(rodFeet, parseInt(e.target.value, 10), rodFracDec, rodFracLbl)}
                       disabled={!isEditMode}
                     >
@@ -1130,9 +1146,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodDiv} />
                   {/* Fraction */}
                   <div style={s.rodPart}>
-                    <span style={s.rodPartLbl}>{t('fracLabel')}</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('fracLabel')}</span>
                     <select
-                      style={s.rodSelect} value={String(rodFracDec)}
+                      style={{ ...s.rodSelect, fontSize: 15 }} value={String(rodFracDec)}
                       onChange={e => {
                         const dec = parseFloat(e.target.value);
                         const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? '0/0';
@@ -1143,12 +1159,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                       {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
-                  {/* Clear */}
+                  {/* Red ✕ clear button */}
                   {isEditMode && (
                     <>
                       <div style={s.rodDiv} />
-                      <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, '0/0')}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const, whiteSpace: 'nowrap' as const }}>{t('clearBtn')}</span>
+                      <button
+                        style={{ ...s.clearAllBtn, minWidth: 36, padding: '0 8px' }}
+                        onClick={() => updateFromFI('', 0, 0, '0/0')}
+                        title={t('clearBtn')}
+                      >
+                        <span style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', lineHeight: 1 }}>✕</span>
                       </button>
                     </>
                   )}
@@ -1170,22 +1190,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   placeholder="" readOnly={!isEditMode}
                 />
               )}
-            </div>
-
-            {/* Right: vertically stacked format toggle */}
-            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
-              <button
-                style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 6px' }}
-                onClick={() => setRodFormat('fif')}
-              >
-                {t('feetInchesBtn')}
-              </button>
-              <button
-                style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 6px' }}
-                onClick={() => setRodFormat('eng')}
-              >
-                {t('engineeringFtBtn')}
-              </button>
             </div>
           </div>
 
