@@ -1231,13 +1231,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             <>
               {/* Compact value card — shown once a benchmark is confirmed */}
               {bmExpanded && bmElevStr ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 10, padding: '10px 12px 10px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '7px 10px 7px 14px', border: '1.5px solid #2A5898' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#FFFFFF', letterSpacing: '1.2px', textTransform: 'uppercase' as const, marginBottom: 3 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.6px', textTransform: 'uppercase' as const, marginBottom: 3 }}>
                       {t('benchmarkToggle')}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', fontFamily: 'monospace', letterSpacing: '-0.3px' }}>
-                      {parseFloat(bmElevStr).toFixed(2)} <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>ft</span>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', fontFamily: 'monospace' }}>
+                      {parseFloat(bmElevStr).toFixed(2)} <span style={{ fontSize: 13, fontWeight: 700, color: '#F5F7FA', marginBottom: 2, display: 'inline-block' }}>ft</span>
                     </div>
                   </div>
                   {isEditMode && (
