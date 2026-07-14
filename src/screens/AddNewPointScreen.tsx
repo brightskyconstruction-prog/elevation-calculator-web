@@ -1078,20 +1078,110 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </>
           ) : (
           <>
-          {/* Section header row — edit mode */}
-          <div style={s.secRow}>
-            <span style={s.secLbl}>{t('rodReading')}</span>
-            <InfoTip text={t('rodInfoTip')} title={t('rodInfoTitle')} />
-            <div style={{ flex: 1 }} />
-            <div style={{ display: 'flex', backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
+          {/* Compact 3-column rod reading layout — no heading */}
+          <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'stretch', minHeight: 54 }}>
+
+            {/* Left: vertical rod image */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 26 }}>
+              <img src="/rod.png" alt="" aria-hidden="true" style={{ width: 'auto', height: 50, objectFit: 'contain', display: 'block' }} />
+            </div>
+
+            {/* Middle: input fields */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              {rodFormat === 'fif' ? (
+                <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
+                  {/* Feet */}
+                  <div style={s.rodPart}>
+                    <span style={s.rodPartLbl}>{t('feetLabel')}</span>
+                    <input
+                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7 }}
+                      type="text" inputMode="numeric" pattern="[0-9]*" value={rodFeet}
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === '' || /^\d+$/.test(v)) {
+                          updateFromFI(v, rodInches, rodFracDec, rodFracLbl);
+                        }
+                      }}
+                      onFocus={(e) => {
+                        if (rodFeet === '0') {
+                          e.target.value = '';
+                          updateFromFI('', rodInches, rodFracDec, rodFracLbl);
+                        }
+                      }}
+                      onKeyDown={e => {
+                        const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
+                        if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
+                      }}
+                      placeholder="" readOnly={!isEditMode}
+                    />
+                  </div>
+                  <div style={s.rodDiv} />
+                  {/* Inches */}
+                  <div style={s.rodPart}>
+                    <span style={s.rodPartLbl}>{t('inchesLabel')}</span>
+                    <select
+                      style={s.rodSelect} value={String(rodInches)}
+                      onChange={e => updateFromFI(rodFeet, parseInt(e.target.value, 10), rodFracDec, rodFracLbl)}
+                      disabled={!isEditMode}
+                    >
+                      {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  <div style={s.rodDiv} />
+                  {/* Fraction */}
+                  <div style={s.rodPart}>
+                    <span style={s.rodPartLbl}>{t('fracLabel')}</span>
+                    <select
+                      style={s.rodSelect} value={String(rodFracDec)}
+                      onChange={e => {
+                        const dec = parseFloat(e.target.value);
+                        const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? '0/0';
+                        updateFromFI(rodFeet, rodInches, dec, lbl);
+                      }}
+                      disabled={!isEditMode}
+                    >
+                      {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  {/* Clear */}
+                  {isEditMode && (
+                    <>
+                      <div style={s.rodDiv} />
+                      <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, '0/0')}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const, whiteSpace: 'nowrap' as const }}>{t('clearBtn')}</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <input
+                  style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}`, height: 54 }}
+                  type="text" inputMode="decimal" value={engFtStr}
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (v === '' || /^\d*\.?\d*$/.test(v)) updateFromEng(v);
+                  }}
+                  onFocus={(e) => {
+                    if (engFtStr !== '' && parseFloat(engFtStr) === 0) {
+                      e.target.value = '';
+                      updateFromEng('');
+                    }
+                  }}
+                  placeholder="" readOnly={!isEditMode}
+                />
+              )}
+            </div>
+
+            {/* Right: vertically stacked format toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
               <button
-                style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}) }}
+                style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 6px' }}
                 onClick={() => setRodFormat('fif')}
               >
                 {t('feetInchesBtn')}
               </button>
               <button
-                style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}) }}
+                style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 6px' }}
                 onClick={() => setRodFormat('eng')}
               >
                 {t('engineeringFtBtn')}
@@ -1099,104 +1189,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           </div>
 
-          {/* Rod reading inputs */}
-          {rodFormat === 'fif' ? (
-            <>
-              <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
-                {/* Feet */}
-                <div style={s.rodPart}>
-                  <span style={s.rodPartLbl}>{t('feetLabel')}</span>
-                  <input
-                    style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7 }}
-                    type="text" inputMode="numeric" pattern="[0-9]*" value={rodFeet}
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (v === '' || /^\d+$/.test(v)) {
-                        updateFromFI(v, rodInches, rodFracDec, rodFracLbl);
-                      }
-                    }}
-                    onFocus={(e) => {
-                      if (rodFeet === '0') {
-                        e.target.value = '';
-                        updateFromFI('', rodInches, rodFracDec, rodFracLbl);
-                      }
-                    }}
-                    onKeyDown={e => {
-                      const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
-                      if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
-                    }}
-                    placeholder="" readOnly={!isEditMode}
-                  />
-                </div>
-                <div style={s.rodDiv} />
-                {/* Inches */}
-                <div style={s.rodPart}>
-                  <span style={s.rodPartLbl}>{t('inchesLabel')}</span>
-                  <select
-                    style={s.rodSelect} value={String(rodInches)}
-                    onChange={e => updateFromFI(rodFeet, parseInt(e.target.value, 10), rodFracDec, rodFracLbl)}
-                    disabled={!isEditMode}
-                  >
-                    {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div style={s.rodDiv} />
-                {/* Fraction */}
-                <div style={s.rodPart}>
-                  <span style={s.rodPartLbl}>{t('fracLabel')}</span>
-                  <select
-                    style={s.rodSelect} value={String(rodFracDec)}
-                    onChange={e => {
-                      const dec = parseFloat(e.target.value);
-                      const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? '0/0';
-                      updateFromFI(rodFeet, rodInches, dec, lbl);
-                    }}
-                    disabled={!isEditMode}
-                  >
-                    {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                {/* Clear */}
-                {isEditMode && (
-                  <>
-                    <div style={s.rodDiv} />
-                    <button style={s.clearAllBtn} onClick={() => updateFromFI('', 0, 0, '0/0')}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_SEC, textAlign: 'center' as const, whiteSpace: 'nowrap' as const }}>{t('clearBtn')}</span>
-                    </button>
-                  </>
-                )}
-              </div>
-              {engDisplay && (
-                <div style={s.autoGenRow}>
-                  <span style={s.autoGenLbl}>{t('autoGenEngFt')}:</span>
-                  <span style={s.autoGenVal}>{engFtStr}′</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <input
-                style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}` }}
-                type="text" inputMode="decimal" value={engFtStr}
-                onChange={e => {
-                  const v = e.target.value;
-                  if (v === '' || /^\d*\.?\d*$/.test(v)) updateFromEng(v);
-                }}
-                onFocus={(e) => {
-                  if (engFtStr !== '' && parseFloat(engFtStr) === 0) {
-                    e.target.value = '';
-                    updateFromEng('');
-                  }
-                }}
-                placeholder="" readOnly={!isEditMode}
-              />
-              {fifDisplay && fifDisplay !== '—' && (
-                <div style={s.autoGenRow}>
-                  <span style={s.autoGenLbl}>{t('autoGenFIF')}:</span>
-                  <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={BLUE_ACC} size={15} />
-                </div>
-              )}
-            </>
+          {/* Auto-generated value row — below the 3-column layout */}
+          {rodFormat === 'fif' && engDisplay && (
+            <div style={s.autoGenRow}>
+              <span style={s.autoGenLbl}>{t('autoGenEngFt')}:</span>
+              <span style={s.autoGenVal}>{engFtStr}′</span>
+            </div>
+          )}
+          {rodFormat === 'eng' && fifDisplay && fifDisplay !== '—' && (
+            <div style={s.autoGenRow}>
+              <span style={s.autoGenLbl}>{t('autoGenFIF')}:</span>
+              <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={BLUE_ACC} size={15} />
+            </div>
           )}
 
           <div style={s.sep} />
