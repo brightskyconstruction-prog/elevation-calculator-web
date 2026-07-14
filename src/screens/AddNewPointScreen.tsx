@@ -562,6 +562,130 @@ function DupNameModal({ conflict, onClose }: DupNameModalProps) {
   );
 }
 
+// ─── Benchmark Verified Modal (green success) ────────────────────────────────
+interface BmVerifiedModalProps {
+  open: boolean;
+  onContinue: () => void;
+  enteredBm: number;
+  derivedBm: number;
+}
+function BmVerifiedModal({ open, onContinue, enteredBm, derivedBm }: BmVerifiedModalProps) {
+  if (!open) return null;
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 500, backgroundColor: 'rgba(0,0,0,0.62)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div
+        className="anp-modal-in"
+        style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 400, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.32)', overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Green header */}
+        <div style={{ backgroundColor: '#16A34A', padding: '20px 20px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 38, lineHeight: 1 }}>✅</span>
+          <span style={{ color: '#FFFFFF', fontSize: 19, fontWeight: 800, letterSpacing: '0.2px', textAlign: 'center' as const, lineHeight: 1.25 }}>Benchmark Verified</span>
+        </div>
+        {/* Body */}
+        <div style={{ padding: '18px 20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, textAlign: 'center' as const, lineHeight: 1.65 }}>
+            The manually entered Benchmark / Known Elevation matches the calculated Derived Benchmark for this set.
+          </p>
+          {/* Value comparison card */}
+          <div style={{ backgroundColor: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Entered Benchmark</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{enteredBm.toFixed(2)} ft</span>
+            </div>
+            <div style={{ height: 1, backgroundColor: '#BBF7D0' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Derived Benchmark</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#16A34A' }}>{derivedBm.toFixed(2)} ft</span>
+            </div>
+          </div>
+          {/* Continue → saves the point */}
+          <button
+            style={{ height: 50, width: '100%', backgroundColor: '#16A34A', border: 'none', borderRadius: 10, color: '#FFFFFF', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.2px' }}
+            onClick={onContinue}
+          >Continue</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Benchmark Mismatch Modal (amber warning) ────────────────────────────────
+interface BmMismatchModalProps {
+  open: boolean;
+  onClose: () => void;
+  onUseDerived: () => void;
+  onEditValue: () => void;
+  enteredBm: number;
+  derivedBm: number;
+}
+function BmMismatchModal({ open, onClose, onUseDerived, onEditValue, enteredBm, derivedBm }: BmMismatchModalProps) {
+  if (!open) return null;
+  const diff = Math.abs(enteredBm - derivedBm).toFixed(2);
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 500, backgroundColor: 'rgba(0,0,0,0.62)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div
+        className="anp-modal-in"
+        style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 400, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.32)', overflow: 'hidden', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Amber header */}
+        <div style={{ backgroundColor: '#B45309', padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 36, lineHeight: 1 }}>⚠️</span>
+          <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, letterSpacing: '0.2px', textAlign: 'center' as const, lineHeight: 1.25 }}>Benchmark Mismatch Detected</span>
+        </div>
+        {/* Scrollable body */}
+        <div style={{ padding: '18px 20px 22px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+          <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, textAlign: 'center' as const, lineHeight: 1.65 }}>
+            The Benchmark / Known Elevation you entered does not match the Derived Benchmark calculated for the selected set.
+          </p>
+          {/* Value comparison card */}
+          <div style={{ backgroundColor: '#FFFBEB', border: '1.5px solid #FCD34D', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Entered Benchmark:</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{enteredBm.toFixed(2)} ft</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Derived Benchmark:</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#B45309' }}>{derivedBm.toFixed(2)} ft</span>
+            </div>
+            <div style={{ height: 1, backgroundColor: '#FCD34D' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Difference:</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#DC2626' }}>{diff} ft</span>
+            </div>
+          </div>
+          <p style={{ margin: 0, fontSize: 13, color: TEXT_SEC, lineHeight: 1.7 }}>
+            This point belongs to an existing set. The benchmark should normally match the calculated Derived Benchmark for that set. Please verify that the value was entered correctly before saving.
+          </p>
+          {/* Primary: Use Derived BM */}
+          <button
+            style={{ height: 52, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#FFFFFF', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.2px' }}
+            onClick={onUseDerived}
+          >Use Derived Benchmark</button>
+          {/* Secondary: Edit My Value */}
+          <button
+            style={{ height: 46, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${NAVY}`, borderRadius: 10, color: NAVY, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+            onClick={onEditValue}
+          >Edit My Value</button>
+          {/* Tertiary: Cancel */}
+          <button
+            style={{ height: 40, width: '100%', backgroundColor: 'transparent', border: 'none', color: TEXT_DIS, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            onClick={onClose}
+          >Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Info modal card ──────────────────────────────────────────────────────────
 function InfoTip({ text, title }: { text: string; title?: string }) {
   const [open, setOpen] = useState(false);
@@ -663,6 +787,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [showSetListModal,  setShowSetListModal]  = useState(false);
   const [showAllSetsModal,  setShowAllSetsModal]  = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
+  // ── Benchmark validation ──────────────────────────────────────────────────
+  const [showBmVerifiedModal,  setShowBmVerifiedModal]  = useState(false);
+  const [showBmMismatchModal,  setShowBmMismatchModal]  = useState(false);
+  const [bmMismatchAutoShown,  setBmMismatchAutoShown]  = useState(false);
+  const [bmInputHighlight,     setBmInputHighlight]     = useState(false);
   const savedNewPointRef = useRef<{
     rodFeet: string; rodInches: number; rodFracDec: number; rodFracLbl: string;
     engFtStr: string; bmElevStr: string; pointName: string; takenBy: string;
@@ -703,6 +832,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       : null;
   const showManualBm = !setReferencePoint || currentIsSetReference;
   const isKnownElevation = currentIsSetReference && (currentPoint?.bmElevation ?? 0) > 0;
+
+  // ── Benchmark mismatch validation ─────────────────────────────────────────
+  // Triggers when the user has manually entered a BM AND the set provides a
+  // derived BM — we compare rounded to 2dp to avoid float-precision mismatches.
+  const enteredBmNum   = parseFloat(bmElevStr);
+  const roundedEnteredBm = !isNaN(enteredBmNum) && enteredBmNum > 0
+    ? parseFloat(enteredBmNum.toFixed(2)) : 0;
+  const roundedDerivedBm = autoDerivedBm != null
+    ? parseFloat(autoDerivedBm.toFixed(2)) : 0;
+  const needsBmValidation = !isNaN(enteredBmNum) && enteredBmNum > 0 && autoDerivedBm != null;
+  const bmValuesMatch     = !needsBmValidation || roundedEnteredBm === roundedDerivedBm;
+  const bmBlocked         = needsBmValidation && !bmValuesMatch;
 
   const fifDisplay      = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
   const engDisplay      = !isNaN(engFt) && engFt > 0 ? `${engFt.toFixed(2)} ft` : '';
@@ -761,6 +902,21 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     return () => window.removeEventListener('resize', sync);
   }, [lastUsedSet?.id, assignedSetObj?.id, setAssignMethod, sets.length, lang]);
 
+  // ── Benchmark mismatch auto-detection effects ─────────────────────────────
+  // Reset the "already auto-shown" flag whenever the inputs that drive validation change.
+  useEffect(() => {
+    setBmMismatchAutoShown(false);
+    setBmInputHighlight(false);
+  }, [bmElevStr, assignedSet]);
+
+  // Immediately show the mismatch dialog when a mismatch is first detected
+  // (e.g. user assigned a set after having already entered a BM).
+  useEffect(() => {
+    if (!needsBmValidation || bmValuesMatch || bmMismatchAutoShown) return;
+    setShowBmMismatchModal(true);
+    setBmMismatchAutoShown(true);
+  }, [needsBmValidation, bmValuesMatch, bmMismatchAutoShown]);
+
   // dropdownSetId / dropdownPoints: what the "View All Points Of This Set" dropdown shows.
   // On a new-point page (assignedSet = null), falls back to lastUsedSet so the button
   // is always visible as long as any set exists.
@@ -796,6 +952,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
     setSetWarning(false); setNewSetElevWarn(false); setRodReadingWarn(false); setDupConflict(null); setShowSetListModal(false); setSetAssignMethod(null); setPendingNewSet(null);
+    setShowBmVerifiedModal(false); setShowBmMismatchModal(false); setBmMismatchAutoShown(false); setBmInputHighlight(false);
   };
 
   // ── Edit point injection ───────────────────────────────────────────────────
@@ -891,7 +1048,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   // ── Benchmark modal handlers ───────────────────────────────────────────────
   const openBmModal  = () => { setBmDraft(bmElevStr); setShowBmModal(true); };
-  const closeBmModal = () => { setShowBmModal(false); if (!bmElevStr) setBmExpanded(false); };
+  const closeBmModal = () => { setShowBmModal(false); setBmInputHighlight(false); if (!bmElevStr) setBmExpanded(false); };
   const confirmBm    = () => {
     const v = bmDraft.trim();
     const n = parseFloat(v);
@@ -903,17 +1060,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setShowBmModal(false);
   };
 
-  // ── Save ──────────────────────────────────────────────────────────────────
-  const handleSave = async () => {
+  // ── Save — actual write (called after validation passes) ─────────────────
+  const doActualSave = async () => {
     const eng = parseFloat(engFtStr);
-    if (isNaN(eng) || eng <= 0) { setRodSaveWarn(true); return; }
-    setRodSaveWarn(false);
-    if (!assignedSet) { setSetWarning(true); return; }
-    setSetWarning(false);
-    // Duplicate point-name check — opens modal dialog on conflict
-    const conflictPt = findDupConflict(pointName, assignedSet, currentPoint?.id);
-    if (conflictPt) { setDupConflict({ name: pointName.trim(), label: conflictPt.label }); return; }
-    setDupConflict(null);
     // Flush pending new set to storage before persisting the point
     if (pendingNewSet && assignedSet === pendingNewSet.id) {
       addSet(projectId, pendingNewSet);
@@ -986,6 +1135,33 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       setSaveMsg(t('pointUpdated'));
       setTimeout(() => { setSaveMsg(null); openNewPoint(); }, 1200);
     }
+  };
+
+  // ── Save — gated entry point ───────────────────────────────────────────────
+  const handleSave = async () => {
+    const eng = parseFloat(engFtStr);
+    if (isNaN(eng) || eng <= 0) { setRodSaveWarn(true); return; }
+    setRodSaveWarn(false);
+    if (!assignedSet) { setSetWarning(true); return; }
+    setSetWarning(false);
+    // Duplicate point-name check — opens modal dialog on conflict
+    const conflictPt = findDupConflict(pointName, assignedSet, currentPoint?.id);
+    if (conflictPt) { setDupConflict({ name: pointName.trim(), label: conflictPt.label }); return; }
+    setDupConflict(null);
+
+    // ── Benchmark validation gate ─────────────────────────────────────────
+    if (needsBmValidation) {
+      if (!bmValuesMatch) {
+        // Mismatch — block save and show warning dialog
+        setShowBmMismatchModal(true);
+        return;
+      }
+      // Values match — show verified confirmation; doActualSave called from modal
+      setShowBmVerifiedModal(true);
+      return;
+    }
+
+    await doActualSave();
   };
 
   const handleCompareThis = () => {
@@ -1560,7 +1736,13 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {rodSaveWarn && (
             <div style={{ ...s.warnMsg, marginBottom: 0, paddingLeft: 4 }}>⚠ {t('rodReadingAlert')}</div>
           )}
-          <button style={s.saveBtn} onClick={handleSave}>
+          {bmBlocked && (
+            <div style={{ ...s.warnMsg, marginBottom: 0, paddingLeft: 4 }}>⚠ Benchmark mismatch — resolve before saving</div>
+          )}
+          <button
+            style={{ ...s.saveBtn, ...(bmBlocked ? { opacity: 0.5, cursor: 'not-allowed' as const } : {}) }}
+            onClick={handleSave}
+          >
             {isNewPoint ? t('savePoint') : t('updatePoint')}
           </button>
         </div>
@@ -1610,8 +1792,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 onChange={e => setBmDraft(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') confirmBm(); }}
                 className="bm-elev-input"
-                style={{ width: '100%', height: 62, border: `2px solid ${BLUE_ACC}`, borderRadius: 12, textAlign: 'center' as const, fontSize: 28, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 16px', boxSizing: 'border-box' as const, fontFamily: 'monospace', backgroundColor: '#FFFFFF' }}
+                style={{ width: '100%', height: 62, border: `2px solid ${bmInputHighlight ? '#EF4444' : BLUE_ACC}`, borderRadius: 12, textAlign: 'center' as const, fontSize: 28, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 16px', boxSizing: 'border-box' as const, fontFamily: 'monospace', backgroundColor: '#FFFFFF', boxShadow: bmInputHighlight ? '0 0 0 4px rgba(239,68,68,0.22)' : undefined }}
                 placeholder="0.00 ft"
+                autoFocus={bmInputHighlight}
               />
               {/* Cancel / OK */}
               <div style={{ display: 'flex', gap: 12 }}>
@@ -1655,6 +1838,34 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       />
       {/* ── Duplicate point name alert dialog ── */}
       <DupNameModal conflict={dupConflict} onClose={() => setDupConflict(null)} />
+
+      {/* ── Benchmark Verified dialog ── */}
+      <BmVerifiedModal
+        open={showBmVerifiedModal}
+        enteredBm={roundedEnteredBm}
+        derivedBm={roundedDerivedBm}
+        onContinue={() => { setShowBmVerifiedModal(false); doActualSave(); }}
+      />
+
+      {/* ── Benchmark Mismatch dialog ── */}
+      <BmMismatchModal
+        open={showBmMismatchModal}
+        enteredBm={roundedEnteredBm}
+        derivedBm={roundedDerivedBm}
+        onClose={() => setShowBmMismatchModal(false)}
+        onUseDerived={() => {
+          // Accept the derived value: update bmElevStr so they match, unblock save
+          setBmElevStr(autoDerivedBm != null ? autoDerivedBm.toFixed(2) : bmElevStr);
+          setBmExpanded(true);
+          setShowBmMismatchModal(false);
+        }}
+        onEditValue={() => {
+          // Let user correct their entry via the BM input modal
+          setShowBmMismatchModal(false);
+          setBmInputHighlight(true);
+          openBmModal();
+        }}
+      />
 
       {/* ── Unsaved changes warning dialog ── */}
       <CenteredModal open={showUnsavedWarn} onClose={() => setShowUnsavedWarn(false)}>
