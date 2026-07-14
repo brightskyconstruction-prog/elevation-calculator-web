@@ -1078,15 +1078,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </>
           ) : (
           <>
-          {/* 3-column layout: rod image | format toggle | entry fields */}
+          {/* 2-column layout: format toggle | entry fields */}
           <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'stretch', minHeight: 54 }}>
 
-            {/* Left: vertical rod image — height matches entry box */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: 30 }}>
-              <img src="/rod.png" alt="" aria-hidden="true" style={{ width: 'auto', height: 54, objectFit: 'contain', display: 'block' }} />
-            </div>
-
-            {/* Center: vertically stacked format toggle — equal-height, equal-width buttons */}
+            {/* Left: vertically stacked format toggle — equal-height, equal-width buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
               <button
                 style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
@@ -1102,7 +1097,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </button>
             </div>
 
-            {/* Right: entry fields with slightly reduced font sizes */}
+            {/* Right: entry fields — expanded to use full available width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               {rodFormat === 'fif' ? (
                 <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
@@ -1110,7 +1105,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodPart}>
                     <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('feetLabel')}</span>
                     <input
-                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 16 }}
+                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 18 }}
                       type="text" inputMode="numeric" pattern="[0-9]*" value={rodFeet}
                       onChange={e => {
                         const v = e.target.value;
@@ -1136,7 +1131,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodPart}>
                     <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('inchesLabel')}</span>
                     <select
-                      style={{ ...s.rodSelect, fontSize: 15 }} value={String(rodInches)}
+                      style={{ ...s.rodSelect, fontSize: 17 }} value={String(rodInches)}
                       onChange={e => updateFromFI(rodFeet, parseInt(e.target.value, 10), rodFracDec, rodFracLbl)}
                       disabled={!isEditMode}
                     >
@@ -1148,7 +1143,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodPart}>
                     <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('fracLabel')}</span>
                     <select
-                      style={{ ...s.rodSelect, fontSize: 15 }} value={String(rodFracDec)}
+                      style={{ ...s.rodSelect, fontSize: 17 }} value={String(rodFracDec)}
                       onChange={e => {
                         const dec = parseFloat(e.target.value);
                         const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? '0/0';
@@ -1159,12 +1154,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                       {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
-                  {/* Red ✕ clear button */}
+                  {/* Red ✕ clear button — soft light-red background */}
                   {isEditMode && (
                     <>
                       <div style={s.rodDiv} />
                       <button
-                        style={{ ...s.clearAllBtn, minWidth: 36, padding: '0 8px' }}
+                        style={{ ...s.clearAllBtn, minWidth: 36, padding: '0 8px', backgroundColor: '#FEF2F2', borderRadius: 6 }}
                         onClick={() => updateFromFI('', 0, 0, '0/0')}
                         title={t('clearBtn')}
                       >
@@ -1174,21 +1169,33 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   )}
                 </div>
               ) : (
-                <input
-                  style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}`, height: 54 }}
-                  type="text" inputMode="decimal" value={engFtStr}
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (v === '' || /^\d*\.?\d*$/.test(v)) updateFromEng(v);
-                  }}
-                  onFocus={(e) => {
-                    if (engFtStr !== '' && parseFloat(engFtStr) === 0) {
-                      e.target.value = '';
-                      updateFromEng('');
-                    }
-                  }}
-                  placeholder="" readOnly={!isEditMode}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    className="eng-decimal-input"
+                    style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}`, height: 54, flex: 1 }}
+                    type="text" inputMode="decimal" value={engFtStr}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) updateFromEng(v);
+                    }}
+                    onFocus={(e) => {
+                      if (engFtStr !== '' && parseFloat(engFtStr) === 0) {
+                        e.target.value = '';
+                        updateFromEng('');
+                      }
+                    }}
+                    placeholder="0.00 ft" readOnly={!isEditMode}
+                  />
+                  {isEditMode && (
+                    <button
+                      style={{ ...s.clearAllBtn, minWidth: 36, height: 54, padding: '0 10px', backgroundColor: '#FEF2F2', borderRadius: 6, border: `1px solid #FECACA` }}
+                      onClick={() => updateFromEng('')}
+                      title={t('clearBtn')}
+                    >
+                      <span style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', lineHeight: 1 }}>✕</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>

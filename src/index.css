@@ -160,6 +160,17 @@ button:disabled {
   font-size: 20px;
 }
 
+/* Decimal Feet input — placeholder hidden immediately on focus */
+.eng-decimal-input::placeholder {
+  color: #B0B7C3;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+}
+.eng-decimal-input:focus::placeholder {
+  color: transparent;
+}
+
 /* ─── Skeleton loading animation ───────────────────────────────────────────── */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
