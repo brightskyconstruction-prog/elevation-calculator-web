@@ -621,7 +621,7 @@ function InfoTip({ text, title }: { text: string; title?: string }) {
 
 export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onFindSlope, imperativeRef }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   const points = getPoints(projectId);
   const sets   = getSets(projectId);
@@ -759,7 +759,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     sync();
     window.addEventListener('resize', sync);
     return () => window.removeEventListener('resize', sync);
-  }, [lastUsedSet?.id, assignedSetObj?.id, setAssignMethod, sets.length]);
+  }, [lastUsedSet?.id, assignedSetObj?.id, setAssignMethod, sets.length, lang]);
 
   // dropdownSetId / dropdownPoints: what the "View All Points Of This Set" dropdown shows.
   // On a new-point page (assignedSet = null), falls back to lastUsedSet so the button
@@ -1364,7 +1364,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     <button
                       onClick={openBmModal}
                       style={{ backgroundColor: '#FFFFFF', border: `1.5px solid ${NAVY}`, borderRadius: 7, color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '6px 14px', letterSpacing: '0.3px', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
-                    >✏ {t('editBtn')}</button>
+                    ><span style={{ display: 'inline-block', transform: 'rotate(60deg)', marginRight: 5 }}>✏</span>{t('editBtn')}</button>
                   )}
                 </div>
               ) : (
@@ -1421,7 +1421,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   ref={setBtn1Ref}
                   style={{
                     ...s.setAssignBtn,
-                    display: 'flex', alignItems: 'center', gap: 10,
+                    display: 'flex', alignItems: 'flex-start', gap: 10,
                     border: 'none',
                     borderBottom: `2px solid rgba(22,58,99,0.45)`,
                     borderLeft: `3.5px solid ${setAssignMethod === 'existing' ? GOLD : 'transparent'}`,
@@ -1445,9 +1445,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     }
                   }}
                 >
-                  {/* Radio dot */}
+                  {/* Radio dot — top-aligned with first text line */}
                   <span style={{
-                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
                     border: `2px solid ${NAVY}`,
                     backgroundColor: setAssignMethod === 'existing' ? NAVY : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1467,7 +1467,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 ref={setBtn2Ref}
                 style={{
                   ...s.setAssignBtn,
-                  display: 'flex', alignItems: 'center', gap: 10,
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
                   border: 'none',
                   borderLeft: `3.5px solid ${setAssignMethod === 'new' ? GOLD : 'transparent'}`,
                   borderRadius: 0,
@@ -1489,9 +1489,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   }
                 }}
               >
-                {/* Radio dot */}
+                {/* Radio dot — top-aligned with first text line */}
                 <span style={{
-                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                  width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
                   border: `2px solid ${NAVY}`,
                   backgroundColor: setAssignMethod === 'new' ? NAVY : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1861,7 +1861,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '6px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.35, boxSizing: 'border-box' as const, overflow: 'hidden' },
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '10px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.35, boxSizing: 'border-box' as const },
   setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
