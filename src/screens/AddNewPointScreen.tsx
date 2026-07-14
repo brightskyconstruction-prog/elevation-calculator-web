@@ -1794,7 +1794,6 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 className="bm-elev-input"
                 style={{ width: '100%', height: 62, border: `2px solid ${bmInputHighlight ? '#EF4444' : BLUE_ACC}`, borderRadius: 12, textAlign: 'center' as const, fontSize: 28, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 16px', boxSizing: 'border-box' as const, fontFamily: 'monospace', backgroundColor: '#FFFFFF', boxShadow: bmInputHighlight ? '0 0 0 4px rgba(239,68,68,0.22)' : undefined }}
                 placeholder="0.00 ft"
-                autoFocus={bmInputHighlight}
               />
               {/* Cancel / OK */}
               <div style={{ display: 'flex', gap: 12 }}>
