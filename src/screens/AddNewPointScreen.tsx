@@ -1027,7 +1027,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
         {/* ── Rod Reading + Set Assignment — joined into one visual card ── */}
         <div style={{ display: 'flex', flexDirection: 'column', border: (setWarning && !assignedSetObj && (isEditMode || isNewPoint)) ? `1.5px solid #EF4444` : `1px solid ${BORDER}`, borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
-        <div style={{ ...s.card, border: 'none', borderRadius: 0, ...(!isEditMode && !isNewPoint ? { gap: 4, padding: '8px 10px' } : {}), borderBottom: `1px solid ${BORDER}` }}>
+        <div style={{ ...s.card, border: 'none', borderRadius: 0, ...(!isEditMode && !isNewPoint ? { gap: 4, padding: '8px 10px' } : { paddingBottom: 4 }), borderBottom: `1px solid ${BORDER}` }}>
 
           {/* ── READ-ONLY rod display (existing saved point, not editing) ── */}
           {!isEditMode && !isNewPoint ? (
@@ -1289,37 +1289,86 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           </div>
         ) : (
-        <div style={{ ...s.card, border: 'none', borderRadius: 0 }}>
+        <div style={{ ...s.card, border: 'none', borderRadius: 0, paddingTop: 4 }}>
           <div style={s.secRow}>
             <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px' }}>{t('setAssignment')}</span>
             <InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {/* Option 1: Add to Current Set — radio row, only shown when a set exists */}
-            {sets.length > 0 && lastUsedSet && (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Grouped selection control — no gap, shared border */}
+            <div style={{ border: `2px solid ${NAVY}`, borderRadius: 8, overflow: 'hidden' }}>
+              {/* Option 1: Add to Current Set — only shown when a set exists */}
+              {sets.length > 0 && lastUsedSet && (
+                <button
+                  ref={setBtn1Ref}
+                  style={{
+                    ...s.setAssignBtn,
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    border: 'none',
+                    borderBottom: `1px solid rgba(22,58,99,0.18)`,
+                    borderLeft: `3.5px solid ${setAssignMethod === 'existing' ? GOLD : 'transparent'}`,
+                    borderRadius: 0,
+                    backgroundColor: setAssignMethod === 'existing' ? '#FEFBF2' : '#F3F4F6',
+                    opacity: setAssignMethod === 'new' ? 0.65 : 1,
+                  }}
+                  onClick={() => {
+                    if (setAssignMethod === 'existing') {
+                      // Single tap deselects
+                      setAssignedSet(null);
+                      setSetAssignMethod(null);
+                    } else {
+                      if (!hasRodReading) { setRodReadingWarn(true); return; }
+                      setRodReadingWarn(false);
+                      setDupConflict(null);
+                      setPendingNewSet(null);
+                      setAssignedSet(lastUsedSet.id);
+                      setSetAssignMethod('existing');
+                      setSetWarning(false);
+                    }
+                  }}
+                >
+                  {/* Radio dot */}
+                  <span style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    border: `2px solid ${NAVY}`,
+                    backgroundColor: setAssignMethod === 'existing' ? NAVY : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {setAssignMethod === 'existing' && (
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
+                    )}
+                  </span>
+                  <span style={{ flex: 1, textAlign: 'left' as const }}>
+                    {`${t('currentSetLabel')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
+                  </span>
+                </button>
+              )}
+
+              {/* Option 2: Create New Set */}
               <button
-                ref={setBtn1Ref}
+                ref={setBtn2Ref}
                 style={{
                   ...s.setAssignBtn,
                   display: 'flex', alignItems: 'center', gap: 10,
-                  ...(setAssignMethod === 'existing'
-                    ? s.setAssignBtnActive
-                    : setAssignMethod === 'new' ? s.setAssignBtnDim : {}),
+                  border: 'none',
+                  borderLeft: `3.5px solid ${setAssignMethod === 'new' ? GOLD : 'transparent'}`,
+                  borderRadius: 0,
+                  backgroundColor: setAssignMethod === 'new' ? '#FEFBF2' : '#F3F4F6',
+                  opacity: setAssignMethod === 'existing' ? 0.65 : 1,
                 }}
                 onClick={() => {
-                  if (setAssignMethod === 'existing') {
+                  if (setAssignMethod === 'new') {
                     // Single tap deselects
                     setAssignedSet(null);
                     setSetAssignMethod(null);
+                    setPendingNewSet(null);
                   } else {
                     if (!hasRodReading) { setRodReadingWarn(true); return; }
                     setRodReadingWarn(false);
                     setDupConflict(null);
-                    setPendingNewSet(null);
-                    setAssignedSet(lastUsedSet.id);
-                    setSetAssignMethod('existing');
-                    setSetWarning(false);
+                    setNewSetElevWarn(false);
+                    setShowCreate(true);
                   }
                 }}
               >
@@ -1327,62 +1376,21 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 <span style={{
                   width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
                   border: `2px solid ${NAVY}`,
-                  backgroundColor: setAssignMethod === 'existing' ? NAVY : 'transparent',
+                  backgroundColor: setAssignMethod === 'new' ? NAVY : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {setAssignMethod === 'existing' && (
+                  {setAssignMethod === 'new' && (
                     <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
                   )}
                 </span>
                 <span style={{ flex: 1, textAlign: 'left' as const }}>
-                  {`${t('currentSetLabel')}: ${[lastUsedSet.setLabel, lastUsedSet.name].filter(Boolean).join(' • ')}`}
+                  {setAssignMethod === 'new' && assignedSetObj
+                    ? `${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
+                    : t('createNewSetBtn')
+                  }
                 </span>
               </button>
-            )}
-
-            {/* Option 2: Create New Set — radio row */}
-            <button
-              ref={setBtn2Ref}
-              style={{
-                ...s.setAssignBtn,
-                display: 'flex', alignItems: 'center', gap: 10,
-                ...(setAssignMethod === 'new'
-                  ? s.setAssignBtnActive
-                  : setAssignMethod === 'existing' ? s.setAssignBtnDim : {}),
-              }}
-              onClick={() => {
-                if (setAssignMethod === 'new') {
-                  // Single tap deselects
-                  setAssignedSet(null);
-                  setSetAssignMethod(null);
-                  setPendingNewSet(null);
-                } else {
-                  if (!hasRodReading) { setRodReadingWarn(true); return; }
-                  setRodReadingWarn(false);
-                  setDupConflict(null);
-                  setNewSetElevWarn(false);
-                  setShowCreate(true);
-                }
-              }}
-            >
-              {/* Radio dot */}
-              <span style={{
-                width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
-                border: `2px solid ${NAVY}`,
-                backgroundColor: setAssignMethod === 'new' ? NAVY : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {setAssignMethod === 'new' && (
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: '#fff', display: 'block' }} />
-                )}
-              </span>
-              <span style={{ flex: 1, textAlign: 'left' as const }}>
-                {setAssignMethod === 'new' && assignedSetObj
-                  ? `${t('newSetLabel')}: ${[assignedSetObj.setLabel, assignedSetObj.name].filter(Boolean).join(' • ')}`
-                  : t('createNewSetBtn')
-                }
-              </span>
-            </button>
+            </div>
 
             {rodReadingWarn && <div style={s.warnMsg}>⚠ {t('rodReadingRequiredForSet')}</div>}
             {newSetElevWarn && <div style={s.warnMsg}>⚠ {t('elevRequiredForSet')}</div>}
@@ -1431,7 +1439,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
       {/* ── Save / Update button — outside scroll, always visible ── */}
       {(isNewPoint || isEditMode) && (
-        <div style={{ flexShrink: 0, padding: '6px 4px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ flexShrink: 0, padding: '4px 4px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
           {rodSaveWarn && (
             <div style={{ ...s.warnMsg, marginBottom: 0, paddingLeft: 4 }}>⚠ {t('rodReadingAlert')}</div>
           )}
@@ -1732,7 +1740,7 @@ const s: Record<string, React.CSSProperties> = {
   savedAt:      { fontSize: 13, color: TEXT_SEC, textAlign: 'center', lineHeight: 1.5, fontWeight: 600 },
   mapsBtn:      { backgroundColor: BLUE, borderRadius: 4, padding: '3px 8px', color: '#fff', fontSize: 9, fontWeight: 800, textDecoration: 'none', flexShrink: 0 },
 
-  saveBtn:    { minHeight: 44, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px', flexShrink: 0 },
+  saveBtn:    { minHeight: 38, width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 10, color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.3px', flexShrink: 0 },
   compareBtn: { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
   slopeBtn:   { height: 40, flex: 1, minWidth: 120, backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.3px' },
 };
