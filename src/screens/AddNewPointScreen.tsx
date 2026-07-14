@@ -1364,7 +1364,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     <button
                       onClick={openBmModal}
                       style={{ backgroundColor: '#FFFFFF', border: `1.5px solid ${NAVY}`, borderRadius: 7, color: NAVY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '6px 14px', letterSpacing: '0.3px', flexShrink: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}
-                    ><span style={{ display: 'inline-block', transform: 'rotate(-60deg)', marginRight: 5 }}>✏</span>{t('editBtn')}</button>
+                    ><span style={{ display: 'inline-block', transform: 'rotate(45deg)', marginRight: 5 }}>✏</span>{t('editBtn')}</button>
                   )}
                 </div>
               ) : (
@@ -1406,10 +1406,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           </div>
         ) : (
-        <div style={{ ...s.card, border: 'none', borderRadius: 0, paddingTop: 4, paddingBottom: 4, gap: 3 }}>
-          <div style={{ ...s.secRow, alignItems: 'flex-start', gap: 6 }}>
+        <div style={{ ...s.card, border: 'none', borderRadius: 0, paddingTop: 4, paddingBottom: 4, gap: 2 }}>
+          <div style={{ ...s.secRow, alignItems: 'center', gap: 6 }}>
             <span style={{ ...s.secLbl, textTransform: 'none' as const, letterSpacing: '0.2px', whiteSpace: 'normal' as const, flexShrink: 1, lineHeight: 1.3 }}>{t('setAssignment')}</span>
-            <span style={{ flexShrink: 0, marginTop: 1 }}><InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} /></span>
+            <span style={{ flexShrink: 0 }}><InfoTip text={t('setInfoTip')} title={t('setInfoTitle')} /></span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1861,7 +1861,7 @@ const s: Record<string, React.CSSProperties> = {
   setOptBtnPri:   { width: '100%', backgroundColor: BLUE, border: 'none', borderRadius: 6, padding: '9px 12px', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   setOptBtnSec:   { width: '100%', backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 12px', color: TEXT_SEC, fontSize: 15, fontWeight: 600, cursor: 'pointer', textAlign: 'left' },
   // Always-visible set assignment buttons
-  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '10px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.35, boxSizing: 'border-box' as const },
+  setAssignBtn:    { width: '100%', backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}`, borderRadius: 7, padding: '7px 12px', color: TEXT_PRI, fontSize: 18, fontWeight: 700, cursor: 'pointer', textAlign: 'left' as const, lineHeight: 1.35, boxSizing: 'border-box' as const },
   setAssignBtnActive: { backgroundColor: '#F3F4F6', border: `3px solid ${GOLD}` } as React.CSSProperties,
   setAssignBtnDim: { backgroundColor: '#F3F4F6', border: `3px solid ${NAVY}` } as React.CSSProperties,
   removeAssignBtn: { width: '100%', background: 'none', border: 'none', color: '#EF4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const, padding: '4px 0' },
