@@ -1103,9 +1103,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
                   {/* Feet */}
                   <div style={s.rodPart}>
-                    <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('feetLabel')}</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>{t('feetLabel')}</span>
                     <input
-                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 18 }}
+                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 19 }}
                       type="text" inputMode="numeric" pattern="[0-9]*" value={rodFeet}
                       onChange={e => {
                         const v = e.target.value;
@@ -1129,9 +1129,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodDiv} />
                   {/* Inches */}
                   <div style={s.rodPart}>
-                    <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('inchesLabel')}</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>{t('inchesLabel')}</span>
                     <select
-                      style={{ ...s.rodSelect, fontSize: 17 }} value={String(rodInches)}
+                      style={{ ...s.rodSelect, fontSize: 18 }} value={String(rodInches)}
                       onChange={e => updateFromFI(rodFeet, parseInt(e.target.value, 10), rodFracDec, rodFracLbl)}
                       disabled={!isEditMode}
                     >
@@ -1141,9 +1141,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodDiv} />
                   {/* Fraction */}
                   <div style={s.rodPart}>
-                    <span style={{ ...s.rodPartLbl, fontSize: 11 }}>{t('fracLabel')}</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>{t('fracLabel')}</span>
                     <select
-                      style={{ ...s.rodSelect, fontSize: 17 }} value={String(rodFracDec)}
+                      style={{ ...s.rodSelect, fontSize: 18 }} value={String(rodFracDec)}
                       onChange={e => {
                         const dec = parseFloat(e.target.value);
                         const lbl = FRACTION_OPTIONS.find(o => Math.abs(parseFloat(o.value) - dec) < 0.001)?.label ?? '0/0';
@@ -1154,12 +1154,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                       {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
-                  {/* Red ✕ clear button — soft light-red background */}
+                  {/* Red ✕ clear button — soft light-red background, slightly narrower */}
                   {isEditMode && (
                     <>
                       <div style={s.rodDiv} />
                       <button
-                        style={{ ...s.clearAllBtn, minWidth: 36, padding: '0 8px', backgroundColor: '#FEF2F2', borderRadius: 6 }}
+                        style={{ ...s.clearAllBtn, minWidth: 28, width: 28, padding: 0, backgroundColor: '#FEF2F2', borderRadius: 0 }}
                         onClick={() => updateFromFI('', 0, 0, '0/0')}
                         title={t('clearBtn')}
                       >
@@ -1169,10 +1169,11 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   )}
                 </div>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                /* Decimal Feet — same rodBox container style so heights match exactly */
+                <div style={{ ...s.rodBox, backgroundColor: '#FFFFFF', border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}` }}>
                   <input
                     className="eng-decimal-input"
-                    style={{ ...s.engInput, border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}`, height: 54, flex: 1 }}
+                    style={{ ...s.engInput, border: 'none', borderRadius: 0, height: '100%', flex: 1, backgroundColor: 'transparent', boxSizing: 'border-box' as const }}
                     type="text" inputMode="decimal" value={engFtStr}
                     onChange={e => {
                       const v = e.target.value;
@@ -1187,13 +1188,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     placeholder="0.00 ft" readOnly={!isEditMode}
                   />
                   {isEditMode && (
-                    <button
-                      style={{ ...s.clearAllBtn, minWidth: 36, height: 54, padding: '0 10px', backgroundColor: '#FEF2F2', borderRadius: 6, border: `1px solid #FECACA` }}
-                      onClick={() => updateFromEng('')}
-                      title={t('clearBtn')}
-                    >
-                      <span style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', lineHeight: 1 }}>✕</span>
-                    </button>
+                    <>
+                      <div style={s.rodDiv} />
+                      <button
+                        style={{ ...s.clearAllBtn, minWidth: 28, width: 28, padding: 0, backgroundColor: '#FEF2F2', borderRadius: 0 }}
+                        onClick={() => updateFromEng('')}
+                        title={t('clearBtn')}
+                      >
+                        <span style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', lineHeight: 1 }}>✕</span>
+                      </button>
+                    </>
                   )}
                 </div>
               )}
@@ -1210,7 +1214,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {rodFormat === 'eng' && fifDisplay && fifDisplay !== '—' && (
             <div style={s.autoGenRow}>
               <span style={s.autoGenLbl}>{t('autoGenFIF')}:</span>
-              <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={BLUE_ACC} size={15} />
+              <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={NAVY} size={15} />
             </div>
           )}
 
@@ -1716,7 +1720,7 @@ const s: Record<string, React.CSSProperties> = {
   fmtBtnOn:  { backgroundColor: NAVY, color: '#FFFFFF', fontWeight: 700, boxShadow: '0 1px 4px rgba(20,58,99,0.30)' } as React.CSSProperties,
 
   rodBox:      { display: 'flex', border: `1.5px solid ${BLUE_ACC}`, borderRadius: 6, backgroundColor: '#FAFAF8', overflow: 'hidden', minHeight: 54 },
-  rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 4px', gap: 4 },
+  rodPart:     { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 2px', gap: 4 },
   rodPartLbl:  { fontSize: 13, fontWeight: 800, color: TEXT_PRI, letterSpacing: '0.5px', textAlign: 'center' },
   rodFeetInput:{ width: '100%', height: 34, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 19, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', padding: 0 },
   rodSelect:   { width: '100%', height: 32, border: `1px solid ${BORDER}`, borderRadius: 4, textAlign: 'center', fontSize: 17, fontWeight: 700, color: TEXT_PRI, background: '#fff', outline: 'none', cursor: 'pointer' },
@@ -1726,7 +1730,7 @@ const s: Record<string, React.CSSProperties> = {
   engInput:   { height: 36, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${BORDER}`, borderRadius: 6, textAlign: 'center', fontSize: 19, fontWeight: 700, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box', padding: '0 12px' },
   autoGenRow: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexWrap: 'wrap' as const },
   autoGenLbl: { fontSize: 15, color: TEXT_PRI, fontWeight: 600 },
-  autoGenVal: { fontSize: 15, color: BLUE, fontWeight: 700 },
+  autoGenVal: { fontSize: 15, color: NAVY, fontWeight: 800 },
   warnMsg:    { fontSize: 14, color: '#EF4444', fontWeight: 600, padding: '4px 0' },
 
   autoBmBox:   { display: 'flex', alignItems: 'center', gap: 12, backgroundColor: NAVY, borderRadius: 6, padding: '7px 10px', border: '1.5px solid #2A5898' },
