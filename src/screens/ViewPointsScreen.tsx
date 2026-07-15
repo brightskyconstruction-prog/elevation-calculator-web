@@ -1281,13 +1281,40 @@ function exportPointsCSV(pts: SurveyPoint[], sets: SurveySet[]): void {
 export function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
   const { t, lang } = useLang();
   const { deletePoint } = useSurveyStore();
+  const es = lang === 'es';
 
-  const [search,       setSearch]       = useState('');
-  const [rawIdx,        setRawIdx]        = useState<number | null>(null);
-  const [showAllModal,  setShowAllModal]  = useState(false);
-  const [viewDetailsPt, setViewDetailsPt] = useState<SurveyPoint | null>(null);
+  // ── Inline bilingual strings ───────────────────────────────────────────────
+  const tx = {
+    pointsOf:       (a: number, b: number, total: number) =>
+                      es ? `Puntos ${a}–${b} de ${total}` : `Points ${a}–${b} of ${total}`,
+    navigateInMaps: es ? 'Navegar en Mapas'      : 'Navigate in Maps',
+    benchmarkInfo:  es ? 'Info de Referencia'    : 'Benchmark Info',
+    pointType:      es ? 'Tipo'                  : 'Type',
+    derivedFrom:    es ? 'Derivado de'           : 'Derived From',
+    metadata:       es ? 'Metadatos'             : 'Metadata',
+    deleteTitle:    es ? '¿Eliminar Punto?'      : 'Delete Point?',
+    deleteWarning:  es ? 'Esta acción eliminará permanentemente este punto de levantamiento. Esta acción no se puede deshacer.'
+                       : 'This action will permanently delete this survey point. This action cannot be undone.',
+    deleteBtn:      es ? 'Eliminar Punto'        : 'Delete Point',
+    cancelStr:      es ? 'Cancelar'              : 'Cancel',
+    editThisPoint:  es ? 'Editar este Punto'     : 'Edit this Point',
+    deleteThisPoint:es ? 'Eliminar este Punto'   : 'Delete this Point',
+    prevPage:       es ? 'Anterior'              : 'Previous',
+    nextPage:       es ? 'Siguiente'             : 'Next',
+    rodSuffix:      es ? 'Varilla'               : 'Rod',
+    elevSuffix:     es ? 'Elev.'                 : 'Elev.',
+  };
 
-  // ── derived maps ──────────────────────────────────────────────────────────
+  const CARDS_PER_PAGE = 2;
+
+  const [search,          setSearch]          = useState('');
+  const [rawPage,         setRawPage]         = useState<number | null>(null);
+  const [showAllModal,    setShowAllModal]     = useState(false);
+  const [viewDetailsPt,   setViewDetailsPt]   = useState<SurveyPoint | null>(null);
+  const [overflowPt,      setOverflowPt]      = useState<SurveyPoint | null>(null);
+  const [deleteConfirmPt, setDeleteConfirmPt] = useState<SurveyPoint | null>(null);
+
+  // ── Derived maps ───────────────────────────────────────────────────────────
   const setMap = useMemo(() => {
     const m: Record<string, SurveySet> = {};
     sets.forEach(s => { m[s.id] = s; });
@@ -1296,7 +1323,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
 
   const typeMap = useMemo(() => resolvePointTypes(points, sets), [points, sets]);
 
-  // Sorted + filtered list — used for both single-card nav and "View All" modal
+  // Sorted + filtered
   const sorted = useMemo(() => {
     const q = search.trim().toLowerCase();
     return [...points]
@@ -1313,7 +1340,9 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
       });
   }, [points, setMap, search]);
 
-  // Default to most recently updated point
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(sorted.length / CARDS_PER_PAGE));
+
   const defaultIdx = useMemo(() => {
     if (sorted.length === 0) return 0;
     let best = 0;
@@ -1323,49 +1352,51 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
     return best;
   }, [sorted]);
 
-  // Reset nav when search changes
-  useEffect(() => { setRawIdx(null); }, [search]);
+  // Reset page when search changes
+  useEffect(() => { setRawPage(null); }, [search]);
 
-  const curIdx = rawIdx !== null
-    ? Math.max(0, Math.min(rawIdx, sorted.length - 1))
-    : defaultIdx;
+  const curPage   = rawPage !== null
+    ? Math.max(0, Math.min(rawPage, totalPages - 1))
+    : Math.floor(defaultIdx / CARDS_PER_PAGE);
+  const pageStart = curPage * CARDS_PER_PAGE;
+  const pageEnd   = Math.min(pageStart + CARDS_PER_PAGE, sorted.length);
+  const pagePoints = sorted.slice(pageStart, pageEnd);
 
-  // ── date formatter ────────────────────────────────────────────────────────
+  // ── Date formatter ─────────────────────────────────────────────────────────
   const fmtMs = (ms: number) =>
-    new Date(ms).toLocaleDateString(lang === 'es' ? 'es-MX' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    new Date(ms).toLocaleDateString(es ? 'es-MX' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  // ── current point derived values ──────────────────────────────────────────
-  const pt      = sorted[curIdx] ?? null;
-  const ptType  = pt ? (typeMap.get(pt.id) ?? 'standalone') : 'standalone';
-  const theme   = TYPE_THEME[ptType];
-  const setObj  = pt?.setId ? setMap[pt.setId] : null;
-
-  const badgeLabel = ptType === 'benchmark' ? t('spBenchmarkBadge')
-                   : ptType === 'derived'   ? t('spDerivedBadge')
-                   : t('spStandaloneBadge');
-
-  // ── View Details modal derived values ──────────────────────────────────────
-  const dpType   = viewDetailsPt ? (typeMap.get(viewDetailsPt.id) ?? 'standalone') : 'standalone';
-  const dpTheme  = TYPE_THEME[dpType];
-  const dpSet    = viewDetailsPt?.setId ? setMap[viewDetailsPt.setId] : null;
-  const dpHasBm  = (viewDetailsPt?.bmElevation ?? 0) > 0;
-  const dpBadge  = dpType === 'benchmark' ? t('spBenchmarkBadge') : dpType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge');
-  const dpFif    = viewDetailsPt ? engToFIF(viewDetailsPt.engineeringFeet) : { feet: 0, inches: '0', frac: '0' };
-  const dpRFeet  = viewDetailsPt?.rodFeet ?? dpFif.feet;
-  const dpRInch  = viewDetailsPt?.rodInches != null ? String(viewDetailsPt.rodInches) : dpFif.inches;
-  const dpRFrac  = (viewDetailsPt?.rodFractionLabel && viewDetailsPt.rodFractionLabel !== '0')
-                    ? viewDetailsPt.rodFractionLabel : (dpFif.frac !== '0' ? dpFif.frac : '');
+  // ── View Details derived values ────────────────────────────────────────────
+  const dpType  = viewDetailsPt ? (typeMap.get(viewDetailsPt.id) ?? 'standalone') : 'standalone';
+  const dpTheme = TYPE_THEME[dpType];
+  const dpSet   = viewDetailsPt?.setId ? setMap[viewDetailsPt.setId] : null;
+  const dpHasBm = (viewDetailsPt?.bmElevation ?? 0) > 0;
+  const dpBadge = dpType === 'benchmark' ? t('spBenchmarkBadge') : dpType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge');
+  const dpFif   = viewDetailsPt ? engToFIF(viewDetailsPt.engineeringFeet) : { feet: 0, inches: '0', frac: '0' };
+  const dpRFeet = viewDetailsPt?.rodFeet ?? dpFif.feet;
+  const dpRInch = viewDetailsPt?.rodInches != null ? String(viewDetailsPt.rodInches) : dpFif.inches;
+  const dpRFrac = (viewDetailsPt?.rodFractionLabel && viewDetailsPt.rodFractionLabel !== '0')
+                   ? viewDetailsPt.rodFractionLabel : (dpFif.frac !== '0' ? dpFif.frac : '');
   const dpHasGps = viewDetailsPt?.createdLatitude != null && viewDetailsPt?.createdLongitude != null;
+  const mapsUrl  = dpHasGps
+    ? `https://maps.apple.com/?ll=${viewDetailsPt!.createdLatitude},${viewDetailsPt!.createdLongitude}&q=Survey+Point`
+    : '';
 
+  // ── Delete handlers ────────────────────────────────────────────────────────
   const handleDeleteSingle = useCallback((delPt: SurveyPoint) => {
-    if (!window.confirm(strings[lang].deletePointConfirmLabel(delPt.label, delPt.pointName))) return;
-    const prevLen = sorted.length;
+    setOverflowPt(null);
+    setDeleteConfirmPt(delPt);
+  }, []);
+
+  const doDelete = useCallback((delPt: SurveyPoint) => {
+    const newTotal = sorted.length - 1;
     deletePoint(projectId, delPt.id);
-    setRawIdx(prev => {
-      const newLen = prevLen - 1;
-      if (newLen <= 0) return 0;
-      return Math.min(prev ?? 0, newLen - 1);
-    });
+    setDeleteConfirmPt(null);
+    setViewDetailsPt(null);
+    if (newTotal > 0) {
+      const maxPage = Math.ceil(newTotal / CARDS_PER_PAGE) - 1;
+      setRawPage(prev => prev !== null ? Math.min(prev, maxPage) : null);
+    }
   }, [projectId, deletePoint, sorted.length]);
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1374,7 +1405,12 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' as const }}>
 
-      {/* ── Compact top bar ── */}
+      {/* ── Overflow menu backdrop ── */}
+      {overflowPt && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 190 }} onClick={() => setOverflowPt(null)} />
+      )}
+
+      {/* ── Top bar ── */}
       <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '5px 10px 6px', display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, letterSpacing: 0.7, textTransform: 'uppercase' as const, flex: 1, minWidth: 0 }}>
@@ -1383,13 +1419,10 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           {points.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
               <button
-                title={t('csvExportLabel')}
-                aria-label={t('csvExportLabel')}
+                title={t('csvExportLabel')} aria-label={t('csvExportLabel')}
                 style={{ height: 28, padding: '0 10px', backgroundColor: 'rgba(26,122,63,0.10)', border: '1px solid rgba(26,122,63,0.35)', borderRadius: 6, fontSize: 12, fontWeight: 800, color: '#1A7A3F', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const }}
                 onClick={() => exportPointsCSV(points, sets)}
-              >
-                {t('csvExportBtn')}
-              </button>
+              >{t('csvExportBtn')}</button>
               <button
                 style={{ height: 28, padding: '0 12px', backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 14, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
                 onClick={() => setShowAllModal(true)}
@@ -1401,24 +1434,20 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: TEXT_DIS, pointerEvents: 'none' }}>🔍</span>
           <input
             style={{ height: 38, backgroundColor: SURFACE, borderRadius: 6, border: `1.5px solid ${BORDER}`, padding: '0 36px 0 30px', fontSize: 15, color: TEXT_PRI, outline: 'none', boxSizing: 'border-box' as const, width: '100%' }}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={t('searchPlaceholder')}
-            aria-label="Search survey points"
-            type="search"
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder={t('searchPlaceholder')} aria-label="Search survey points" type="search"
           />
           {search.length > 0 && (
             <button
               style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', fontSize: 16, color: TEXT_DIS, cursor: 'pointer', padding: '4px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
-              onClick={() => setSearch('')}
-              aria-label="Clear search"
+              onClick={() => setSearch('')} aria-label="Clear search"
             >✕</button>
           )}
         </div>
       </div>
 
       {/* ── Main scrollable body ── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
 
         {/* Empty state */}
         {sorted.length === 0 && (
@@ -1433,58 +1462,112 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           </div>
         )}
 
-        {/* ── Single point card (compact) ── */}
-        {pt && (
-          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, overflow: 'hidden' }}>
+        {/* ── 2 cards per page ── */}
+        {pagePoints.map(pt => {
+          const ptType    = typeMap.get(pt.id) ?? 'standalone';
+          const theme     = TYPE_THEME[ptType];
+          const setObj    = pt.setId ? setMap[pt.setId] : null;
+          const hasBm     = (pt.bmElevation ?? 0) > 0;
+          const badge     = ptType === 'benchmark' ? t('spBenchmarkBadge')
+                          : ptType === 'derived'   ? t('spDerivedBadge')
+                          : t('spStandaloneBadge');
+          const isMenuOpen = overflowPt?.id === pt.id;
+          const { feet, inches, frac } = engToFIF(pt.engineeringFeet);
+          const fifStr = `${feet}'-${inches}${frac && frac !== '0' ? ` ${frac}` : ''}"`;
 
-            {/* Identity row: label · name · badge · set */}
-            <div style={{ padding: '10px 12px 8px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: NAVY, letterSpacing: 0.3 }}>{pt.label}</span>
-              {pt.pointName && <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>• {pt.pointName}</span>}
-              <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '2px 7px' }}>
-                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.6, color: theme.badgeTxt }}>{badgeLabel}</span>
-              </div>
-              {setObj && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 7px' }}>
-                  {setObj.setLabel && <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC }}>{setObj.setLabel}</span>}
-                  <span style={{ fontSize: 11, fontWeight: 700, color: NAVY }}>{setObj.name}</span>
+          return (
+            <div key={pt.id} style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, boxShadow: '0 1px 5px rgba(0,0,0,0.06)' }}>
+
+              {/* Header row */}
+              <div style={{ padding: '10px 10px 0', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                {/* Label + name + type chip */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                    <span style={{ fontSize: 15, fontWeight: 900, color: NAVY, letterSpacing: 0.2 }}>{pt.label}</span>
+                    {pt.pointName && (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>– {pt.pointName}</span>
+                    )}
+                    <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '2px 6px', flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: theme.badgeTxt }}>{badge}</span>
+                    </div>
+                  </div>
+                  {setObj && (
+                    <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {setObj.setLabel && (
+                        <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, backgroundColor: BLUE_DEEP, borderRadius: 3, padding: '1px 5px' }}>{setObj.setLabel}</span>
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_SEC }}>{setObj.name}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Action row: Edit | View Details | Delete */}
-            <div style={{ padding: '0 12px 10px', display: 'flex', gap: 6 }}>
-              {onEditPoint && (
-                <button onClick={() => onEditPoint(pt)}
-                  style={{ flex: 1, height: 32, backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 6, fontSize: 13, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
-                >{t('edit')}</button>
-              )}
-              <button onClick={() => setViewDetailsPt(pt)}
-                style={{ flex: 2, height: 32, backgroundColor: SURFACE, border: `1px solid ${BORDER_B}`, borderRadius: 6, fontSize: 13, fontWeight: 800, color: TEXT_SEC, cursor: 'pointer' }}
-              >{t('viewDetailsBtn')}</button>
-              <button onClick={() => handleDeleteSingle(pt)}
-                style={{ flex: 1, height: 32, backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.30)', borderRadius: 6, fontSize: 13, fontWeight: 800, color: RED, cursor: 'pointer' }}
-              >{t('delete')}</button>
-            </div>
-          </div>
-        )}
+                {/* ℹ + ⋮ buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, position: 'relative' as const }}>
+                  <button
+                    onClick={() => setViewDetailsPt(pt)}
+                    title={t('viewDetailsBtn')} aria-label={t('viewDetailsBtn')}
+                    style={{ width: 30, height: 30, borderRadius: 7, backgroundColor: SURFACE, border: `1px solid ${BORDER_B}`, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                  >ⓘ</button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setOverflowPt(isMenuOpen ? null : pt); }}
+                    aria-label="More options"
+                    style={{ width: 30, height: 30, borderRadius: 7, backgroundColor: isMenuOpen ? NAVY : SURFACE, border: `1px solid ${isMenuOpen ? NAVY : BORDER_B}`, color: isMenuOpen ? '#fff' : TEXT_SEC, fontSize: 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                  >⋮</button>
+                  {/* Overflow dropdown */}
+                  {isMenuOpen && (
+                    <div
+                      style={{ position: 'absolute', top: '100%', right: 0, zIndex: 200, backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, boxShadow: '0 8px 24px rgba(0,0,0,0.14)', overflow: 'hidden', minWidth: 165, marginTop: 4 }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {onEditPoint && (
+                        <button
+                          style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', borderBottom: `1px solid ${BORDER_S}`, textAlign: 'left' as const, fontSize: 14, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' as const }}
+                          onClick={() => { setOverflowPt(null); onEditPoint(pt); }}
+                        ><span style={{ fontSize: 15 }}>✏</span>{tx.editThisPoint}</button>
+                      )}
+                      <button
+                        style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', textAlign: 'left' as const, fontSize: 14, fontWeight: 700, color: RED, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' as const }}
+                        onClick={() => handleDeleteSingle(pt)}
+                      ><span style={{ fontSize: 15 }}>🗑</span>{tx.deleteThisPoint}</button>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-        {/* ── Compact Prev / Next navigation ── */}
+              {/* Summary row */}
+              <div style={{ padding: '6px 12px 10px', display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_DIS }}>{tx.rodSuffix}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</span>
+                <span style={{ color: BORDER_B, fontSize: 13 }}>•</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{fifStr}</span>
+                {hasBm && (
+                  <>
+                    <span style={{ color: BORDER_B, fontSize: 13 }}>•</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_DIS }}>{tx.elevSuffix}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: ptType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ── Page navigation ── */}
         {sorted.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
-              disabled={curIdx === 0}
-              style={{ flex: 1, height: 32, backgroundColor: curIdx === 0 ? SURFACE : CARD, border: `1px solid ${curIdx === 0 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === 0 ? TEXT_DIS : BLUE, cursor: curIdx === 0 ? 'default' : 'pointer', opacity: curIdx === 0 ? 0.4 : 1 }}
-              onClick={() => setRawIdx(curIdx - 1)}
-            >← {t('prevPoint')}</button>
-            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, whiteSpace: 'nowrap' as const }}>
-              {curIdx + 1}/{sorted.length}
+              disabled={curPage === 0}
+              style={{ flex: 1, height: 34, backgroundColor: curPage === 0 ? SURFACE : CARD, border: `1px solid ${curPage === 0 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 14, fontWeight: 800, color: curPage === 0 ? TEXT_DIS : BLUE, cursor: curPage === 0 ? 'default' : 'pointer', opacity: curPage === 0 ? 0.4 : 1 }}
+              onClick={() => setRawPage(Math.max(0, curPage - 1))}
+            >← {tx.prevPage}</button>
+            <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, whiteSpace: 'nowrap' as const, textAlign: 'center' as const, minWidth: 90 }}>
+              {tx.pointsOf(pageStart + 1, pageEnd, sorted.length)}
             </span>
             <button
-              disabled={curIdx === sorted.length - 1}
-              style={{ flex: 1, height: 32, backgroundColor: curIdx === sorted.length - 1 ? SURFACE : CARD, border: `1px solid ${curIdx === sorted.length - 1 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 15, fontWeight: 800, color: curIdx === sorted.length - 1 ? TEXT_DIS : BLUE, cursor: curIdx === sorted.length - 1 ? 'default' : 'pointer', opacity: curIdx === sorted.length - 1 ? 0.4 : 1 }}
-              onClick={() => setRawIdx(curIdx + 1)}
-            >{t('nextPoint')} →</button>
+              disabled={curPage >= totalPages - 1}
+              style={{ flex: 1, height: 34, backgroundColor: curPage >= totalPages - 1 ? SURFACE : CARD, border: `1px solid ${curPage >= totalPages - 1 ? BORDER : BLUE}`, borderRadius: 8, fontSize: 14, fontWeight: 800, color: curPage >= totalPages - 1 ? TEXT_DIS : BLUE, cursor: curPage >= totalPages - 1 ? 'default' : 'pointer', opacity: curPage >= totalPages - 1 ? 0.4 : 1 }}
+              onClick={() => setRawPage(Math.min(totalPages - 1, curPage + 1))}
+            >{tx.nextPage} →</button>
           </div>
         )}
 
@@ -1494,164 +1577,270 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
         </div>
       </div>
 
-      {/* ── Point Detail Modal ── */}
+      {/* ── Point Details Modal ── */}
       {viewDetailsPt && (
         <div
-          style={{ position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', boxSizing: 'border-box' as const }}
+          style={{ position: 'fixed' as const, inset: 0, backgroundColor: 'rgba(0,0,0,0.58)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', boxSizing: 'border-box' as const }}
           onClick={() => setViewDetailsPt(null)}
         >
-          <div
-            className="anp-modal-in"
-            style={{ backgroundColor: CARD, borderRadius: 18, width: '100%', maxWidth: 440, maxHeight: '88vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}
+          <div className="anp-modal-in"
+            style={{ backgroundColor: CARD, borderRadius: 18, width: '100%', maxWidth: 440, maxHeight: '90vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal header */}
-            <div style={{ backgroundColor: NAVY, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, borderLeft: `5px solid ${dpTheme.border}` }}>
-              <div>
-                <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800 }}>{viewDetailsPt.label}</span>
-                {viewDetailsPt.pointName && (
-                  <span style={{ color: 'rgba(255,255,255,0.72)', fontSize: 14, fontWeight: 600, marginLeft: 8 }}>• {viewDetailsPt.pointName}</span>
+            {/* Header */}
+            <div style={{ backgroundColor: NAVY, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' as const }}>
+                  <span style={{ color: '#FFFFFF', fontSize: 19, fontWeight: 900 }}>{viewDetailsPt.label}</span>
+                  {viewDetailsPt.pointName && (
+                    <span style={{ color: 'rgba(255,255,255,0.68)', fontSize: 13, fontWeight: 600 }}>– {viewDetailsPt.pointName}</span>
+                  )}
+                </div>
+                {dpSet && (
+                  <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {dpSet.setLabel && <span style={{ fontSize: 11, fontWeight: 800, color: GOLD, backgroundColor: 'rgba(244,176,42,0.18)', borderRadius: 3, padding: '1px 5px' }}>{dpSet.setLabel}</span>}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.65)' }}>{dpSet.name}</span>
+                  </div>
                 )}
               </div>
               <button onClick={() => setViewDetailsPt(null)}
-                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 22, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85, flexShrink: 0 }}
                 aria-label="Close"
               >✕</button>
             </div>
 
             {/* Scrollable body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              {/* Type + Set badges */}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
-                <div style={{ borderRadius: 6, border: `1px solid ${dpTheme.badgeBdr}`, backgroundColor: dpTheme.badgeBg, padding: '4px 10px' }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.8, color: dpTheme.badgeTxt }}>{dpBadge}</span>
+              {/* Rod Reading */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 10 }}>{t('rodReading')}</div>
+                <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('spFeetInches')}</div>
+                    <StackedFIFSpan feet={dpRFeet} inches={dpRInch} frac={dpRFrac} color={TEXT_PRI} size={18} />
+                  </div>
+                  <div style={{ width: 1, backgroundColor: BORDER_S, alignSelf: 'stretch' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('spDecimalFeet')}</div>
+                    <span style={{ fontSize: 20, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.engineeringFeet.toFixed(2)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: TEXT_SEC, marginLeft: 4 }}>ft</span>
+                  </div>
                 </div>
-                {dpSet && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, backgroundColor: BLUE_DEEP, borderRadius: 6, padding: '4px 10px', border: `1px solid ${BLUE}` }}>
-                    {dpSet.setLabel && <span style={{ fontSize: 12, fontWeight: 800, color: BLUE_ACC }}>{dpSet.setLabel} ·</span>}
-                    <span style={{ fontSize: 12, fontWeight: 700, color: NAVY }}>{dpSet.name}</span>
+              </div>
+
+              <div style={{ height: 1, backgroundColor: BORDER_S }} />
+
+              {/* Elevation */}
+              {dpHasBm && (
+                <>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 8 }}>{t('elevation')}</div>
+                    <span style={{ fontSize: 26, fontWeight: 800, color: dpType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>{(viewDetailsPt.bmElevation ?? 0).toFixed(2)}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: TEXT_SEC, marginLeft: 4 }}>ft</span>
+                  </div>
+                  <div style={{ height: 1, backgroundColor: BORDER_S }} />
+                </>
+              )}
+
+              {/* Benchmark Info */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 10 }}>{tx.benchmarkInfo}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS }}>{tx.pointType}:</span>
+                  <div style={{ borderRadius: 5, border: `1px solid ${dpTheme.badgeBdr}`, backgroundColor: dpTheme.badgeBg, padding: '3px 9px' }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.6, color: dpTheme.badgeTxt }}>{dpBadge}</span>
+                  </div>
+                </div>
+                {dpType === 'derived' && dpSet && (
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_DIS }}>{tx.derivedFrom}:</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 8px' }}>
+                      {dpSet.setLabel && <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC }}>{dpSet.setLabel}</span>}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: NAVY }}>{dpSet.name}</span>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Rod Reading card */}
-              <div style={{ backgroundColor: SURFACE, borderRadius: 10, padding: '12px 14px', border: `1px solid ${BORDER}` }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 10 }}>{t('rodReading')}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
+              {/* Location */}
+              {dpHasGps && (
+                <>
+                  <div style={{ height: 1, backgroundColor: BORDER_S }} />
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('spFeetInches')}</div>
-                    <StackedFIFSpan feet={dpRFeet} inches={dpRInch} frac={dpRFrac} color={TEXT_PRI} size={18} />
+                    <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 10 }}>{t('location')}</div>
+                    <div style={{ display: 'flex', gap: 14, marginBottom: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('spLatitude')}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.createdLatitude?.toFixed(6)}</div>
+                      </div>
+                      <div style={{ width: 1, backgroundColor: BORDER_S, alignSelf: 'stretch' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('spLongitude')}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.createdLongitude?.toFixed(6)}</div>
+                      </div>
+                    </div>
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 42, backgroundColor: NAVY, borderRadius: 9, color: '#FFFFFF', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}
+                    >📍 {tx.navigateInMaps}</a>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('spDecimalFeet')}</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.engineeringFeet.toFixed(2)} ft</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Elevation card */}
-              {dpHasBm && (
-                <div style={{ backgroundColor: dpType === 'benchmark' ? 'rgba(146,97,10,0.08)' : SURFACE, borderRadius: 10, padding: '12px 14px', border: `1px solid ${dpType === 'benchmark' ? 'rgba(146,97,10,0.28)' : BORDER}` }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 6 }}>{t('elevation')}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: dpType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>{(viewDetailsPt.bmElevation ?? 0).toFixed(2)} ft</div>
-                </div>
+                </>
               )}
 
-              {/* Dates card */}
-              <div style={{ backgroundColor: SURFACE, borderRadius: 10, padding: '12px 14px', border: `1px solid ${BORDER}` }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('spCreated')}</div>
+              {/* Metadata */}
+              <div style={{ height: 1, backgroundColor: BORDER_S }} />
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 1.2, textTransform: 'uppercase' as const, marginBottom: 10 }}>{tx.metadata}</div>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('spCreated')}</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(viewDetailsPt.createdAt)}</div>
                   </div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('spLastUpdated')}</div>
+                  <div style={{ width: 1, backgroundColor: BORDER_S, alignSelf: 'stretch' }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_DIS, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 5 }}>{t('spLastUpdated')}</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>{fmtMs(viewDetailsPt.updatedAt)}</div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* GPS card */}
-              {dpHasGps && (
-                <div style={{ backgroundColor: SURFACE, borderRadius: 10, padding: '12px 14px', border: `1px solid ${BORDER}` }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 8 }}>{t('location')}</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('spLatitude')}</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.createdLatitude?.toFixed(6)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('spLongitude')}</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.createdLongitude?.toFixed(6)}</div>
-                    </div>
-                  </div>
-                </div>
+            {/* Footer: Edit + Delete */}
+            <div style={{ padding: '10px 16px 14px', borderTop: `1px solid ${BORDER_S}`, display: 'flex', gap: 8, flexShrink: 0 }}>
+              {onEditPoint && (
+                <button
+                  style={{ flex: 1, height: 46, backgroundColor: BLUE_DEEP, border: `1px solid ${BLUE}`, borderRadius: 10, fontSize: 15, fontWeight: 800, color: BLUE_ACC, cursor: 'pointer' }}
+                  onClick={() => { setViewDetailsPt(null); onEditPoint(viewDetailsPt!); }}
+                >{t('edit')}</button>
               )}
-
+              <button
+                style={{ flex: 1, height: 46, backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.30)', borderRadius: 10, fontSize: 15, fontWeight: 800, color: RED, cursor: 'pointer' }}
+                onClick={() => handleDeleteSingle(viewDetailsPt!)}
+              >{tx.deleteBtn}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── View All Modal (centered overlay) ── */}
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteConfirmPt && (
+        <div
+          style={{ position: 'fixed' as const, inset: 0, backgroundColor: 'rgba(0,0,0,0.62)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
+          onClick={() => setDeleteConfirmPt(null)}
+        >
+          <div className="anp-modal-in"
+            style={{ backgroundColor: CARD, borderRadius: 18, width: '100%', maxWidth: 400, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.32)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ backgroundColor: '#7F1D1D', padding: '15px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ color: '#FFFFFF', fontSize: 17, fontWeight: 800 }}>{tx.deleteTitle}</span>
+              <button onClick={() => setDeleteConfirmPt(null)} style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 20, fontWeight: 700, cursor: 'pointer', padding: '2px 4px', opacity: 0.85, lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Point summary */}
+              {(() => {
+                const dcType  = typeMap.get(deleteConfirmPt.id) ?? 'standalone';
+                const dcTheme = TYPE_THEME[dcType];
+                const dcSet   = deleteConfirmPt.setId ? setMap[deleteConfirmPt.setId] : null;
+                const dcBadge = dcType === 'benchmark' ? t('spBenchmarkBadge') : dcType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge');
+                const dcHasBm = (deleteConfirmPt.bmElevation ?? 0) > 0;
+                return (
+                  <div style={{ backgroundColor: SURFACE, borderRadius: 10, padding: '11px 14px', border: `1px solid ${BORDER}`, borderLeft: `4px solid ${dcTheme.border}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' as const }}>
+                      <span style={{ fontSize: 16, fontWeight: 900, color: NAVY }}>{deleteConfirmPt.label}</span>
+                      {deleteConfirmPt.pointName && <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC }}>– {deleteConfirmPt.pointName}</span>}
+                      <div style={{ borderRadius: 4, border: `1px solid ${dcTheme.badgeBdr}`, backgroundColor: dcTheme.badgeBg, padding: '2px 6px' }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: dcTheme.badgeTxt }}>{dcBadge}</span>
+                      </div>
+                    </div>
+                    {dcSet && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                        {dcSet.setLabel && <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, backgroundColor: BLUE_DEEP, borderRadius: 3, padding: '1px 5px' }}>{dcSet.setLabel}</span>}
+                        <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_SEC }}>{dcSet.name}</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{tx.rodSuffix} {deleteConfirmPt.engineeringFeet.toFixed(2)} ft</span>
+                      {dcHasBm && (
+                        <><span style={{ color: BORDER_B }}>•</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{tx.elevSuffix} {(deleteConfirmPt.bmElevation ?? 0).toFixed(2)} ft</span></>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              <p style={{ margin: 0, fontSize: 13, color: '#7F1D1D', lineHeight: 1.65, fontWeight: 600 }}>{tx.deleteWarning}</p>
+              <button
+                style={{ height: 50, width: '100%', backgroundColor: RED, border: 'none', borderRadius: 10, color: '#FFFFFF', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}
+                onClick={() => doDelete(deleteConfirmPt!)}
+              >🗑 {tx.deleteBtn}</button>
+              <button
+                style={{ height: 44, width: '100%', backgroundColor: CARD, border: `1.5px solid ${BORDER_B}`, borderRadius: 10, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setDeleteConfirmPt(null)}
+              >{tx.cancelStr}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── View All Modal ── */}
       {showAllModal && (
         <div
-          style={{ position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
+          style={{ position: 'fixed' as const, inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
           onClick={() => setShowAllModal(false)}
         >
-          <div
-            className="anp-modal-in"
+          <div className="anp-modal-in"
             style={{ backgroundColor: CARD, borderRadius: 18, width: '100%', maxWidth: 440, maxHeight: '85vh', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Navy header */}
-            <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>
-                {t('allSurveyPoints')}
-              </span>
+            <div style={{ backgroundColor: NAVY, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div>
+                <span style={{ color: '#FFFFFF', fontSize: 17, fontWeight: 800 }}>{t('allSurveyPoints')}</span>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: 600, marginLeft: 8 }}>{sorted.length}</span>
+              </div>
               <button onClick={() => setShowAllModal(false)}
-                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', flexShrink: 0, opacity: 0.85 }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 22, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', flexShrink: 0, opacity: 0.85 }}
                 aria-label="Close"
               >✕</button>
             </div>
-            {/* Modal list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 8px', display: 'flex', flexDirection: 'column' }}>
               {sorted.map((mpt, i) => {
-                const mType  = typeMap.get(mpt.id) ?? 'standalone';
-                const mTheme = TYPE_THEME[mType];
-                const mSet   = mpt.setId ? setMap[mpt.setId] : null;
-                const mBadge = mType === 'benchmark' ? t('spBenchmarkBadge') : mType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge');
-                const isCur  = curIdx === i;
+                const mType   = typeMap.get(mpt.id) ?? 'standalone';
+                const mTheme  = TYPE_THEME[mType];
+                const mSet    = mpt.setId ? setMap[mpt.setId] : null;
+                const mBadge  = mType === 'benchmark' ? t('spBenchmarkBadge') : mType === 'derived' ? t('spDerivedBadge') : t('spStandaloneBadge');
+                const onPage  = i >= pageStart && i < pageEnd;
                 return (
                   <div key={mpt.id}
-                    style={{ backgroundColor: isCur ? '#EEF4FF' : SURFACE, borderRadius: 8, border: `1px solid ${isCur ? BLUE : BORDER}`, borderLeft: `3px solid ${mTheme.border}`, padding: '7px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                    onClick={() => { setRawIdx(i); setShowAllModal(false); }}
+                    style={{ borderRadius: 7, border: `1px solid ${onPage ? BLUE : 'transparent'}`, borderLeft: `3px solid ${mTheme.border}`, padding: '8px 10px', cursor: 'pointer', backgroundColor: onPage ? '#EEF4FF' : 'transparent', marginBottom: 2 }}
+                    onClick={() => { setRawPage(Math.floor(i / CARDS_PER_PAGE)); setShowAllModal(false); }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Row 1: PT label + point name */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
-                        <span style={{ fontSize: 18, fontWeight: 900, color: BLUE_ACC }}>{mpt.label}</span>
-                        {mpt.pointName && <span style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>• {mpt.pointName}</span>}
+                    {/* Row 1: label + name + type badge inline */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
+                      <span style={{ fontSize: 14, fontWeight: 900, color: BLUE_ACC }}>{mpt.label}</span>
+                      {mpt.pointName && <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI }}>– {mpt.pointName}</span>}
+                      <div style={{ borderRadius: 4, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '1px 5px' }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
                       </div>
-                      {/* Row 2: badges + values */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' as const }}>
-                        <div style={{ borderRadius: 4, border: `1px solid ${mTheme.badgeBdr}`, backgroundColor: mTheme.badgeBg, padding: '2px 7px' }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: mTheme.badgeTxt }}>{mBadge}</span>
-                        </div>
-                        {mSet && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, backgroundColor: BLUE_DEEP, borderRadius: 4, padding: '2px 7px' }}>
-                            {mSet.setLabel && <span style={{ fontSize: 13, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
-                            <span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>{mSet.name}</span>
-                          </div>
-                        )}
-                        <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
-                        {(mpt.bmElevation ?? 0) > 0 && (
-                          <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>· {(mpt.bmElevation ?? 0).toFixed(2)} ft elev</span>
-                        )}
-                      </div>
+                      {onPage && <span style={{ fontSize: 12, color: BLUE, marginLeft: 'auto', fontWeight: 700 }}>✓</span>}
                     </div>
-                    {isCur && <span style={{ fontSize: 20, color: BLUE, flexShrink: 0 }}>✓</span>}
+                    {/* Row 2: set + values */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 3, flexWrap: 'wrap' as const }}>
+                      {mSet && (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                            {mSet.setLabel && <span style={{ fontSize: 10, fontWeight: 800, color: BLUE_ACC }}>{mSet.setLabel}</span>}
+                            <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_DIS }}>{mSet.name}</span>
+                          </div>
+                          <span style={{ color: BORDER_B, fontSize: 11 }}>·</span>
+                        </>
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
+                      {(mpt.bmElevation ?? 0) > 0 && (
+                        <><span style={{ color: BORDER_B, fontSize: 11 }}>·</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_SEC, fontFamily: 'monospace' }}>{tx.elevSuffix} {(mpt.bmElevation ?? 0).toFixed(2)} ft</span></>
+                      )}
+                    </div>
                   </div>
                 );
               })}
