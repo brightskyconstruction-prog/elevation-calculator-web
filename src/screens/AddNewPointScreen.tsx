@@ -624,62 +624,94 @@ interface BmMismatchModalProps {
   derivedBm: number;
 }
 function BmMismatchModal({ open, onClose, onUseDerived, onEditValue, enteredBm, derivedBm }: BmMismatchModalProps) {
+  const { lang } = useLang();
+  const es = lang === 'es';
   if (!open) return null;
   const diff = Math.abs(enteredBm - derivedBm).toFixed(2);
+
+  // Inline bilingual strings — no i18n file changes required
+  const tx = {
+    title:      es ? 'Se Detectó una Diferencia en el Punto de Referencia' : 'Benchmark Mismatch Detected',
+    body:       es ? 'El Punto de Referencia / Elevación Conocida ingresado no coincide con la Referencia Calculada para el conjunto seleccionado.'
+                   : 'The Benchmark / Known Elevation you entered does not match the Derived Benchmark calculated for the selected set.',
+    entered:    es ? 'Referencia Ingresada:'    : 'Entered Benchmark:',
+    derived:    es ? 'Referencia Calculada:'    : 'Derived Benchmark:',
+    diff:       es ? 'Diferencia:'              : 'Difference:',
+    explain:    es ? 'Este punto pertenece a un conjunto existente. La referencia normalmente debe coincidir con la Referencia Calculada para ese conjunto. Por favor verifique que el valor fue ingresado correctamente antes de guardar.'
+                   : 'This point belongs to an existing set. The benchmark should normally match the calculated Derived Benchmark for that set. Please verify that the value was entered correctly before saving.',
+    useDerived: es ? 'Usar Referencia Calculada' : 'Use Derived Benchmark',
+    editValue:  es ? 'Editar Mi Valor'           : 'Edit My Value',
+    goBack:     es ? 'Entendido, Volver'         : 'Got it, Go Back',
+  };
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 500, backgroundColor: 'rgba(0,0,0,0.62)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px' }}
-      onClick={e => e.stopPropagation()}
+      onClick={onClose}
     >
       <div
         className="anp-modal-in"
         style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 400, width: '100%', boxShadow: '0 24px 64px rgba(0,0,0,0.32)', overflow: 'hidden', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Amber header */}
-        <div style={{ backgroundColor: '#B45309', padding: '18px 20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 36, lineHeight: 1 }}>⚠️</span>
-          <span style={{ color: '#FFFFFF', fontSize: 18, fontWeight: 800, letterSpacing: '0.2px', textAlign: 'center' as const, lineHeight: 1.25 }}>Benchmark Mismatch Detected</span>
+        {/* Amber header — icon + title + X close button in one row */}
+        <div style={{ backgroundColor: '#B45309', padding: '16px 16px 14px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+          <span style={{ flex: 1, color: '#FFFFFF', fontSize: 16, fontWeight: 800, letterSpacing: '0.1px', lineHeight: 1.3 }}>{tx.title}</span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{ flexShrink: 0, background: 'rgba(255,255,255,0.18)', border: '1.5px solid rgba(255,255,255,0.35)', borderRadius: 8, color: '#FFFFFF', fontSize: 17, fontWeight: 900, lineHeight: 1, cursor: 'pointer', padding: '5px 8px', marginLeft: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 32, minHeight: 32 }}
+          >✕</button>
         </div>
+
         {/* Scrollable body */}
-        <div style={{ padding: '18px 20px 22px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
+        <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
           <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, textAlign: 'center' as const, lineHeight: 1.65 }}>
-            The Benchmark / Known Elevation you entered does not match the Derived Benchmark calculated for the selected set.
+            {tx.body}
           </p>
+
           {/* Value comparison card */}
           <div style={{ backgroundColor: '#FFFBEB', border: '1.5px solid #FCD34D', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Entered Benchmark:</span>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{tx.entered}</span>
               <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{enteredBm.toFixed(2)} ft</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Derived Benchmark:</span>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{tx.derived}</span>
               <span style={{ fontSize: 16, fontWeight: 800, color: '#B45309' }}>{derivedBm.toFixed(2)} ft</span>
             </div>
             <div style={{ height: 1, backgroundColor: '#FCD34D' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Difference:</span>
+              <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{tx.diff}</span>
               <span style={{ fontSize: 16, fontWeight: 800, color: '#DC2626' }}>{diff} ft</span>
             </div>
           </div>
+
           <p style={{ margin: 0, fontSize: 13, color: TEXT_SEC, lineHeight: 1.7 }}>
-            This point belongs to an existing set. The benchmark should normally match the calculated Derived Benchmark for that set. Please verify that the value was entered correctly before saving.
+            {tx.explain}
           </p>
+
           {/* Primary: Use Derived BM */}
           <button
             style={{ height: 52, width: '100%', backgroundColor: NAVY, border: 'none', borderRadius: 10, color: '#FFFFFF', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.2px' }}
             onClick={onUseDerived}
-          >Use Derived Benchmark</button>
+          >{tx.useDerived}</button>
+
           {/* Secondary: Edit My Value */}
           <button
             style={{ height: 46, width: '100%', backgroundColor: '#FFFFFF', border: `1.5px solid ${NAVY}`, borderRadius: 10, color: NAVY, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
             onClick={onEditValue}
-          >Edit My Value</button>
-          {/* Tertiary: Cancel */}
+          >{tx.editValue}</button>
+
+          {/* Tertiary: Got it, Go Back — replaces Cancel */}
           <button
-            style={{ height: 40, width: '100%', backgroundColor: 'transparent', border: 'none', color: TEXT_DIS, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            style={{ height: 44, width: '100%', backgroundColor: '#F3F4F6', border: `1px solid ${BORDER}`, borderRadius: 10, color: TEXT_SEC, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
             onClick={onClose}
-          >Cancel</button>
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>←</span>
+            {tx.goBack}
+          </button>
         </div>
       </div>
     </div>
