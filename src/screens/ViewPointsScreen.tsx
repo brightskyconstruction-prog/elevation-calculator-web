@@ -1486,9 +1486,6 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                   {pt.pointName && (
                     <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>– {pt.pointName}</span>
                   )}
-                  <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '2px 6px', flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: theme.badgeTxt }}>{badge}</span>
-                  </div>
                 </div>
                 {/* ⓘ + ⋮ */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, position: 'relative' as const }}>
@@ -1524,16 +1521,22 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 </span>
               </div>
 
-              {/* ── Elevation + Set row ── */}
-              <div style={{ padding: '3px 12px 9px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {hasBm ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
-                  </div>
-                ) : (
-                  <div style={{ flex: 1 }} />
-                )}
+              {/* ── Elevation + Badge + Set row ── */}
+              <div style={{ padding: '3px 12px 9px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* Elevation — fills available space */}
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {hasBm && (
+                    <>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
+                    </>
+                  )}
+                </div>
+                {/* Badge — compact, between elevation and set */}
+                <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '1px 6px', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: theme.badgeTxt }}>{badge}</span>
+                </div>
+                {/* Set info */}
                 {setObj && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                     {setObj.setLabel && (
@@ -1796,7 +1799,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 const onPage  = i >= pageStart && i < pageEnd;
                 return (
                   <div key={mpt.id}
-                    style={{ borderLeft: `3px solid ${mTheme.border}`, padding: '9px 14px', cursor: 'pointer', backgroundColor: onPage ? '#EEF4FF' : i % 2 === 0 ? '#FAFAFA' : CARD, borderBottom: `1px solid ${BORDER_S}` }}
+                    style={{ borderLeft: `3px solid ${mTheme.border}`, padding: '9px 14px', cursor: 'pointer', backgroundColor: onPage ? '#EEF4FF' : i % 2 === 0 ? '#FAFAFA' : CARD, borderBottom: `1.5px solid ${BORDER_B}` }}
                     onClick={() => { setRawPage(Math.floor(i / CARDS_PER_PAGE)); setShowAllModal(false); }}
                   >
                     {/* Row 1: label + name + badge + checkmark */}
