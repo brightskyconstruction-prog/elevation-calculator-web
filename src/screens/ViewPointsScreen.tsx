@@ -153,11 +153,13 @@ interface GoalModalProps {
 }
 
 function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChangeInput, onSubmit, onClose }: GoalModalProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const es = lang === 'es';
   const [inputMode, setInputMode] = useState<'dec' | 'fif'>('dec');
   const [fifFeet,   setFifFeet]   = useState('0');
   const [fifInches, setFifInches] = useState('0');
   const [fifFrac,   setFifFrac]   = useState('0');
+  const [decFocused, setDecFocused] = useState(false);
 
   // Sync FIF state when modal opens/closes
   useEffect(() => {
@@ -171,13 +173,14 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
       }
     } else {
       setInputMode('dec');
+      setDecFocused(false);
     }
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!visible || !goalField || !goalPt) return null;
   const goalNum        = parseFloat(goalInput);
   const goalDiffSigned = !isNaN(goalNum) ? goalNum - existingVal : null;
-  const canSubmit      = !isNaN(goalNum);
+  const canSubmit      = !isNaN(goalNum) && goalNum > 0;
 
   const diffBg  = goalDiffSigned == null ? 'rgba(100,100,100,0.08)'
     : goalDiffSigned >  0.00005 ? 'rgba(31,138,77,0.12)'
@@ -192,13 +195,10 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
     : goalDiffSigned < -0.00005 ? RED
     : TEXT_SEC;
 
-  // Build FIF string for existing value display
   const exFIF = engToFIF(existingVal);
-  const exFIFStr = `${exFIF.feet}' - ${exFIF.inches}" ${exFIF.frac === '0' ? '' : exFIF.frac}`.trim();
 
   const handleSwitchMode = (mode: 'dec' | 'fif') => {
     if (mode === 'fif' && inputMode === 'dec') {
-      // sync decimal → FIF
       const n = parseFloat(goalInput);
       if (!isNaN(n) && n > 0) {
         const fif = engToFIF(n);
@@ -208,157 +208,187 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
     setInputMode(mode);
   };
 
-  return (
-    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', zIndex: 250 }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)' }} onClick={onClose} />
-      <div style={{ position: 'relative', width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: CARD, borderRadius: '20px 20px 0 0', padding: '4px 16px 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {/* Handle */}
-        <div style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: BORDER_B, marginTop: 10 }} />
+  const handleClear = () => {
+    onChangeInput('');
+    setFifFeet('0'); setFifInches('0'); setFifFrac('0');
+  };
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: NAVY, letterSpacing: 0.3 }}>
-            {goalField === 'rod' ? t('goalHeightTitle') : t('goalElevTitle')}
-            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC }}> · {goalPt.pointName ?? goalPt.label}</span>
-          </span>
-          <button style={{ background: 'none', border: 'none', fontSize: 20, color: TEXT_SEC, cursor: 'pointer', padding: '0 0 0 8px', lineHeight: 1 }} onClick={onClose}>✕</button>
+  return (
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 250, padding: 16, boxSizing: 'border-box' as const }}>
+      {/* Dimmed backdrop */}
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.62)' }} onClick={onClose} />
+
+      {/* Centered modal */}
+      <div className="anp-modal-in"
+        style={{ position: 'relative', width: '100%', maxWidth: 480, backgroundColor: CARD, borderRadius: 24, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.32)', display: 'flex', flexDirection: 'column' as const }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* ── Header ── */}
+        <div style={{ backgroundColor: NAVY, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 900, color: '#fff', letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
+              {goalField === 'rod' ? t('goalHeightTitle') : t('goalElevTitle')}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.65)', marginLeft: 6 }}>
+              · {goalPt.pointName ?? goalPt.label}
+            </span>
+          </div>
+          <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', padding: '2px 6px', opacity: 0.85, lineHeight: 1, flexShrink: 0 }} onClick={onClose}>✕</button>
         </div>
 
-        {/* Current value card */}
-        <div style={{ backgroundColor: '#0F2130', borderRadius: 10, padding: '10px 14px' }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.70)', letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
-            {goalField === 'rod' ? t('currentRodReading') : t('currentElevation')}
-          </span>
-          <div style={{ display: 'flex', gap: 14, marginTop: 6, alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.4 }}>{t('goalCurrentDecFt')}</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>{existingVal.toFixed(2)}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.75)' }}>ft</span>
+        {/* ── Two-column body ── */}
+        <div style={{ padding: '14px 16px 10px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+
+          {/* LEFT — Current reading card */}
+          <div style={{ flex: 2, backgroundColor: '#0F2130', borderRadius: 12, padding: '12px 13px', display: 'flex', flexDirection: 'column' as const, gap: 8, flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.60)', letterSpacing: 1, textTransform: 'uppercase' as const }}>
+              {goalField === 'rod' ? t('currentRodReading') : t('currentElevation')}
+            </span>
+            {/* Decimal feet */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.50)', letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('goalCurrentDecFt')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>{existingVal.toFixed(2)}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.70)' }}>ft</span>
               </div>
             </div>
-            <div style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.22)', alignSelf: 'stretch' }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.4 }}>{t('goalCurrentFIF')}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{exFIFStr}</span>
+            <div style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.10)' }} />
+            {/* FIF */}
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.50)', letterSpacing: 0.5, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t('goalCurrentFIF')}</div>
+              <StackedFIFSpan feet={exFIF.feet} inches={exFIF.inches} frac={exFIF.frac} color="#fff" size={16} />
             </div>
+          </div>
+
+          {/* RIGHT — Goal entry section */}
+          <div style={{ flex: 3, display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.8, textTransform: 'uppercase' as const }}>
+              {goalField === 'rod' ? t('goalRodReading') : t('goalElevInput')}
+            </span>
+
+            {/* Decimal input */}
+            {inputMode === 'dec' && (
+              <input
+                style={{ width: '100%', height: 52, backgroundColor: '#fff', borderRadius: 10, border: `2px solid ${BLUE_ACC}`, fontSize: 26, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                value={goalInput}
+                onChange={e => {
+                  const v = e.target.value;
+                  onChangeInput(v);
+                  const n = parseFloat(v);
+                  if (!isNaN(n) && n > 0) {
+                    const fif = engToFIF(n);
+                    setFifFeet(fif.feet); setFifInches(fif.inches); setFifFrac(fif.frac);
+                  }
+                }}
+                onFocus={e => { setDecFocused(true); e.target.select(); }}
+                onBlur={() => setDecFocused(false)}
+                inputMode="decimal"
+                placeholder={decFocused ? '' : '0.00'}
+                autoFocus
+              />
+            )}
+
+            {/* FIF input */}
+            {inputMode === 'fif' && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('feetLabel')}</span>
+                  <input
+                    style={{ width: '100%', height: 46, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 18, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                    type="text" inputMode="numeric" pattern="[0-9]*"
+                    value={fifFeet}
+                    onChange={e => {
+                      const v = e.target.value;
+                      if (v === '' || /^\d+$/.test(v)) {
+                        setFifFeet(v);
+                        const eng = fifToEng(v || '0', fifInches, fifFrac);
+                        onChangeInput(eng > 0 ? eng.toFixed(2) : '');
+                      }
+                    }}
+                    onKeyDown={e => {
+                      const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
+                      if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
+                    }}
+                    onFocus={e => e.target.select()}
+                    placeholder="0"
+                    autoFocus
+                  />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('inchesLabel')}</span>
+                  <select
+                    style={{ width: '100%', height: 46, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 16, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                    value={fifInches}
+                    onChange={e => {
+                      setFifInches(e.target.value);
+                      const eng = fifToEng(fifFeet, e.target.value, fifFrac);
+                      onChangeInput(eng > 0 ? eng.toFixed(2) : '');
+                    }}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => <option key={i} value={String(i)}>{i}</option>)}
+                  </select>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('fracLabel')}</span>
+                  <select
+                    style={{ width: '100%', height: 46, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 11, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                    value={fifFrac}
+                    onChange={e => {
+                      setFifFrac(e.target.value);
+                      const eng = fifToEng(fifFeet, fifInches, e.target.value);
+                      onChangeInput(eng > 0 ? eng.toFixed(2) : '');
+                    }}
+                  >
+                    {FRAC_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Clear button */}
+            <button
+              style={{ alignSelf: 'flex-start', height: 28, padding: '0 10px', backgroundColor: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.40)', borderRadius: 6, fontSize: 12, fontWeight: 700, color: RED, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const }}
+              onClick={handleClear}
+            >❌ {es ? 'Limpiar' : 'Clear'}</button>
+
+            {/* Live diff preview */}
+            {goalDiffSigned != null && (
+              <div style={{ borderRadius: 8, padding: '6px 10px', border: `1.5px solid ${diffBdr}`, backgroundColor: diffBg }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.6, textTransform: 'uppercase' as const, marginBottom: 2 }}>{t('difference')}</div>
+                <span style={{ fontSize: 13, fontWeight: 800, color: diffClr }}>
+                  {goalDiffSigned > 0 ? '+' : ''}{goalDiffSigned.toFixed(2)} ft{'  '}
+                  {goalDiffSigned >  0.00005 ? t('fillRequired') :
+                   goalDiffSigned < -0.00005 ? t('cutRequired') : t('atGrade')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Format toggle */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        {/* ── Toggle — bottom segmented control ── */}
+        <div style={{ padding: '10px 16px', borderTop: `1px solid ${BORDER_S}`, display: 'flex', gap: 6, flexShrink: 0 }}>
           <button
-            style={{ flex: 1, height: 36, backgroundColor: inputMode === 'dec' ? BLUE_ACC : SURFACE, border: `1.5px solid ${inputMode === 'dec' ? BLUE_ACC : BORDER}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: inputMode === 'dec' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
+            style={{ flex: 1, height: 38, backgroundColor: inputMode === 'dec' ? BLUE_ACC : SURFACE, border: `1.5px solid ${inputMode === 'dec' ? BLUE_ACC : BORDER}`, borderRadius: 8, fontSize: 14, fontWeight: 700, color: inputMode === 'dec' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
             onClick={() => handleSwitchMode('dec')}
           >{t('goalInputDec')}</button>
           <button
-            style={{ flex: 1, height: 36, backgroundColor: inputMode === 'fif' ? BLUE_ACC : SURFACE, border: `1.5px solid ${inputMode === 'fif' ? BLUE_ACC : BORDER}`, borderRadius: 8, fontSize: 13, fontWeight: 700, color: inputMode === 'fif' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
+            style={{ flex: 1, height: 38, backgroundColor: inputMode === 'fif' ? BLUE_ACC : SURFACE, border: `1.5px solid ${inputMode === 'fif' ? BLUE_ACC : BORDER}`, borderRadius: 8, fontSize: 14, fontWeight: 700, color: inputMode === 'fif' ? '#fff' : TEXT_SEC, cursor: 'pointer' }}
             onClick={() => handleSwitchMode('fif')}
           >{t('goalInputFIF')}</button>
         </div>
 
-        {/* Goal section label */}
-        <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, letterSpacing: 0.6, textTransform: 'uppercase' as const, textAlign: 'center', marginBottom: -4 }}>
-          {goalField === 'rod' ? t('goalRodReading') : t('goalElevInput')}
-        </span>
-
-        {/* Decimal input */}
-        {inputMode === 'dec' && (
-          <input
-            style={{ width: '100%', height: 52, backgroundColor: '#fff', borderRadius: 8, border: `2px solid ${BLUE_ACC}`, fontSize: 24, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
-            value={goalInput}
-            onChange={e => {
-              const v = e.target.value;
-              onChangeInput(v);
-              const n = parseFloat(v);
-              if (!isNaN(n) && n > 0) {
-                const fif = engToFIF(n);
-                setFifFeet(fif.feet); setFifInches(fif.inches); setFifFrac(fif.frac);
-              }
-            }}
-            inputMode="decimal"
-            placeholder="0.00"
-            autoFocus
-          />
-        )}
-
-        {/* FIF input */}
-        {inputMode === 'fif' && (
-          <div style={{ display: 'flex', gap: 6, width: '100%' }}>
-            {/* Feet */}
-            <div style={{ flex: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('feetLabel')}</span>
-              <input
-                style={{ width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 22, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
-                type="text" inputMode="numeric" pattern="[0-9]*"
-                value={fifFeet}
-                onChange={e => {
-                  const v = e.target.value;
-                  if (v === '' || /^\d+$/.test(v)) {
-                    setFifFeet(v);
-                    const eng = fifToEng(v || '0', fifInches, fifFrac);
-                    onChangeInput(eng > 0 ? eng.toFixed(2) : '');
-                  }
-                }}
-                onKeyDown={e => {
-                  const allowed = ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End'];
-                  if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault();
-                }}
-                placeholder="0"
-                autoFocus
-              />
-            </div>
-            {/* Inches */}
-            <div style={{ flex: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('inchesLabel')}</span>
-              <select
-                style={{ width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 20, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
-                value={fifInches}
-                onChange={e => {
-                  setFifInches(e.target.value);
-                  const eng = fifToEng(fifFeet, e.target.value, fifFrac);
-                  onChangeInput(eng > 0 ? eng.toFixed(2) : '');
-                }}
-              >
-                {Array.from({ length: 12 }, (_, i) => <option key={i} value={String(i)}>{i}</option>)}
-              </select>
-            </div>
-            {/* Fraction */}
-            <div style={{ flex: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, textAlign: 'center', letterSpacing: 0.4 }}>{t('fracLabel')}</span>
-              <select
-                style={{ width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 6, border: `2px solid ${BLUE_ACC}`, fontSize: 15, fontWeight: 700, color: '#000', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
-                value={fifFrac}
-                onChange={e => {
-                  setFifFrac(e.target.value);
-                  const eng = fifToEng(fifFeet, fifInches, e.target.value);
-                  onChangeInput(eng > 0 ? eng.toFixed(2) : '');
-                }}
-              >
-                {FRAC_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-          </div>
-        )}
-
-        {/* Live diff preview */}
-        {goalDiffSigned != null && (
-          <div style={{ borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, border: `2px solid ${diffBdr}`, backgroundColor: diffBg }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>{t('difference')}</span>
-            <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 0.3, textAlign: 'center', color: diffClr }}>
-              {goalDiffSigned > 0 ? '+' : ''}{goalDiffSigned.toFixed(2)} ft{'  '}
-              {goalDiffSigned >  0.00005 ? t('fillRequired') :
-               goalDiffSigned < -0.00005 ? t('cutRequired') : t('atGrade')}
-            </span>
-          </div>
-        )}
-
-        {/* Submit */}
-        <button
-          style={{ height: 50, backgroundColor: canSubmit ? NAVY : SURFACE, border: 'none', borderRadius: 10, color: canSubmit ? '#fff' : TEXT_DIS, fontSize: 16, fontWeight: 800, letterSpacing: 0.4, cursor: canSubmit ? 'pointer' : 'default', opacity: canSubmit ? 1 : 0.35, boxShadow: canSubmit ? '0 3px 8px rgba(20,58,99,0.35)' : 'none' }}
-          onClick={onSubmit}
-          disabled={!canSubmit}
-        >{t('setGoal')}</button>
+        {/* ── Footer: Cancel + Apply ── */}
+        <div style={{ padding: '0 16px 18px', display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button
+            style={{ flex: 1, height: 44, backgroundColor: SURFACE, border: `1.5px solid ${BORDER_B}`, borderRadius: 10, fontSize: 15, fontWeight: 700, color: TEXT_SEC, cursor: 'pointer' }}
+            onClick={onClose}
+          >{es ? 'Cancelar' : 'Cancel'}</button>
+          <button
+            style={{ flex: 2, height: 44, backgroundColor: canSubmit ? NAVY : SURFACE, border: 'none', borderRadius: 10, color: canSubmit ? '#fff' : TEXT_DIS, fontSize: 15, fontWeight: 800, letterSpacing: 0.3, cursor: canSubmit ? 'pointer' : 'default', opacity: canSubmit ? 1 : 0.35, boxShadow: canSubmit ? '0 3px 8px rgba(20,58,99,0.35)' : 'none' }}
+            onClick={onSubmit}
+            disabled={!canSubmit}
+          >{es ? 'Aplicar Lectura' : 'Apply Goal Reading'}</button>
+        </div>
       </div>
     </div>
   );
@@ -609,8 +639,9 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
       {showComparison && hasSelection ? (
         /* ── Comparison results view ── */
         <div style={{ flex: 1, overflowY: 'auto', padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {/* Summary card — swap left, result text right */}
+          {/* Summary card — result text left, swap right */}
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: '7px 10px 6px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <span style={{ flex: 1, fontSize: 17, fontWeight: 700, lineHeight: 1.4, color: compColor }}>{compText}</span>
             <button
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: NAVY, border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 6px rgba(20,58,99,0.30)', minWidth: 62 }}
               onClick={handleSwap}
@@ -618,7 +649,6 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
               <span style={{ fontSize: 17, color: '#fff', fontWeight: 800, lineHeight: 1 }}>⇆</span>
               <span style={{ fontSize: 14, color: '#fff', fontWeight: 800, lineHeight: 1.2, textAlign: 'center' }}>{t('swapPoints')}</span>
             </button>
-            <span style={{ flex: 1, fontSize: 17, fontWeight: 700, lineHeight: 1.4, color: compColor }}>{compText}</span>
           </div>
 
           {/* 3-column table card */}
