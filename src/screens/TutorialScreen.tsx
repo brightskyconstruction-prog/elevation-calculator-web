@@ -10,7 +10,6 @@ const TEXT_PRI = '#111827';
 const TEXT_SEC = '#374151';
 const TEXT_DIS = '#9CA3AF';
 const BORDER   = '#E5E7EB';
-const GREEN    = '#1F8A4D';
 
 // ── Tutorial data ─────────────────────────────────────────────────────────────
 interface VideoEntry {
