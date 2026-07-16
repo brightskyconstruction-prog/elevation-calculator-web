@@ -9,6 +9,7 @@ import CalculatorScreen   from './screens/CalculatorScreen';
 import SplashScreenWeb    from './screens/SplashScreenWeb';
 import LoginScreenWeb     from './screens/LoginScreenWeb';
 import SlopeScreen        from './screens/SlopeScreen';
+import TutorialScreen     from './screens/TutorialScreen';
 import OfflineIndicator   from './components/OfflineIndicator';
 import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
@@ -361,12 +362,14 @@ function AppInner() {
   const projectId = activeProjectId ?? 'default-project';
 
   // ── Main tab definitions (translated) ───────────────────────────
-  const MAIN_TABS: { id: MainTab; label: string }[] = [
-    { id: 'add',    label: t('tabAdd')    },
-    { id: 'points', label: t('tabPoints') },
-    { id: 'slope',  label: t('tabSlope')  },
-    { id: 'sets',   label: t('tabSets')   },
-    { id: 'calc',   label: t('tabCalc')   },
+  // `lines` forces a two-line label for tabs that need to wrap.
+  const MAIN_TABS: { id: MainTab; label: string; lines?: [string, string] }[] = [
+    { id: 'add',      label: t('tabAdd')    },
+    { id: 'points',   label: t('tabPoints') },
+    { id: 'slope',    label: t('tabSlope')  },
+    { id: 'sets',     label: t('tabSets'),  lines: (lang === 'en' ? ['View', 'Sets'] : ['Ver', 'Conj.']) },
+    { id: 'calc',     label: t('tabCalc')   },
+    { id: 'tutorial', label: '?',           lines: ['Help', '?']  },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
@@ -425,6 +428,7 @@ function AppInner() {
       <nav style={styles.tabBar} role="tablist">
         {MAIN_TABS.map(tab => {
           const isActive = activeTab === tab.id;
+          const isTutorial = tab.id === 'tutorial';
           return (
             <button
               key={tab.id}
@@ -433,10 +437,17 @@ function AppInner() {
               style={{
                 ...styles.tab,
                 ...(isActive ? styles.tabActive : {}),
+                ...(isTutorial ? styles.tabTutorial : {}),
+                ...(isActive && isTutorial ? styles.tabTutorialActive : {}),
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
-              {tab.label}
+              {tab.lines ? (
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.15 }}>
+                  <span>{tab.lines[0]}</span>
+                  <span>{tab.lines[1]}</span>
+                </span>
+              ) : tab.label}
             </button>
           );
         })}
@@ -470,6 +481,9 @@ function AppInner() {
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
           <CalculatorScreen />
+        </div>
+        <div style={{ ...styles.screen, display: activeTab === 'tutorial' ? 'flex' : 'none' }}>
+          <TutorialScreen />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'slope'  ? 'flex' : 'none' }}>
           <SlopeScreen
@@ -738,25 +752,26 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink:      0,
     width:           '100%',
     boxSizing:       'border-box' as const,
-    padding:         '4px 6px',
-    gap:             3,
+    padding:         '3px 4px',
+    gap:             2,
   },
   tab: {
     flex:            1,
     minWidth:        0,
-    padding:         '5px 3px',
+    padding:         '4px 2px',
     display:         'flex',
     alignItems:      'center',
     justifyContent:  'center',
-    fontSize:        '13px',
+    fontSize:        '11px',
     fontWeight:      '600',
     lineHeight:      '1.2',
     textAlign:       'center' as const,
     color:           '#6B7280',
     backgroundColor: 'transparent',
     border:          'none',
-    borderRadius:    20,
+    borderRadius:    16,
     cursor:          'pointer',
+    whiteSpace:      'normal' as const,
     transition:      'background-color 0.2s, color 0.2s, box-shadow 0.2s',
   },
   tabActive: {
@@ -764,6 +779,14 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#DBEAFE',
     fontWeight:      '700',
     boxShadow:       '0 1px 4px rgba(20,58,99,0.12)',
+  },
+  tabTutorial: {
+    color:           '#6B7280',
+  },
+  tabTutorialActive: {
+    color:           NAVY,
+    backgroundColor: '#DBEAFE',
+    fontWeight:      '700',
   },
   content: {
     flex:          1,
