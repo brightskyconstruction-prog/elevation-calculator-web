@@ -462,9 +462,11 @@ function ConverterView() {
                 style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
                 value={cEng} onChange={e => onEngChange(e.target.value)}
                 inputMode="decimal"
+                enterKeyHint="done"
                 placeholder={cEngFocused ? '' : '0.00'}
                 onFocus={() => setCEngFocused(true)}
                 onBlur={() => setCEngFocused(false)}
+                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>ft</span>
             </div>
