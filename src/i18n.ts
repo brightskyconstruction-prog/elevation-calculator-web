@@ -437,6 +437,72 @@ const en = {
   addNewPointBtn:      '+ Add New Point',
   deletePointConfirmLabel: (label: string, name?: string) =>
     `Delete ${label}${name ? ` ("${name}")` : ''}? This action cannot be undone.`,
+
+  // ── Tutorial / Help tab ───────────────────────────────────────────
+  tutFaqVideos:        'FAQ VIDEOS',
+  tutSearch:           'Search',
+  tutSearchPlaceholder:'Search tutorials…',
+  tutNoResults:        'No tutorial videos found.',
+  tutNoResultsHint:    'Try searching with a different keyword.',
+  tutFeaturedVideo:    'Featured Video',
+  tutTutorialVideos:   'Tutorial Videos',
+  tutFooterNote:       'New tutorials are added regularly. Check back soon for more guides.',
+  tutComingSoon:       'Coming Soon',
+  tutCount:            (n: number) => `${n} tutorial${n !== 1 ? 's' : ''}`,
+
+  // Categories
+  tutCatGettingStarted: 'Getting Started',
+  tutCatSurveyPoints:   'Survey Points',
+  tutCatCompareHeight:  'Compare Height',
+  tutCatSlope:          'Slope',
+  tutCatViewSets:       'View Sets',
+  tutCatCalculator:     'Calculator',
+
+  // Featured video
+  tutFeaturedTitle:    'Grade & Elevation Calculator — Overview',
+  tutFeaturedDesc:     'A quick introduction to the core workflows: adding points, comparing heights, and reading elevations.',
+
+  // Getting Started videos
+  tutGS1Title:         'App overview and navigation',
+  tutGS1Desc:          'Tour every tab and learn the core layout.',
+  tutGS2Title:         'Creating your first project',
+  tutGS2Desc:          'Set up a new survey project from scratch.',
+
+  // Survey Points videos
+  tutSP1Title:         'Adding a benchmark',
+  tutSP1Desc:          'Record a known elevation as your reference.',
+  tutSP2Title:         'Adding derived points',
+  tutSP2Desc:          'Calculate elevations from rod readings.',
+  tutSP3Title:         'Managing point sets',
+  tutSP3Desc:          'Organise points into named sets.',
+
+  // Compare Height videos
+  tutCH1Title:         'Comparing two survey points',
+  tutCH1Desc:          'See the height difference between any two points.',
+  tutCH2Title:         'Setting a goal rod reading',
+  tutCH2Desc:          'Enter a target rod reading and see fill/cut.',
+  tutCH3Title:         'Setting a goal elevation',
+  tutCH3Desc:          'Enter a target elevation and calculate the cut/fill.',
+
+  // Slope videos
+  tutSL1Title:         'Creating slopes',
+  tutSL1Desc:          'Define a slope between two survey points.',
+  tutSL2Title:         'Reading slope results',
+  tutSL2Desc:          'Interpret the percentage and ratio output.',
+
+  // View Sets videos
+  tutVS1Title:         'Creating sets',
+  tutVS1Desc:          'Group related points into a named set.',
+  tutVS2Title:         'Editing sets',
+  tutVS2Desc:          'Rename, reorder, and update set members.',
+  tutVS3Title:         'Exporting sets',
+  tutVS3Desc:          'Export set data as CSV for further analysis.',
+
+  // Calculator videos
+  tutCA1Title:         'Elevation calculator',
+  tutCA1Desc:          'Convert between decimal feet and FIF.',
+  tutCA2Title:         'Unit conversions',
+  tutCA2Desc:          'Switch between feet, inches, and fractions.',
 };
 
 const es: typeof en = {
@@ -875,6 +941,72 @@ const es: typeof en = {
   addNewPointBtn:      '+ Nuevo Punto',
   deletePointConfirmLabel: (label: string, name?: string) =>
     `¿Eliminar ${label}${name ? ` ("${name}")` : ''}? Esta acción no se puede deshacer.`,
+
+  // ── Tutorial / Help tab ───────────────────────────────────────────
+  tutFaqVideos:        'VIDEOS FAQ',
+  tutSearch:           'Buscar',
+  tutSearchPlaceholder:'Buscar tutoriales…',
+  tutNoResults:        'No se encontraron videos.',
+  tutNoResultsHint:    'Intenta buscar con otra palabra clave.',
+  tutFeaturedVideo:    'Video Destacado',
+  tutTutorialVideos:   'Videos Tutoriales',
+  tutFooterNote:       'Se agregan tutoriales regularmente. Vuelve pronto para más guías.',
+  tutComingSoon:       'Próximamente',
+  tutCount:            (n: number) => `${n} tutorial${n !== 1 ? 'es' : ''}`,
+
+  // Categories
+  tutCatGettingStarted: 'Primeros Pasos',
+  tutCatSurveyPoints:   'Puntos de Levantamiento',
+  tutCatCompareHeight:  'Comparar Altura',
+  tutCatSlope:          'Pendiente',
+  tutCatViewSets:       'Ver Conjuntos',
+  tutCatCalculator:     'Calculadora',
+
+  // Featured video
+  tutFeaturedTitle:    'Calculadora de Grado y Elevación — Resumen',
+  tutFeaturedDesc:     'Una introducción rápida a los flujos de trabajo principales: agregar puntos, comparar alturas y leer elevaciones.',
+
+  // Getting Started videos
+  tutGS1Title:         'Resumen de la app y navegación',
+  tutGS1Desc:          'Recorre cada pestaña y aprende el diseño principal.',
+  tutGS2Title:         'Crear tu primer proyecto',
+  tutGS2Desc:          'Configura un nuevo proyecto de levantamiento desde cero.',
+
+  // Survey Points videos
+  tutSP1Title:         'Agregar una referencia',
+  tutSP1Desc:          'Registra una elevación conocida como referencia.',
+  tutSP2Title:         'Agregar puntos derivados',
+  tutSP2Desc:          'Calcula elevaciones desde lecturas de varilla.',
+  tutSP3Title:         'Gestionar conjuntos de puntos',
+  tutSP3Desc:          'Organiza puntos en conjuntos con nombre.',
+
+  // Compare Height videos
+  tutCH1Title:         'Comparar dos puntos de levantamiento',
+  tutCH1Desc:          'Ve la diferencia de altura entre dos puntos.',
+  tutCH2Title:         'Establecer lectura de varilla objetivo',
+  tutCH2Desc:          'Ingresa una lectura objetivo y ve el relleno/corte.',
+  tutCH3Title:         'Establecer elevación objetivo',
+  tutCH3Desc:          'Ingresa una elevación objetivo y calcula el corte/relleno.',
+
+  // Slope videos
+  tutSL1Title:         'Crear pendientes',
+  tutSL1Desc:          'Define una pendiente entre dos puntos de levantamiento.',
+  tutSL2Title:         'Leer resultados de pendiente',
+  tutSL2Desc:          'Interpreta el porcentaje y la relación de salida.',
+
+  // View Sets videos
+  tutVS1Title:         'Crear conjuntos',
+  tutVS1Desc:          'Agrupa puntos relacionados en un conjunto con nombre.',
+  tutVS2Title:         'Editar conjuntos',
+  tutVS2Desc:          'Renombra, reordena y actualiza los miembros del conjunto.',
+  tutVS3Title:         'Exportar conjuntos',
+  tutVS3Desc:          'Exporta datos del conjunto como CSV para más análisis.',
+
+  // Calculator videos
+  tutCA1Title:         'Calculadora de elevación',
+  tutCA1Desc:          'Convierte entre pies decimales y pies-pulgadas-fracción.',
+  tutCA2Title:         'Conversiones de unidades',
+  tutCA2Desc:          'Cambia entre pies, pulgadas y fracciones.',
 };
 
 export const strings: Record<Lang, typeof en> = { en, es };
