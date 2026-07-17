@@ -1572,29 +1572,27 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 </span>
               </div>
 
-              {/* ── Elevation + Badge + Set row ── */}
-              <div style={{ padding: '3px 12px 9px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                {/* Elevation — fills available space */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {hasBm && (
-                    <>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
-                    </>
-                  )}
-                </div>
-                {/* Badge — compact, between elevation and set */}
-                <div style={{ borderRadius: 4, border: `1px solid ${theme.badgeBdr}`, backgroundColor: theme.badgeBg, padding: '1px 6px', flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: theme.badgeTxt }}>{badge}</span>
-                </div>
-                {/* Set info */}
+              {/* ── Elevation + Badge + Set — single compact row ── */}
+              <div style={{ padding: '3px 12px 9px', display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, overflow: 'hidden' }}>
+                {hasBm && (
+                  <>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
+                  </>
+                )}
+                {/* Badge: plain text, no box */}
+                <span style={{ fontSize: 11, fontWeight: 800, color: theme.badgeTxt, flexShrink: 0, letterSpacing: 0.3 }}>{badge}</span>
+                {/* Set info: plain text, set name truncates */}
                 {setObj && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  <>
+                    <span style={{ fontSize: 11, color: TEXT_DIS, flexShrink: 0 }}>/</span>
                     {setObj.setLabel && (
-                      <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, backgroundColor: BLUE_DEEP, borderRadius: 3, padding: '1px 5px' }}>{setObj.setLabel}</span>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, flexShrink: 0 }}>{setObj.setLabel}</span>
                     )}
-                    <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC }}>• {setObj.name}</span>
-                  </div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC, flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                      {'— '}{setObj.name}
+                    </span>
+                  </>
                 )}
               </div>
             </div>
