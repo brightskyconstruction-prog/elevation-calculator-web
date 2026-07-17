@@ -167,6 +167,19 @@ export default function TutorialScreen() {
 
       {/* ── Search bar (shown when open) ──────────────────────────── */}
       {searchOpen && (
+        <>
+        <style>{`
+          .tut-search-input,
+          .tut-search-input:focus,
+          .tut-search-input:active {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            background-color: transparent !important;
+          }
+        `}</style>
         <div style={s.searchBar}>
           <div style={s.searchInputWrap}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -178,6 +191,7 @@ export default function TutorialScreen() {
             <input
               ref={searchInputRef}
               type="text"
+              className="tut-search-input"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={t('tutSearchPlaceholder')}
@@ -199,6 +213,7 @@ export default function TutorialScreen() {
             {t('cancel')}
           </button>
         </div>
+        </>
       )}
 
       <div style={s.scrollArea}>
