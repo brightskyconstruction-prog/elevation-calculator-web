@@ -704,12 +704,14 @@ function CalculatorView() {
                 value={aEng}
                 onChange={e => { setAEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
+                enterKeyHint="done"
                 placeholder={aEngFocused ? '' : '0.00'}
                 onFocus={() => setAEngFocused(true)}
                 onBlur={() => setAEngFocused(false)}
+                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
             )}
-            <button style={{ height: 26, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
+            <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
           </div>
 
           {/* Op selector column */}
@@ -757,12 +759,14 @@ function CalculatorView() {
                 value={bEng}
                 onChange={e => { setBEng(e.target.value); resetCalc(); }}
                 inputMode="decimal"
+                enterKeyHint="done"
                 placeholder={bEngFocused ? '' : '0.00'}
                 onFocus={() => setBEngFocused(true)}
                 onBlur={() => setBEngFocused(false)}
+                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
             )}
-            <button style={{ height: 26, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: TEXT_S, cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
+            <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
           </div>
 
           {/* Result card */}
@@ -782,16 +786,17 @@ function CalculatorView() {
           </div>
         </div>
 
-        {/* Primary action — full-width Calculate */}
+        {/* Primary action — full-width Calculate (always blue) */}
         <button
           style={{
             width: '100%', height: 40,
-            backgroundColor: calcEnabled ? NAVY : '#E8EFF7',
-            border: `2px solid ${calcEnabled ? GOLD : '#C5D2E4'}`,
+            backgroundColor: NAVY,
+            border: `2px solid ${GOLD}`,
             borderRadius: 8,
-            color: calcEnabled ? '#fff' : '#7B96B8',
+            color: '#fff',
             fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
             cursor: calcEnabled ? 'pointer' : 'default',
+            opacity: calcEnabled ? 1 : 0.45,
           }}
           onClick={triggerCalculate}
           disabled={!calcEnabled}
