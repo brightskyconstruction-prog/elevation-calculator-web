@@ -261,6 +261,28 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
   );
 }
 
+// ─── Stacked fraction for rod reading in picker ───────────────────────────────
+function PickerFrac({ feet, inches, fracLbl }: { feet: string; inches: number; fracLbl: string }) {
+  const hasFrac = !!(fracLbl && fracLbl !== 'None' && fracLbl !== '');
+  const clean   = hasFrac ? fracLbl.replace(/"/g, '') : '';
+  const parts   = clean.split('/');
+  const num     = parts.length === 2 ? parseInt(parts[0], 10) : NaN;
+  const den     = parts.length === 2 ? parseInt(parts[1], 10) : NaN;
+  const sz      = 11;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 1, fontSize: sz, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>
+      <span>{feet}′ {inches}″</span>
+      {hasFrac && !isNaN(num) && !isNaN(den) && (
+        <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.1, marginLeft: 2 }}>
+          <span style={{ fontSize: sz - 2, fontWeight: 800, lineHeight: 1 }}>{num}</span>
+          <span style={{ display: 'block', height: 1, width: '100%', backgroundColor: TEXT_PRI }} />
+          <span style={{ fontSize: sz - 2, fontWeight: 800, lineHeight: 1 }}>{den}</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
 // ─── Point Picker Modal ───────────────────────────────────────────────────────
 interface PickerProps {
   points: SurveyPoint[]; setMap: Record<string, SurveySet>;
@@ -268,22 +290,32 @@ interface PickerProps {
   onSelect: (id: string) => void; onClose: () => void;
 }
 
+type SortOrder = 'label' | 'newest' | 'oldest';
+
 function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose }: PickerProps) {
   const { t } = useLang();
-  const [q, setQ] = useState('');
+  const [q,          setQ]          = useState('');
+  const [sortOrder,  setSortOrder]  = useState<SortOrder>('label');
+  const [showFilter, setShowFilter] = useState(false);
 
   const eligible = useMemo(() => points.filter(p => (p.bmElevation ?? 0) > 0), [points]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    return (query
+    const base  = query
       ? eligible.filter(p =>
           p.label.toLowerCase().includes(query) ||
           (p.pointName ?? '').toLowerCase().includes(query) ||
           (setMap[p.setId ?? '']?.name ?? '').toLowerCase().includes(query))
-      : eligible
-    ).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
-  }, [eligible, q, setMap]);
+      : eligible;
+    return [...base].sort((a, b) => {
+      if (sortOrder === 'newest') return b.createdAt - a.createdAt;
+      if (sortOrder === 'oldest') return a.createdAt - b.createdAt;
+      return a.label.localeCompare(b.label, undefined, { numeric: true });
+    });
+  }, [eligible, q, setMap, sortOrder]);
+
+  const filterActive = sortOrder !== 'label';
 
   return (
     <div
@@ -292,40 +324,139 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
     >
       <div className="anp-modal-in"
         style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 440, width: '100%', maxHeight: '82vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.28)' }}>
+
+        {/* Header */}
         <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2 }}>{title}</span>
           <button style={{ background: 'none', border: 'none', color: '#FFFFFF', fontSize: 24, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '4px 6px', opacity: 0.85 }} onClick={onClose}>✕</button>
         </div>
-        <div style={{ padding: '8px 12px', flexShrink: 0 }}>
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder={t('slopeSearchPts')}
-            style={{ width: '100%', height: 36, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 13, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }} />
+
+        {/* Search + Filter row */}
+        <div style={{ padding: '8px 12px', flexShrink: 0, position: 'relative' }}>
+          <div style={{ display: 'flex', gap: 7 }}>
+            <input
+              value={q} onChange={e => setQ(e.target.value)}
+              placeholder={t('slopeSearchPts')}
+              style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 13, color: TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
+            />
+            <button
+              onClick={() => setShowFilter(f => !f)}
+              style={{
+                height: 36, paddingLeft: 11, paddingRight: 11, flexShrink: 0,
+                borderRadius: 7,
+                border: `1.5px solid ${filterActive ? BLUE_ACC : BORDER}`,
+                backgroundColor: filterActive ? BLUE_DEEP : SURFACE,
+                color: filterActive ? BLUE_ACC : TEXT_SEC,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 4,
+                whiteSpace: 'nowrap' as const,
+              }}
+            >
+              Filter {showFilter ? '▲' : '▼'}
+            </button>
+          </div>
+
+          {/* Filter dropdown */}
+          {showFilter && (
+            <div style={{
+              position: 'absolute', right: 12, top: 46, zIndex: 20,
+              backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.14)', overflow: 'hidden', minWidth: 172,
+            }}>
+              {([
+                { key: 'newest' as SortOrder, label: 'Newest to Oldest' },
+                { key: 'oldest' as SortOrder, label: 'Oldest to Newest' },
+              ]).map((opt, i, arr) => (
+                <button key={opt.key}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left' as const,
+                    padding: '10px 14px', fontSize: 13,
+                    fontWeight: sortOrder === opt.key ? 800 : 600,
+                    color: sortOrder === opt.key ? NAVY : TEXT_SEC,
+                    backgroundColor: sortOrder === opt.key ? BLUE_DEEP : 'transparent',
+                    border: 'none',
+                    borderBottom: i < arr.length - 1 ? `1px solid ${BORDER}` : 'none',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => { setSortOrder(opt.key); setShowFilter(false); }}
+                >
+                  {sortOrder === opt.key ? '✓ ' : ''}{opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+
+        {/* Point list */}
+        <div
+          style={{ flex: 1, overflowY: 'auto', padding: '0 10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}
+          onClick={() => { if (showFilter) setShowFilter(false); }}
+        >
           {filtered.length === 0 && (
             <div style={{ padding: '28px 0', textAlign: 'center', color: TEXT_DIS, fontSize: 13 }}>
               {eligible.length === 0 ? t('slopeNoElevPts') : t('slopeNoMatchPts')}
             </div>
           )}
           {filtered.map(pt => {
-            const setObj = pt.setId ? setMap[pt.setId] : null;
-            const isSel  = pt.id === selectedId;
+            const setObj   = pt.setId ? setMap[pt.setId] : null;
+            const isSel    = pt.id === selectedId;
+            const hasRod   = pt.rodFeet !== undefined && pt.rodFeet !== '';
+            const rodDec   = pt.engineeringFeet ?? 0;
+            const setLbl   = setObj?.setLabel ?? null;
+            const setName  = setObj?.name ?? null;
+
             return (
               <div key={pt.id}
-                style={{ backgroundColor: isSel ? BLUE_DEEP : SURFACE, border: `1px solid ${isSel ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '8px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                style={{ backgroundColor: isSel ? BLUE_DEEP : SURFACE, border: `1.5px solid ${isSel ? BLUE_ACC : BORDER}`, borderRadius: 10, padding: '9px 11px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 9 }}
                 onClick={() => { onSelect(pt.id); onClose(); }}>
-                <div style={{ width: 38, height: 38, backgroundColor: isSel ? BLUE_ACC : BLUE, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: 0.3 }}>{pt.label}</span>
+
+                {/* Badge */}
+                <div style={{ width: 40, height: 40, backgroundColor: isSel ? BLUE_ACC : BLUE, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: 0.2, textAlign: 'center' as const, lineHeight: 1.2 }}>{pt.label}</span>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                    {pt.label}{pt.pointName ? ` · ${pt.pointName}` : ''}
+
+                {/* 3-row content */}
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+                  {/* Row 1: PT7 • Sewer 1 */}
+                  <div style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, lineHeight: 1.3 }}>
+                    {pt.label} • {pt.pointName ? pt.pointName : 'Unnamed Point'}
                   </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC }}>
-                    {(pt.bmElevation ?? 0).toFixed(3)} {t('slopeFtElev')}
-                    {setObj ? ` · ${setObj.setLabel ? setObj.setLabel + ' ' : ''}${setObj.name}` : ''}
+
+                  {/* Row 2: Elev. 984.250 ft   Rod. 15.87 ft | 15' 10" 7/16 */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1px 6px', lineHeight: 1.5 }}>
+                    <span style={{ whiteSpace: 'nowrap' as const }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>Elev. </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{(pt.bmElevation ?? 0).toFixed(3)} ft</span>
+                    </span>
+                    {hasRod && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const }}>
+                        <span style={{ fontSize: 11, color: TEXT_DIS }}>|</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>Rod. </span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{rodDec.toFixed(2)} ft</span>
+                        <span style={{ fontSize: 11, color: TEXT_DIS }}>|</span>
+                        <PickerFrac
+                          feet={pt.rodFeet!}
+                          inches={pt.rodInches ?? 0}
+                          fracLbl={pt.rodFractionLabel ?? 'None'}
+                        />
+                      </span>
+                    )}
                   </div>
+
+                  {/* Row 3: SET-1 • Fence Start */}
+                  {setObj && (setLbl || setName) && (
+                    <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_SEC, lineHeight: 1.35 }}>
+                      <span style={{ whiteSpace: 'nowrap' as const, fontWeight: 700, color: NAVY }}>
+                        {setLbl ?? 'SET'} •{' '}
+                      </span>
+                      <span>{setName}</span>
+                    </div>
+                  )}
                 </div>
-                {isSel && <span style={{ fontSize: 15, color: BLUE_ACC, fontWeight: 900 }}>✓</span>}
+
+                {/* Selected checkmark */}
+                {isSel && <span style={{ fontSize: 15, color: BLUE_ACC, fontWeight: 900, flexShrink: 0 }}>✓</span>}
               </div>
             );
           })}
