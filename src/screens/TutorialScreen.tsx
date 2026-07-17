@@ -177,7 +177,7 @@ export default function TutorialScreen() {
             </svg>
             <input
               ref={searchInputRef}
-              type="search"
+              type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={t('tutSearchPlaceholder')}
