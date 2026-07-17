@@ -89,36 +89,38 @@ export default function TutorialScreen() {
 
       {/* ── Page header ──────────────────────────────────────────── */}
       <div style={s.pageHeader}>
+
+        {/* Left: FAQ icon */}
         <div style={s.pageHeaderIcon}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
                stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         </div>
-        <div>
-          <div style={s.pageHeaderTitle}>Tutorials</div>
-          <div style={s.pageHeaderSub}>Learn how to use Grade &amp; Elevation Calculator</div>
+
+        {/* Center: title */}
+        <div style={s.pageHeaderCenter}>
+          <span style={s.pageHeaderTitle}>FAQ VIDEOS</span>
         </div>
+
+        {/* Right: search button */}
+        <button style={s.searchBtn} onClick={() => { /* search UI — coming soon */ }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <span style={s.searchBtnLabel}>Search</span>
+        </button>
+
       </div>
 
       <div style={s.scrollArea}>
 
-        {/* ── Intro card ───────────────────────────────────────────── */}
-        <div style={s.introCard}>
-          <div style={s.introIconRow}>
-            <span style={s.introEmoji}>🎓</span>
-            <span style={s.introHeadline}>Step-by-step video guides</span>
-          </div>
-          <p style={s.introText}>
-            Learn every feature of the app through quick step-by-step videos.
-            Watch tutorials whenever you need help using any tool.
-          </p>
-        </div>
-
-        {/* ── Featured sample video ────────────────────────────────── */}
-        <div style={s.sectionLabel}>FEATURED TUTORIAL</div>
+        {/* ── Featured Video ───────────────────────────────────────── */}
+        <div style={s.featuredLabel}>Featured Video</div>
         <div style={s.videoCard}>
           <div style={s.videoEmbed}>
             <iframe
@@ -136,7 +138,7 @@ export default function TutorialScreen() {
         </div>
 
         {/* ── Category sections ────────────────────────────────────── */}
-        <div style={s.sectionLabel}>ALL TUTORIALS</div>
+        <div style={s.sectionLabel}>Tutorial Videos</div>
         <div style={s.categoriesList}>
           {CATEGORIES.map(cat => {
             const isOpen = expanded === cat.id;
@@ -149,8 +151,8 @@ export default function TutorialScreen() {
                   onClick={() => setExpanded(isOpen ? null : cat.id)}
                 >
                   <div style={s.categoryLeft}>
-                    <div style={{ ...s.categoryIconBox, backgroundColor: cat.color + '18', border: `1.5px solid ${cat.color}30` }}>
-                      <span style={{ fontSize: 16 }}>{cat.icon}</span>
+                    <div style={{ ...s.categoryIconBox, backgroundColor: cat.color + '18', border: `1.5px solid ${cat.color}40` }}>
+                      <span style={{ fontSize: 17 }}>{cat.icon}</span>
                     </div>
                     <div>
                       <div style={s.categoryTitle}>{cat.title}</div>
@@ -208,7 +210,7 @@ export default function TutorialScreen() {
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
-      width="16" height="16" viewBox="0 0 24 24" fill="none"
+      width="17" height="17" viewBox="0 0 24 24" fill="none"
       stroke={TEXT_SEC} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
       style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}
     >
@@ -220,225 +222,238 @@ function ChevronIcon({ open }: { open: boolean }) {
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s: Record<string, React.CSSProperties> = {
   root: {
-    display:       'flex',
-    flexDirection: 'column',
-    flex:          1,
-    overflow:      'hidden',
-    backgroundColor: SURFACE,
+    display:          'flex',
+    flexDirection:    'column',
+    flex:             1,
+    overflow:         'hidden',
+    backgroundColor:  SURFACE,
   },
+
+  /* ── Header ── */
   pageHeader: {
-    display:         'flex',
-    alignItems:      'center',
-    gap:             12,
-    backgroundColor: NAVY,
-    padding:         '14px 16px',
-    flexShrink:      0,
+    display:          'flex',
+    alignItems:       'center',
+    backgroundColor:  NAVY,
+    padding:          '13px 14px',
+    flexShrink:       0,
+    gap:              10,
   },
   pageHeaderIcon: {
-    width:           40,
-    height:          40,
-    borderRadius:    10,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    border:          '1.5px solid rgba(255,255,255,0.20)',
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
-    flexShrink:      0,
+    width:            36,
+    height:           36,
+    borderRadius:     9,
+    backgroundColor:  'rgba(255,255,255,0.12)',
+    border:           '1.5px solid rgba(255,255,255,0.20)',
+    display:          'flex',
+    alignItems:       'center',
+    justifyContent:   'center',
+    flexShrink:       0,
+  },
+  pageHeaderCenter: {
+    flex:             1,
+    display:          'flex',
+    alignItems:       'center',
+    justifyContent:   'center',
   },
   pageHeaderTitle: {
-    fontSize:      17,
-    fontWeight:    800,
-    color:         '#fff',
-    letterSpacing: 0.2,
+    fontSize:         18,
+    fontWeight:       900,
+    color:            '#fff',
+    letterSpacing:    1.5,
   },
-  pageHeaderSub: {
-    fontSize:   12,
-    fontWeight: 500,
-    color:      'rgba(255,255,255,0.70)',
-    marginTop:  2,
+  searchBtn: {
+    display:          'flex',
+    alignItems:       'center',
+    gap:              5,
+    backgroundColor:  'rgba(255,255,255,0.14)',
+    border:           '1.5px solid rgba(255,255,255,0.25)',
+    borderRadius:     20,
+    padding:          '6px 11px',
+    cursor:           'pointer',
+    flexShrink:       0,
   },
+  searchBtnLabel: {
+    fontSize:         13,
+    fontWeight:       700,
+    color:            '#fff',
+    letterSpacing:    0.2,
+  },
+
+  /* ── Scroll area ── */
   scrollArea: {
-    flex:      1,
-    overflowY: 'auto',
-    padding:   '12px 12px 0',
+    flex:             1,
+    overflowY:        'auto',
+    padding:          '14px 12px 0',
   },
-  introCard: {
-    backgroundColor: CARD,
-    borderRadius:    14,
-    padding:         '14px 16px',
-    marginBottom:    12,
-    boxShadow:       '0 1px 6px rgba(0,0,0,0.07)',
-    border:          `1px solid ${BORDER}`,
+
+  /* ── Featured label ── */
+  featuredLabel: {
+    fontSize:         13,
+    fontWeight:       800,
+    color:            TEXT_PRI,
+    letterSpacing:    0.1,
+    marginBottom:     9,
+    paddingLeft:      2,
   },
-  introIconRow: {
-    display:     'flex',
-    alignItems:  'center',
-    gap:         8,
-    marginBottom: 8,
-  },
-  introEmoji: {
-    fontSize: 22,
-  },
-  introHeadline: {
-    fontSize:   15,
-    fontWeight: 800,
-    color:      TEXT_PRI,
-  },
-  introText: {
-    fontSize:   13,
-    fontWeight: 500,
-    color:      TEXT_SEC,
-    lineHeight: 1.55,
-    margin:     0,
-  },
-  sectionLabel: {
-    fontSize:      10,
-    fontWeight:    800,
-    color:         TEXT_DIS,
-    letterSpacing: 1,
-    marginBottom:  8,
-    paddingLeft:   2,
-  },
+
+  /* ── Featured video card ── */
   videoCard: {
-    backgroundColor: CARD,
-    borderRadius:    14,
-    overflow:        'hidden',
-    marginBottom:    16,
-    boxShadow:       '0 2px 10px rgba(0,0,0,0.09)',
-    border:          `1px solid ${BORDER}`,
+    backgroundColor:  CARD,
+    borderRadius:     18,
+    overflow:         'hidden',
+    marginBottom:     18,
+    boxShadow:        '0 4px 16px rgba(0,0,0,0.11)',
+    border:           `1px solid ${BORDER}`,
   },
   videoEmbed: {
-    position:       'relative',
-    width:          '100%',
-    paddingBottom:  '56.25%',   // 16:9
-    backgroundColor: '#000',
-    overflow:       'hidden',
+    position:         'relative',
+    width:            '100%',
+    paddingBottom:    '56.25%',   // 16:9
+    backgroundColor:  '#000',
+    overflow:         'hidden',
   },
   videoIframe: {
-    position: 'absolute',
-    top:      0,
-    left:     0,
-    width:    '100%',
-    height:   '100%',
-    border:   'none',
+    position:         'absolute',
+    top:              0,
+    left:             0,
+    width:            '100%',
+    height:           '100%',
+    border:           'none',
   },
   videoMeta: {
-    padding: '12px 14px',
+    padding:          '13px 16px 15px',
   },
   videoTitle: {
-    fontSize:     14,
-    fontWeight:   800,
-    color:        TEXT_PRI,
-    marginBottom: 4,
+    fontSize:         15,
+    fontWeight:       800,
+    color:            TEXT_PRI,
+    marginBottom:     5,
+    lineHeight:       1.35,
   },
   videoDesc: {
-    fontSize:   12,
-    fontWeight: 500,
-    color:      TEXT_SEC,
-    lineHeight: 1.5,
+    fontSize:         13,
+    fontWeight:       500,
+    color:            TEXT_SEC,
+    lineHeight:       1.55,
   },
+
+  /* ── Section label ── */
+  sectionLabel: {
+    fontSize:         13,
+    fontWeight:       800,
+    color:            TEXT_PRI,
+    letterSpacing:    0.1,
+    marginBottom:     9,
+    paddingLeft:      2,
+  },
+
+  /* ── Category list ── */
   categoriesList: {
-    display:       'flex',
-    flexDirection: 'column',
-    gap:           8,
-    marginBottom:  12,
+    display:          'flex',
+    flexDirection:    'column',
+    gap:              9,
+    marginBottom:     12,
   },
   categoryCard: {
-    backgroundColor: CARD,
-    borderRadius:    12,
-    overflow:        'hidden',
-    boxShadow:       '0 1px 5px rgba(0,0,0,0.07)',
-    border:          `1px solid ${BORDER}`,
+    backgroundColor:  CARD,
+    borderRadius:     14,
+    overflow:         'hidden',
+    boxShadow:        '0 2px 8px rgba(0,0,0,0.08)',
+    border:           `1px solid ${BORDER}`,
   },
   categoryHeader: {
-    width:           '100%',
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'space-between',
-    padding:         '11px 14px',
-    backgroundColor: 'transparent',
-    border:          'none',
-    cursor:          'pointer',
-    textAlign:       'left',
-    gap:             10,
+    width:            '100%',
+    display:          'flex',
+    alignItems:       'center',
+    justifyContent:   'space-between',
+    padding:          '13px 16px',
+    backgroundColor:  'transparent',
+    border:           'none',
+    cursor:           'pointer',
+    textAlign:        'left',
+    gap:              10,
   },
   categoryLeft: {
-    display:    'flex',
-    alignItems: 'center',
-    gap:        10,
-    flex:       1,
-    minWidth:   0,
+    display:          'flex',
+    alignItems:       'center',
+    gap:              12,
+    flex:             1,
+    minWidth:         0,
   },
   categoryIconBox: {
-    width:          36,
-    height:         36,
-    borderRadius:   9,
-    display:        'flex',
-    alignItems:     'center',
-    justifyContent: 'center',
-    flexShrink:     0,
+    width:            40,
+    height:           40,
+    borderRadius:     11,
+    display:          'flex',
+    alignItems:       'center',
+    justifyContent:   'center',
+    flexShrink:       0,
   },
   categoryTitle: {
-    fontSize:   14,
-    fontWeight: 800,
-    color:      TEXT_PRI,
+    fontSize:         15,
+    fontWeight:       800,
+    color:            TEXT_PRI,
+    lineHeight:       1.2,
   },
   categoryMeta: {
-    fontSize:   11,
-    fontWeight: 600,
-    color:      TEXT_DIS,
-    marginTop:  1,
+    fontSize:         12,
+    fontWeight:       600,
+    color:            TEXT_DIS,
+    marginTop:        2,
   },
   videoList: {
-    padding: '0 14px',
+    padding:          '0 16px',
   },
   videoRow: {
-    display:     'flex',
-    alignItems:  'flex-start',
-    gap:         10,
-    padding:     '10px 0',
+    display:          'flex',
+    alignItems:       'flex-start',
+    gap:              11,
+    padding:          '11px 0',
   },
   videoRowLeft: {
-    flexShrink: 0,
-    paddingTop: 2,
+    flexShrink:       0,
+    paddingTop:       2,
   },
   comingSoonBadge: {
-    display:         'flex',
-    alignItems:      'center',
-    gap:             4,
-    backgroundColor: BLUE_DEEP,
-    border:          `1px solid ${BLUE_ACC}30`,
-    borderRadius:    5,
-    padding:         '3px 6px',
-    fontSize:        10,
-    fontWeight:      700,
-    color:           BLUE_ACC,
-    whiteSpace:      'nowrap',
+    display:          'flex',
+    alignItems:       'center',
+    gap:              4,
+    backgroundColor:  BLUE_DEEP,
+    border:           `1px solid ${BLUE_ACC}30`,
+    borderRadius:     6,
+    padding:          '3px 7px',
+    fontSize:         10,
+    fontWeight:       700,
+    color:            BLUE_ACC,
+    whiteSpace:       'nowrap',
   },
   videoRowRight: {
-    flex:    1,
-    minWidth: 0,
+    flex:             1,
+    minWidth:         0,
   },
   videoRowTitle: {
-    fontSize:     13,
-    fontWeight:   700,
-    color:        TEXT_PRI,
-    marginBottom: 2,
+    fontSize:         13,
+    fontWeight:       700,
+    color:            TEXT_PRI,
+    marginBottom:     3,
+    lineHeight:       1.3,
   },
   videoRowDesc: {
-    fontSize:   11,
-    fontWeight: 500,
-    color:      TEXT_SEC,
-    lineHeight: 1.4,
+    fontSize:         12,
+    fontWeight:       500,
+    color:            TEXT_SEC,
+    lineHeight:       1.45,
   },
+
+  /* ── Footer ── */
   footerNote: {
-    display:    'flex',
-    alignItems: 'flex-start',
-    gap:        6,
-    padding:    '10px 4px',
-    fontSize:   11,
-    fontWeight: 500,
-    color:      TEXT_DIS,
-    lineHeight: 1.5,
+    display:          'flex',
+    alignItems:       'flex-start',
+    gap:              6,
+    padding:          '10px 4px',
+    fontSize:         11,
+    fontWeight:       500,
+    color:            TEXT_DIS,
+    lineHeight:       1.5,
   },
 };
