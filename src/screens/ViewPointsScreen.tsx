@@ -1527,11 +1527,16 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           const fifData   = engToFIF(pt.engineeringFeet);
           const elevColor = ptType === 'benchmark' ? '#92610A' : TEXT_PRI;
 
+          // stronger badge colors (no background box — plain bold text)
+          const badgeColor = ptType === 'benchmark' ? '#7A3F00'
+                           : ptType === 'derived'   ? NAVY
+                           : TEXT_SEC;
+
           return (
             <div key={pt.id} style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, borderLeft: `4px solid ${theme.border}`, boxShadow: '0 1px 5px rgba(0,0,0,0.06)' }}>
 
-              {/* ── Header row: PT label + name + chip + ⓘ + ⋮ ── */}
-              <div style={{ padding: '8px 8px 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* ── Header row: PT label + name + ⓘ + ⋮ — tighter top gap ── */}
+              <div style={{ padding: '5px 8px 0 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
                   <span style={{ fontSize: 17, fontWeight: 900, color: NAVY, letterSpacing: 0.2 }}>{pt.label}</span>
                   {pt.pointName && (
@@ -1562,36 +1567,38 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 </div>
               </div>
 
-              {/* ── Rod Reading row: "Rod - {dec} ft | {FIF stacked}" ── */}
-              <div style={{ padding: '5px 12px 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' as const }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, flexShrink: 0 }}>{tx.rodSuffix} -</span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{pt.engineeringFeet.toFixed(2)} ft</span>
+              {/* ── Rod Reading row ── */}
+              <div style={{ padding: '3px 12px 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' as const }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, flexShrink: 0 }}>{tx.rodSuffix} -</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{pt.engineeringFeet.toFixed(2)} ft</span>
                 <span style={{ color: BORDER_B, fontSize: 15, flexShrink: 0 }}>|</span>
                 <span style={{ flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
-                  <StackedFIFSpan {...fifData} color={TEXT_PRI} size={14} />
+                  <StackedFIFSpan {...fifData} color={TEXT_PRI} size={15} />
                 </span>
               </div>
 
-              {/* ── Elevation + Badge + Set — single compact row ── */}
-              <div style={{ padding: '3px 12px 9px', display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, overflow: 'hidden' }}>
-                {hasBm && (
-                  <>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
-                  </>
-                )}
-                {/* Badge: plain text, no box */}
-                <span style={{ fontSize: 11, fontWeight: 800, color: theme.badgeTxt, flexShrink: 0, letterSpacing: 0.3 }}>{badge}</span>
-                {/* Set info: plain text, set name truncates */}
+              {/* ── Elevation row (own line) ── */}
+              {hasBm && (
+                <div style={{ padding: '2px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
+                </div>
+              )}
+
+              {/* ── Badge + Set row — badge/SET-X no-wrap, set name wraps ── */}
+              <div style={{ padding: '2px 12px 7px', lineHeight: 1.35, minWidth: 0 }}>
+                {/* BENCHMARK / DERIVED — no-wrap unit */}
+                <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 900, color: badgeColor }}>{badge}</span>
                 {setObj && (
                   <>
-                    <span style={{ fontSize: 11, color: TEXT_DIS, flexShrink: 0 }}>/</span>
+                    {/* / SET-X — no-wrap unit */}
                     {setObj.setLabel && (
-                      <span style={{ fontSize: 11, fontWeight: 800, color: BLUE_ACC, flexShrink: 0 }}>{setObj.setLabel}</span>
+                      <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 900, color: NAVY }}> / {setObj.setLabel}</span>
                     )}
-                    <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_SEC, flexShrink: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-                      {'— '}{setObj.name}
-                    </span>
+                    {/* — separator — no-wrap so it stays with SET-X */}
+                    <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 600, color: TEXT_SEC }}> —</span>
+                    {/* Set name — wraps naturally */}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_PRI }}> {setObj.name}</span>
                   </>
                 )}
               </div>
