@@ -56,7 +56,7 @@ const en = {
   tabAdd:             'Point ⊕',
   tabPoints:          'Compare Height',
   tabSets:            'View Sets',
-  tabCalc:            'Calculator',
+  tabCalc:            'Calc',
   tabSlope:           'Slope',
   comingSoon:         'Coming Soon',
 
@@ -494,7 +494,7 @@ const es: typeof en = {
   tabAdd:             'Punto ⊕',
   tabPoints:          'Comparar Altura',
   tabSets:            'Ver Conjuntos',
-  tabCalc:            'Calculadora',
+  tabCalc:            'Calc',
   tabSlope:           'Pendiente',
   comingSoon:         'Próximamente',
 

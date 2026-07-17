@@ -762,7 +762,7 @@ const styles: Record<string, React.CSSProperties> = {
     display:         'flex',
     alignItems:      'center',
     justifyContent:  'center',
-    fontSize:        '11px',
+    fontSize:        '12.5px',
     fontWeight:      '600',
     lineHeight:      '1.2',
     textAlign:       'center' as const,
