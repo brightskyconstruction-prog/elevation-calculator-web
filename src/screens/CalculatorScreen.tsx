@@ -798,7 +798,6 @@ function CalculatorView() {
             cursor: calcEnabled ? 'pointer' : 'default',
           }}
           onClick={triggerCalculate}
-          disabled={!calcEnabled}
         >{t('calculate')}</button>
 
         {/* Recent Calculations */}
