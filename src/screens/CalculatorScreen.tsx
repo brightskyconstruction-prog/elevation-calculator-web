@@ -796,7 +796,6 @@ function CalculatorView() {
             color: '#fff',
             fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
             cursor: calcEnabled ? 'pointer' : 'default',
-            opacity: calcEnabled ? 1 : 0.45,
           }}
           onClick={triggerCalculate}
           disabled={!calcEnabled}
