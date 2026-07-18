@@ -415,36 +415,35 @@ function PointPickerModal({ points, setMap, selectedId, title, onSelect, onClose
                   <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: 0.2, textAlign: 'center' as const, lineHeight: 1.2 }}>{pt.label}</span>
                 </div>
 
-                {/* 3-row content */}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* 4-row content */}
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
 
                   {/* Row 1: PT7 • Sewer 1 */}
                   <div style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, lineHeight: 1.3 }}>
                     {pt.label} • {pt.pointName ? pt.pointName : 'Unnamed Point'}
                   </div>
 
-                  {/* Row 2: Elev. 984.250 ft   Rod. 15.87 ft | 15' 10" 7/16 */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1px 6px', lineHeight: 1.5 }}>
-                    <span style={{ whiteSpace: 'nowrap' as const }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>Elev. </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{(pt.bmElevation ?? 0).toFixed(3)} ft</span>
-                    </span>
-                    {hasRod && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const }}>
-                        <span style={{ fontSize: 11, color: TEXT_DIS }}>|</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>Rod. </span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{rodDec.toFixed(2)} ft</span>
-                        <span style={{ fontSize: 11, color: TEXT_DIS }}>|</span>
-                        <PickerFrac
-                          feet={pt.rodFeet!}
-                          inches={pt.rodInches ?? 0}
-                          fracLbl={pt.rodFractionLabel ?? 'None'}
-                        />
-                      </span>
-                    )}
+                  {/* Row 2: Elev. 986.500 ft */}
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>Elev. </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{(pt.bmElevation ?? 0).toFixed(3)} ft</span>
                   </div>
 
-                  {/* Row 3: SET-1 • Fence Start */}
+                  {/* Row 3: Rod. 12.71 ft | 12'-8 9/16" */}
+                  {hasRod && (
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0 4px' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>Rod. </span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{rodDec.toFixed(2)} ft</span>
+                      <span style={{ fontSize: 11, color: TEXT_DIS }}>|</span>
+                      <PickerFrac
+                        feet={pt.rodFeet!}
+                        inches={pt.rodInches ?? 0}
+                        fracLbl={pt.rodFractionLabel ?? 'None'}
+                      />
+                    </div>
+                  )}
+
+                  {/* Row 4: SET-1 • Fence Start */}
                   {setObj && (setLbl || setName) && (
                     <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_SEC, lineHeight: 1.35 }}>
                       <span style={{ whiteSpace: 'nowrap' as const, fontWeight: 700, color: NAVY }}>
