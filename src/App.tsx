@@ -100,6 +100,7 @@ function AppInner() {
   }, [activeTab, t]);
   const [editPoint,     setEditPoint]     = useState<SurveyPoint | undefined>(undefined);
   const [showSettings,  setShowSettings]  = useState(false);
+  const [showLauncher,  setShowLauncher]  = useState(false);
   useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
@@ -395,21 +396,30 @@ function AppInner() {
           </div>
         </div>
         <div style={styles.headerRight}>
-          {/* Two-button language toggle */}
+          {/* Bright Sky Services launcher */}
+          <button
+            style={styles.headerBtn}
+            onClick={() => setShowLauncher(true)}
+            title="Bright Sky Services"
+            aria-label="Bright Sky Services"
+          >
+            <LauncherGridIcon />
+          </button>
+          {/* Two-button language toggle — abbreviated labels to save space */}
           <div style={styles.langToggle}>
             <button
               style={{ ...styles.langOpt, ...(lang === 'en' ? styles.langOptActive : {}) }}
               onClick={() => setLang('en')}
               aria-pressed={lang === 'en'}
             >
-              {t('english')}
+              EN
             </button>
             <button
               style={{ ...styles.langOpt, ...(lang === 'es' ? styles.langOptActive : {}) }}
               onClick={() => setLang('es')}
               aria-pressed={lang === 'es'}
             >
-              {t('spanish')}
+              ES
             </button>
           </div>
           {/* Settings */}
@@ -522,6 +532,11 @@ function AppInner() {
         />
       )}
 
+      {/* ── Bright Sky Services launcher modal ───────────────────── */}
+      {showLauncher && (
+        <BrightSkyLauncherModal onClose={() => setShowLauncher(false)} />
+      )}
+
       {/* ── First-run onboarding ─────────────────────────────────── */}
       <OnboardingOverlay />
 
@@ -614,6 +629,122 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
         {/* ── App version ──────────────────────────────────────── */}
         <div style={spS.versionRow}>
           <span style={spS.versionText}>Grade and Elevation Calculator · v1.0</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Launcher grid icon (3×3 squares) ────────────────────────────────────────
+function LauncherGridIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 17 17" fill="currentColor">
+      <rect x="1"   y="1"   width="4.5" height="4.5" rx="1.2"/>
+      <rect x="6.2" y="1"   width="4.5" height="4.5" rx="1.2"/>
+      <rect x="11.5" y="1"  width="4.5" height="4.5" rx="1.2"/>
+      <rect x="1"   y="6.2" width="4.5" height="4.5" rx="1.2"/>
+      <rect x="6.2" y="6.2" width="4.5" height="4.5" rx="1.2"/>
+      <rect x="11.5" y="6.2" width="4.5" height="4.5" rx="1.2"/>
+      <rect x="1"   y="11.5" width="4.5" height="4.5" rx="1.2"/>
+      <rect x="6.2" y="11.5" width="4.5" height="4.5" rx="1.2"/>
+      <rect x="11.5" y="11.5" width="4.5" height="4.5" rx="1.2"/>
+    </svg>
+  );
+}
+
+// ─── Bright Sky Services Launcher Modal ──────────────────────────────────────
+interface BrightSkyServiceDef {
+  id:       string;
+  icon:     string;
+  title:    string;
+  desc:     string;
+  featured: boolean;
+  onOpen:   () => void;
+}
+
+function BrightSkyLauncherModal({ onClose }: { onClose: () => void }) {
+  const services: BrightSkyServiceDef[] = [
+    {
+      id:       'time-tracker',
+      icon:     '🕒',
+      title:    'Employee Time Tracker',
+      desc:     'Track work hours, attendance and timesheets.',
+      featured: true,
+      onOpen:   () => { /* navigate to Time Tracker app — placeholder */ },
+    },
+    {
+      id:       'route-tracker',
+      icon:     '📍',
+      title:    'Employee Route Tracker',
+      desc:     'View employee travel routes and GPS history.',
+      featured: true,
+      onOpen:   () => { /* navigate to Route Tracker app — placeholder */ },
+    },
+  ];
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.58)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 18px', boxSizing: 'border-box' as const }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="anp-modal-in"
+        style={{ maxWidth: 420, width: '100%', backgroundColor: '#FFFFFF', borderRadius: 22, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.34)', display: 'flex', flexDirection: 'column', maxHeight: '88vh' }}
+      >
+        {/* ── Header ── */}
+        <div style={{ backgroundColor: NAVY, padding: '18px 18px 16px', display: 'flex', alignItems: 'center', gap: 13, flexShrink: 0 }}>
+          {/* Company icon */}
+          <div style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: 'rgba(244,176,42,0.15)', border: '1.5px solid rgba(244,176,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 24 }}>
+            🌤️
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', letterSpacing: 0.1, lineHeight: 1.2 }}>Bright Sky Services</div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.62)', marginTop: 3, lineHeight: 1.35 }}>
+              Access tools and services by Bright Sky Construction.
+            </div>
+          </div>
+          <button
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.78)', fontSize: 22, cursor: 'pointer', padding: '4px 6px', lineHeight: 1, flexShrink: 0 }}
+            onClick={onClose}
+          >✕</button>
+        </div>
+
+        {/* ── Scrollable service list ── */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.9, textTransform: 'uppercase' as const, marginBottom: 2 }}>
+            Available Services
+          </div>
+          {services.map(svc => (
+            <button
+              key={svc.id}
+              style={{ display: 'flex', alignItems: 'center', gap: 14, backgroundColor: '#F8FAFC', border: '1.5px solid #E5E7EB', borderRadius: 14, padding: '13px 13px', cursor: 'pointer', textAlign: 'left' as const, width: '100%', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+              onClick={svc.onOpen}
+            >
+              {/* Service icon */}
+              <div style={{ width: 48, height: 48, borderRadius: 13, backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 24 }}>
+                {svc.icon}
+              </div>
+              {/* Text block */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' as const, marginBottom: 3 }}>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>{svc.title}</span>
+                  {svc.featured && (
+                    <span style={{ fontSize: 9, fontWeight: 800, color: NAVY, backgroundColor: '#DBEAFE', borderRadius: 4, padding: '2px 6px', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, lineHeight: 1.6 }}>
+                      Featured
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', lineHeight: 1.4 }}>{svc.desc}</div>
+              </div>
+              {/* Arrow */}
+              <span style={{ fontSize: 22, color: '#CBD5E1', flexShrink: 0, lineHeight: 1, fontWeight: 300 }}>›</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Footer ── */}
+        <div style={{ padding: '12px 14px 16px', textAlign: 'center' as const, borderTop: '1px solid #F3F4F6', flexShrink: 0, marginTop: 4 }}>
+          <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>Powered by Bright Sky Construction</span>
         </div>
       </div>
     </div>
