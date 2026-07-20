@@ -674,7 +674,7 @@ function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: ViewA
               {lang === 'es' ? 'No se encontraron conjuntos.' : 'No sets found.'}
             </div>
           )}
-          {filteredSets.map((s, idx) => {
+          {filteredSets.map((s) => {
             const origIdx  = sets.indexOf(s);
             const isCur    = origIdx === currentIdx;
             const isOpen   = expanded[s.id] !== false;
