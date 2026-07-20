@@ -43,6 +43,8 @@ function fbErr(err: unknown, es: boolean): string {
     return es ? 'Demasiados intentos. Intenta más tarde.' : 'Too many attempts. Try again later.';
   if (code === 'auth/invalid-email')
     return es ? 'Correo electrónico no válido.' : 'Please enter a valid email address.';
+  if (code === 'auth/operation-not-allowed')
+    return es ? 'Este método de acceso no está habilitado. Contacta al administrador.' : 'This sign-in method is not enabled. Please contact the administrator.';
   return es ? 'Ocurrió un error. Por favor intenta de nuevo.' : 'An error occurred. Please try again.';
 }
 
