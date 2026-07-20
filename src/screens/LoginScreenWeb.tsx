@@ -11,7 +11,7 @@ import {
   sendPasswordReset,
 } from '../firebase';
 
-// ─── Mode / tab types ─────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 type Mode     = 'main' | 'completing' | 'confirm-email';
 type AuthTab  = 'signin' | 'signup';
 type ForgotPw = 'hidden' | 'form' | 'sent';
@@ -46,33 +46,27 @@ function fbErr(err: unknown, es: boolean): string {
   return es ? 'Ocurrió un error. Por favor intenta de nuevo.' : 'An error occurred. Please try again.';
 }
 
-// ─── Decorative measurement tick strip ───────────────────────────────────────
+// ─── Decorative ruler ticks ───────────────────────────────────────────────────
 function MeasureTicks() {
   const ticks: React.ReactNode[] = [];
   for (let i = 0; i <= 40; i++) {
     const isMajor = i % 5 === 0;
     ticks.push(
-      <line
-        key={i}
-        x1={i * 10} y1={0}
-        x2={i * 10} y2={isMajor ? 10 : 6}
+      <line key={i} x1={i * 10} y1={0} x2={i * 10} y2={isMajor ? 10 : 6}
         stroke={isMajor ? GOLD2 : 'rgba(244,176,42,0.45)'}
-        strokeWidth={isMajor ? 1.5 : 1}
-      />
+        strokeWidth={isMajor ? 1.5 : 1} />
     );
   }
   return (
-    <svg
-      viewBox="0 0 400 12" width="100%" height="12"
-      preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-    >
+    <svg viewBox="0 0 400 12" width="100%" height="12" preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       {ticks}
       <line x1="0" y1="0" x2="400" y2="0" stroke={GOLD2} strokeWidth="1.5" opacity="0.6" />
     </svg>
   );
 }
 
-// ─── Field row (label + icon-prefixed input + optional right node) ────────────
+// ─── Labeled input with left icon and optional right node ─────────────────────
 function Field({
   label, icon, type = 'text', value, onChange, placeholder,
   autoComplete, hasError, endNode,
@@ -82,17 +76,15 @@ function Field({
   autoComplete?: string; hasError?: boolean; endNode?: React.ReactNode;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <label style={S.label}>{label}</label>
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <span style={S.inputIcon}>{icon}</span>
         <input
-          type={type}
-          value={value}
+          type={type} value={value}
           onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          style={{ ...S.input, ...(hasError ? S.inputErr : {}), paddingRight: endNode ? 58 : 14 }}
+          placeholder={placeholder} autoComplete={autoComplete}
+          style={{ ...S.input, ...(hasError ? S.inputErr : {}), paddingRight: endNode ? 56 : 14 }}
         />
         {endNode && (
           <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, display: 'flex', alignItems: 'center', paddingRight: 10 }}>
@@ -104,84 +96,130 @@ function Field({
   );
 }
 
-// ─── Coming Soon badge ────────────────────────────────────────────────────────
-const ComingSoonBadge = () => (
-  <span style={{
-    fontSize: 9, fontWeight: 800, color: '#92400E',
-    backgroundColor: '#FEF3C7', border: '1px solid #FCD34D',
-    borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5,
-    textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, lineHeight: 1.6,
-  }}>
-    Coming Soon
-  </span>
-);
-
-// ─── Bright Sky service card ──────────────────────────────────────────────────
-function ServiceCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      backgroundColor: '#F8FAFC', border: '1.5px solid #E5E7EB',
-      borderRadius: 12, padding: '12px 13px',
-    }}>
-      <div style={{
-        width: 44, height: 44, borderRadius: 11,
-        backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, fontSize: 22,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' as const, marginBottom: 3 }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>{title}</span>
-          <ComingSoonBadge />
-        </div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: '#6B7280', lineHeight: 1.4 }}>{desc}</div>
-      </div>
-      <span style={{ fontSize: 20, color: '#CBD5E1', flexShrink: 0, lineHeight: 1, fontWeight: 300 }}>›</span>
-    </div>
-  );
-}
-
-// ─── Show / Hide toggle button ────────────────────────────────────────────────
+// ─── Show / hide password toggle ─────────────────────────────────────────────
 function ShowHideBtn({ visible, onToggle, es }: { visible: boolean; onToggle: () => void; es: boolean }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#6B7280', padding: '4px 2px', lineHeight: 1 }}
-    >
+    <button type="button" onClick={onToggle}
+      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#6B7280', padding: '4px 2px', lineHeight: 1 }}>
       {visible ? (es ? 'Ocultar' : 'Hide') : (es ? 'Mostrar' : 'Show')}
     </button>
   );
 }
 
-// ─── Login screen ─────────────────────────────────────────────────────────────
+// ─── Coming-soon badge ────────────────────────────────────────────────────────
+const ComingSoonBadge = () => (
+  <span style={{ fontSize: 9, fontWeight: 800, color: '#92400E', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, lineHeight: 1.6 }}>
+    Coming Soon
+  </span>
+);
+
+// ─── Individual service card ──────────────────────────────────────────────────
+function ServiceCard({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, backgroundColor: '#F8FAFC', border: '1.5px solid #E5E7EB', borderRadius: 14, padding: '12px 13px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      <div style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' as const, marginBottom: 3 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>{title}</span>
+          <ComingSoonBadge />
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: '#6B7280', lineHeight: 1.4 }}>{desc}</div>
+      </div>
+      <span style={{ fontSize: 22, color: '#CBD5E1', flexShrink: 0, lineHeight: 1, fontWeight: 300 }}>›</span>
+    </div>
+  );
+}
+
+// ─── Bright Sky Services modal ────────────────────────────────────────────────
+function BrightSkyServicesModal({ onClose, es }: { onClose: () => void; es: boolean }) {
+  // Close on Escape key
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.58)', zIndex: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 18px', boxSizing: 'border-box' as const }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="login-modal-in"
+        style={{ maxWidth: 420, width: '100%', backgroundColor: '#FFFFFF', borderRadius: 22, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.34)', display: 'flex', flexDirection: 'column', maxHeight: '88vh' }}>
+
+        {/* Header */}
+        <div style={{ backgroundColor: NAVY, padding: '16px 18px 14px', display: 'flex', alignItems: 'center', gap: 13, flexShrink: 0 }}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: 'rgba(244,176,42,0.15)', border: '1.5px solid rgba(244,176,42,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 24 }}>
+            🌤️
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#FFFFFF', letterSpacing: 0.1, lineHeight: 1.2 }}>
+              {es ? 'Servicios Bright Sky Construction' : 'Bright Sky Construction Services'}
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.62)', marginTop: 3, lineHeight: 1.35 }}>
+              {es ? 'Herramientas de productividad próximamente.' : 'Explore additional productivity tools coming soon.'}
+            </div>
+          </div>
+          <button
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.78)', fontSize: 22, cursor: 'pointer', padding: '4px 6px', lineHeight: 1, flexShrink: 0 }}
+            onClick={onClose}>✕</button>
+        </div>
+
+        {/* Service list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 6px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.9, textTransform: 'uppercase' as const, marginBottom: 2 }}>
+            {es ? 'Servicios Disponibles' : 'Available Services'}
+          </div>
+          <ServiceCard
+            icon="🕒"
+            title="Employee Time Tracker"
+            desc={es ? 'Registra horas de trabajo, asistencia y hojas de tiempo de empleados.' : 'Track employee work hours, attendance, and timesheets.'}
+          />
+          <ServiceCard
+            icon="📍"
+            title="Employee Route Tracker"
+            desc={es ? 'Visualiza rutas de empleados, historial GPS y actividad de campo.' : 'View employee travel routes, GPS history, and field activity.'}
+          />
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '10px 14px 14px', textAlign: 'center' as const, borderTop: '1px solid #F3F4F6', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
+            {es ? 'Desarrollado por Bright Sky Construction' : 'Powered by Bright Sky Construction'}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main login screen ────────────────────────────────────────────────────────
 export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
   const { t, lang } = useLang();
   const es = lang === 'es';
 
-  // ── Global state ─────────────────────────────────────────────────────────
-  const [mode,         setMode]         = useState<Mode>('main');
-  const [authTab,      setAuthTab]      = useState<AuthTab>('signin');
-  const [loading,      setLoading]      = useState(false);
-  const [showPrivacy,  setShowPrivacy]  = useState(false);
-  const [privacyTab,   setPrivacyTab]   = useState<'privacy' | 'terms'>('privacy');
-  const [showServices, setShowServices] = useState(false);
+  // Global state
+  const [mode,               setMode]               = useState<Mode>('main');
+  const [authTab,            setAuthTab]            = useState<AuthTab>('signin');
+  const [loading,            setLoading]            = useState(false);
+  const [showPrivacy,        setShowPrivacy]        = useState(false);
+  const [privacyTab,         setPrivacyTab]         = useState<'privacy' | 'terms'>('privacy');
+  const [showServicesModal,  setShowServicesModal]  = useState(false);
 
-  // ── Sign-in fields ────────────────────────────────────────────────────────
+  // Sign-in
   const [siEmail,    setSiEmail]    = useState('');
   const [siPassword, setSiPassword] = useState('');
   const [siShowPw,   setSiShowPw]   = useState(false);
   const [siError,    setSiError]    = useState('');
 
-  // ── Forgot-password sub-flow ──────────────────────────────────────────────
+  // Forgot-password sub-flow
   const [forgotPw, setForgotPw] = useState<ForgotPw>('hidden');
   const [fpEmail,  setFpEmail]  = useState('');
   const [fpError,  setFpError]  = useState('');
 
-  // ── Sign-up fields ────────────────────────────────────────────────────────
+  // Sign-up
   const [suName,    setSuName]    = useState('');
   const [suEmail,   setSuEmail]   = useState('');
   const [suPass,    setSuPass]    = useState('');
@@ -190,7 +228,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
   const [suShowCf,  setSuShowCf]  = useState(false);
   const [suError,   setSuError]   = useState('');
 
-  // ── Confirm-email flow (different-device link) ────────────────────────────
+  // Confirm-email (different-device link)
   const [ceEmail, setCeEmail] = useState('');
   const [ceError, setCeError] = useState('');
 
@@ -220,14 +258,8 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
   // ── Sign In ───────────────────────────────────────────────────────────────
   const handleSignIn = async () => {
     const email = siEmail.trim();
-    if (!EMAIL_RE.test(email)) {
-      setSiError(es ? 'Ingresa un correo electrónico válido.' : 'Please enter a valid email address.');
-      return;
-    }
-    if (!siPassword) {
-      setSiError(es ? 'Ingresa tu contraseña.' : 'Please enter your password.');
-      return;
-    }
+    if (!EMAIL_RE.test(email)) { setSiError(es ? 'Ingresa un correo electrónico válido.' : 'Please enter a valid email address.'); return; }
+    if (!siPassword)            { setSiError(es ? 'Ingresa tu contraseña.' : 'Please enter your password.'); return; }
     setSiError(''); setLoading(true);
     try {
       if (isFirebaseConfigured()) {
@@ -237,21 +269,17 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
         try { localStorage.setItem('auth:email', email); } catch {}
         onLogin(email, '');
       }
-    } catch (err) {
-      setSiError(fbErr(err, es));
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setSiError(fbErr(err, es)); }
+    finally { setLoading(false); }
   };
 
   // ── Sign Up ───────────────────────────────────────────────────────────────
   const handleSignUp = async () => {
-    const name  = suName.trim();
-    const email = suEmail.trim();
-    if (!name)                    { setSuError(es ? 'Ingresa tu nombre completo.' : 'Please enter your full name.'); return; }
-    if (!EMAIL_RE.test(email))    { setSuError(es ? 'Ingresa un correo electrónico válido.' : 'Please enter a valid email address.'); return; }
-    if (suPass.length < 6)        { setSuError(es ? 'La contraseña debe tener al menos 6 caracteres.' : 'Password must be at least 6 characters.'); return; }
-    if (suPass !== suConfirm)     { setSuError(es ? 'Las contraseñas no coinciden.' : 'Passwords do not match.'); return; }
+    const name = suName.trim(), email = suEmail.trim();
+    if (!name)                 { setSuError(es ? 'Ingresa tu nombre completo.' : 'Please enter your full name.'); return; }
+    if (!EMAIL_RE.test(email)) { setSuError(es ? 'Ingresa un correo electrónico válido.' : 'Please enter a valid email address.'); return; }
+    if (suPass.length < 6)     { setSuError(es ? 'La contraseña debe tener al menos 6 caracteres.' : 'Password must be at least 6 characters.'); return; }
+    if (suPass !== suConfirm)  { setSuError(es ? 'Las contraseñas no coinciden.' : 'Passwords do not match.'); return; }
     setSuError(''); setLoading(true);
     try {
       if (isFirebaseConfigured()) {
@@ -261,11 +289,8 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
         try { localStorage.setItem('auth:email', email); } catch {}
         onLogin(email, '');
       }
-    } catch (err) {
-      setSuError(fbErr(err, es));
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setSuError(fbErr(err, es)); }
+    finally { setLoading(false); }
   };
 
   // ── Forgot Password ───────────────────────────────────────────────────────
@@ -276,14 +301,11 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
     try {
       if (isFirebaseConfigured()) await sendPasswordReset(email);
       setForgotPw('sent');
-    } catch (err) {
-      setFpError(fbErr(err, es));
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setFpError(fbErr(err, es)); }
+    finally { setLoading(false); }
   };
 
-  // ── Confirm-email (different-device link) ─────────────────────────────────
+  // ── Confirm email (different-device link) ─────────────────────────────────
   const handleConfirmEmail = async () => {
     const email = ceEmail.trim();
     if (!EMAIL_RE.test(email)) { setCeError(t('invalidEmail')); return; }
@@ -297,12 +319,10 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
       setCeError(t('signInLinkExpired'));
       setMode('main');
       window.history.replaceState({}, document.title, '/');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // ── Shared sub-components ─────────────────────────────────────────────────
+  // ── Shared pieces ─────────────────────────────────────────────────────────
   const CardHeader = () => (
     <>
       <div style={S.topAccent} />
@@ -320,29 +340,47 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
     </>
   );
 
-  const LegalRow = () => (
-    <div style={S.legalRow}>
-      <button style={S.legalLink} onClick={() => { setPrivacyTab('privacy'); setShowPrivacy(true); }}>
-        {t('settingsPrivacy')}
+  const Footer = () => (
+    <>
+      <div style={S.legalRow}>
+        <button style={S.legalLink} onClick={() => { setPrivacyTab('privacy'); setShowPrivacy(true); }}>{t('settingsPrivacy')}</button>
+        <span style={S.legalDot}>·</span>
+        <button style={S.legalLink} onClick={() => { setPrivacyTab('terms'); setShowPrivacy(true); }}>{t('settingsTerms')}</button>
+        <span style={S.legalDot}>·</span>
+        <span style={{ fontSize: 11, color: '#9CA3AF' }}>{t('version')}</span>
+      </div>
+      <div style={{ textAlign: 'center' as const }}>
+        <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
+          {es ? 'Desarrollado por Bright Sky Construction' : 'Powered by Bright Sky Construction'}
+        </span>
+      </div>
+    </>
+  );
+
+  // ── "Explore Bright Sky" compact tap-row ─────────────────────────────────
+  const ExploreRow = () => (
+    <div style={{ margin: '0 20px', borderTop: `1px solid ${BORDER}`, paddingTop: 8 }}>
+      <button
+        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderRadius: 8 }}
+        onClick={() => setShowServicesModal(true)}
+      >
+        <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: 'rgba(22,58,99,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16 }}>
+          🌤️
+        </div>
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' as const }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>
+            {es ? 'Explorar Bright Sky Construction' : 'Explore Bright Sky Construction'}
+          </div>
+          <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500, marginTop: 1 }}>
+            {es ? 'Herramientas próximamente disponibles' : 'Tools coming soon for your team'}
+          </div>
+        </div>
+        <span style={{ fontSize: 20, color: '#9CA3AF', flexShrink: 0, lineHeight: 1 }}>›</span>
       </button>
-      <span style={S.legalDot}>·</span>
-      <button style={S.legalLink} onClick={() => { setPrivacyTab('terms'); setShowPrivacy(true); }}>
-        {t('settingsTerms')}
-      </button>
-      <span style={S.legalDot}>·</span>
-      <span style={{ fontSize: 11, color: '#9CA3AF' }}>{t('version')}</span>
     </div>
   );
 
-  const PoweredBy = () => (
-    <div style={{ textAlign: 'center' as const, paddingBottom: 4 }}>
-      <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
-        {es ? 'Desarrollado por Bright Sky Construction' : 'Powered by Bright Sky Construction'}
-      </span>
-    </div>
-  );
-
-  // ── "Signing you in…" screen ──────────────────────────────────────────────
+  // ── "Signing you in…" mode ────────────────────────────────────────────────
   if (mode === 'completing') {
     return (
       <div style={S.root}>
@@ -354,8 +392,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
             <div style={S.spinner} aria-hidden="true" />
             <p style={S.centerTitle}>{t('completingSignIn')}</p>
           </div>
-          <LegalRow />
-          <PoweredBy />
+          <Footer />
         </div>
         <div style={S.spacer} />
         {showPrivacy && <PrivacyPolicyModal initialTab={privacyTab} onClose={() => setShowPrivacy(false)} />}
@@ -363,7 +400,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
     );
   }
 
-  // ── "Confirm email" screen (different-device link) ────────────────────────
+  // ── Confirm email (different-device link) ─────────────────────────────────
   if (mode === 'confirm-email') {
     return (
       <div style={S.root}>
@@ -371,25 +408,22 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
         <div style={S.spacer} />
         <div style={S.card}>
           <CardHeader />
-          <div style={{ padding: '2px 22px 0' }}>
+          <div style={{ padding: '2px 20px 0' }}>
             <h2 style={S.title}>{t('confirmEmailTitle')}</h2>
             <p style={S.subtitle}>{t('confirmEmailMsg')}</p>
           </div>
-          <div style={{ padding: '0 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Field
-              label={t('emailLabel')} icon="@" type="email"
-              value={ceEmail} onChange={v => { setCeEmail(v); setCeError(''); }}
-              placeholder={t('emailPlaceholder')} autoComplete="email" hasError={!!ceError}
-            />
+          <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Field label={t('emailLabel')} icon="@" type="email" value={ceEmail}
+              onChange={v => { setCeEmail(v); setCeError(''); }}
+              placeholder={t('emailPlaceholder')} autoComplete="email" hasError={!!ceError} />
             {ceError && <span style={S.errorMsg}><span style={S.errorDot}>●</span> {ceError}</span>}
           </div>
-          <div style={{ padding: '0 22px' }}>
+          <div style={{ padding: '0 20px' }}>
             <button style={{ ...S.btnPrimary, ...(loading ? S.btnLoading : {}) }} onClick={handleConfirmEmail} disabled={loading}>
               {loading ? '…' : t('confirmAndSignIn')}
             </button>
           </div>
-          <LegalRow />
-          <PoweredBy />
+          <Footer />
         </div>
         <div style={S.spacer} />
         {showPrivacy && <PrivacyPolicyModal initialTab={privacyTab} onClose={() => setShowPrivacy(false)} />}
@@ -399,176 +433,123 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
 
   // ── Main screen ───────────────────────────────────────────────────────────
   const tabLeft = authTab === 'signin' ? '4px' : '50%';
+  const showGuestDivider = forgotPw !== 'form' && forgotPw !== 'sent';
 
   return (
     <div style={S.root}>
       <div style={S.bg} />
-      <div style={{ ...S.spacer, minHeight: 20 }} />
+      <div style={{ ...S.spacer, minHeight: 16 }} />
 
       <div style={S.card}>
         <CardHeader />
 
-        {/* ──── Segmented tab control ──── */}
+        {/* ── Segmented tab control ── */}
         <div style={{ padding: '0 20px' }}>
-          <div style={{ position: 'relative', display: 'flex', backgroundColor: '#F3F4F6', borderRadius: 12, padding: 4 }}>
-            {/* Sliding active pill */}
-            <div style={{
-              position: 'absolute', top: 4, bottom: 4,
-              left: tabLeft, width: 'calc(50% - 4px)',
-              backgroundColor: NAVY, borderRadius: 9,
-              transition: 'left 0.22s cubic-bezier(0.4,0,0.2,1)',
-              zIndex: 0,
-            }} />
-            <button
-              style={{ ...S.tabBtn, color: authTab === 'signin' ? '#fff' : '#6B7280' }}
-              onClick={() => { setAuthTab('signin'); setForgotPw('hidden'); setSiError(''); }}
-            >
+          <div style={{ position: 'relative', display: 'flex', backgroundColor: '#F3F4F6', borderRadius: 11, padding: 3 }}>
+            <div style={{ position: 'absolute', top: 3, bottom: 3, left: tabLeft, width: 'calc(50% - 3px)', backgroundColor: NAVY, borderRadius: 8, transition: 'left 0.22s cubic-bezier(0.4,0,0.2,1)', zIndex: 0 }} />
+            <button style={{ ...S.tabBtn, color: authTab === 'signin' ? '#fff' : '#6B7280' }}
+              onClick={() => { setAuthTab('signin'); setForgotPw('hidden'); setSiError(''); }}>
               {es ? 'Iniciar Sesión' : 'Sign In'}
             </button>
-            <button
-              style={{ ...S.tabBtn, color: authTab === 'signup' ? '#fff' : '#6B7280' }}
-              onClick={() => { setAuthTab('signup'); setSuError(''); }}
-            >
+            <button style={{ ...S.tabBtn, color: authTab === 'signup' ? '#fff' : '#6B7280' }}
+              onClick={() => { setAuthTab('signup'); setSuError(''); }}>
               {es ? 'Registrarse' : 'Sign Up'}
             </button>
           </div>
         </div>
 
-        {/* ──── Sign In tab content ──── */}
+        {/* ── Sign In tab ── */}
         {authTab === 'signin' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 22px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: '0 20px' }}>
 
-            {/* Normal sign-in form */}
             {forgotPw === 'hidden' && (
               <>
-                <div>
+                <div style={{ marginBottom: 1 }}>
                   <h2 style={S.title}>{es ? 'Bienvenido' : 'Welcome Back'}</h2>
-                  <p style={S.subtitle}>
-                    {es
-                      ? 'Inicia sesión para continuar usando la Calculadora de Grado y Elevación.'
-                      : 'Sign in to continue using Grade and Elevation Calculator.'}
-                  </p>
+                  <p style={S.subtitle}>{es ? 'Inicia sesión para continuar.' : 'Sign in to continue using Grade and Elevation Calculator.'}</p>
                 </div>
-                <Field
-                  label={es ? 'Correo Electrónico' : 'Email Address'} icon="@" type="email"
+                <Field label={es ? 'Correo Electrónico' : 'Email Address'} icon="@" type="email"
                   value={siEmail} onChange={v => { setSiEmail(v); setSiError(''); }}
                   placeholder={es ? 'tu@ejemplo.com' : 'you@example.com'}
-                  autoComplete="email" hasError={!!siError}
-                />
-                <Field
-                  label={es ? 'Contraseña' : 'Password'} icon="🔒"
-                  type={siShowPw ? 'text' : 'password'}
+                  autoComplete="email" hasError={!!siError} />
+                <Field label={es ? 'Contraseña' : 'Password'} icon="🔒" type={siShowPw ? 'text' : 'password'}
                   value={siPassword} onChange={v => { setSiPassword(v); setSiError(''); }}
                   placeholder={es ? 'Tu contraseña' : 'Your password'}
                   autoComplete="current-password" hasError={!!siError}
-                  endNode={<ShowHideBtn visible={siShowPw} onToggle={() => setSiShowPw(p => !p)} es={es} />}
-                />
+                  endNode={<ShowHideBtn visible={siShowPw} onToggle={() => setSiShowPw(p => !p)} es={es} />} />
                 {siError && <span style={S.errorMsg}><span style={S.errorDot}>●</span> {siError}</span>}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -4 }}>
-                  <button
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: NAVY, textDecoration: 'underline', textUnderlineOffset: '2px', padding: '2px 0' }}
-                    onClick={() => { setForgotPw('form'); setFpEmail(siEmail); setFpError(''); }}
-                  >
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -3 }}>
+                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: NAVY, textDecoration: 'underline', textUnderlineOffset: '2px', padding: '2px 0' }}
+                    onClick={() => { setForgotPw('form'); setFpEmail(siEmail); setFpError(''); }}>
                     {es ? '¿Olvidaste tu contraseña?' : 'Forgot Password?'}
                   </button>
                 </div>
               </>
             )}
 
-            {/* Forgot password — enter email */}
             {forgotPw === 'form' && (
               <>
-                <button
-                  style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: NAVY, display: 'flex', alignItems: 'center', gap: 4, padding: '2px 0', marginTop: 2 }}
-                  onClick={() => { setForgotPw('hidden'); setFpError(''); }}
-                >
+                <button style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: NAVY, display: 'flex', alignItems: 'center', gap: 4, padding: '2px 0' }}
+                  onClick={() => { setForgotPw('hidden'); setFpError(''); }}>
                   ← {es ? 'Volver' : 'Back to Sign In'}
                 </button>
-                <div>
+                <div style={{ marginBottom: 1 }}>
                   <h2 style={S.title}>{es ? '¿Olvidaste tu contraseña?' : 'Forgot Password?'}</h2>
-                  <p style={S.subtitle}>
-                    {es
-                      ? 'Ingresa tu correo para recibir un enlace de restablecimiento.'
-                      : 'Enter your email to receive a reset link.'}
-                  </p>
+                  <p style={S.subtitle}>{es ? 'Ingresa tu correo para recibir un enlace de restablecimiento.' : 'Enter your email to receive a reset link.'}</p>
                 </div>
-                <Field
-                  label={es ? 'Correo Electrónico' : 'Email Address'} icon="@" type="email"
+                <Field label={es ? 'Correo Electrónico' : 'Email Address'} icon="@" type="email"
                   value={fpEmail} onChange={v => { setFpEmail(v); setFpError(''); }}
                   placeholder={es ? 'tu@ejemplo.com' : 'you@example.com'}
-                  autoComplete="email" hasError={!!fpError}
-                />
+                  autoComplete="email" hasError={!!fpError} />
                 {fpError && <span style={S.errorMsg}><span style={S.errorDot}>●</span> {fpError}</span>}
               </>
             )}
 
-            {/* Forgot password — success */}
             {forgotPw === 'sent' && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '6px 0 10px' }}>
-                <div style={{ fontSize: 38, lineHeight: 1 }}>✅</div>
-                <h2 style={{ ...S.title, textAlign: 'center' as const }}>
-                  {es ? '¡Enlace Enviado!' : 'Reset Link Sent!'}
-                </h2>
-                <p style={{ ...S.subtitle, textAlign: 'center' as const }}>
-                  {es ? `Revisa tu correo en ${fpEmail}.` : `Check your email at ${fpEmail}.`}
-                </p>
-                <button
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: NAVY, textDecoration: 'underline', textUnderlineOffset: '2px', marginTop: 4 }}
-                  onClick={() => setForgotPw('hidden')}
-                >
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 0 6px' }}>
+                <div style={{ fontSize: 34, lineHeight: 1 }}>✅</div>
+                <h2 style={{ ...S.title, textAlign: 'center' as const }}>{es ? '¡Enlace Enviado!' : 'Reset Link Sent!'}</h2>
+                <p style={{ ...S.subtitle, textAlign: 'center' as const }}>{es ? `Revisa tu correo en ${fpEmail}.` : `Check your email at ${fpEmail}.`}</p>
+                <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: NAVY, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+                  onClick={() => setForgotPw('hidden')}>
                   ← {es ? 'Volver al inicio de sesión' : 'Back to Sign In'}
                 </button>
               </div>
             )}
-
           </div>
         )}
 
-        {/* ──── Sign Up tab content ──── */}
+        {/* ── Sign Up tab ── */}
         {authTab === 'signup' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 22px' }}>
-            <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 20px' }}>
+            <div style={{ marginBottom: 1 }}>
               <h2 style={S.title}>{es ? 'Crea Tu Cuenta' : 'Create Your Account'}</h2>
-              <p style={S.subtitle}>
-                {es
-                  ? 'Crea una cuenta de Bright Sky para guardar tus datos de topografía en todos tus dispositivos.'
-                  : 'Create a Bright Sky account to securely save your survey data across devices.'}
-              </p>
+              <p style={S.subtitle}>{es ? 'Guarda tus datos de topografía en todos tus dispositivos.' : 'Securely save your survey data across devices.'}</p>
             </div>
-            <Field
-              label={es ? 'Nombre Completo' : 'Full Name'} icon="👤" type="text"
+            <Field label={es ? 'Nombre Completo' : 'Full Name'} icon="👤" type="text"
               value={suName} onChange={v => { setSuName(v); setSuError(''); }}
               placeholder={es ? 'Tu nombre completo' : 'Your full name'}
-              autoComplete="name" hasError={!!suError && !suName.trim()}
-            />
-            <Field
-              label={es ? 'Correo Electrónico' : 'Email Address'} icon="@" type="email"
+              autoComplete="name" hasError={!!suError && !suName.trim()} />
+            <Field label={es ? 'Correo Electrónico' : 'Email Address'} icon="@" type="email"
               value={suEmail} onChange={v => { setSuEmail(v); setSuError(''); }}
               placeholder={es ? 'tu@ejemplo.com' : 'you@example.com'}
-              autoComplete="email" hasError={!!suError}
-            />
-            <Field
-              label={es ? 'Contraseña' : 'Password'} icon="🔒"
-              type={suShowPw ? 'text' : 'password'}
+              autoComplete="email" hasError={!!suError} />
+            <Field label={es ? 'Contraseña' : 'Password'} icon="🔒" type={suShowPw ? 'text' : 'password'}
               value={suPass} onChange={v => { setSuPass(v); setSuError(''); }}
-              placeholder={es ? 'Mínimo 6 caracteres' : 'Minimum 6 characters'}
+              placeholder={es ? 'Mín. 6 caracteres' : 'Min. 6 characters'}
               autoComplete="new-password" hasError={!!suError}
-              endNode={<ShowHideBtn visible={suShowPw} onToggle={() => setSuShowPw(p => !p)} es={es} />}
-            />
-            <Field
-              label={es ? 'Confirmar Contraseña' : 'Confirm Password'} icon="🔒"
-              type={suShowCf ? 'text' : 'password'}
+              endNode={<ShowHideBtn visible={suShowPw} onToggle={() => setSuShowPw(p => !p)} es={es} />} />
+            <Field label={es ? 'Confirmar Contraseña' : 'Confirm Password'} icon="🔒" type={suShowCf ? 'text' : 'password'}
               value={suConfirm} onChange={v => { setSuConfirm(v); setSuError(''); }}
               placeholder={es ? 'Repite la contraseña' : 'Repeat your password'}
               autoComplete="new-password" hasError={!!suError && suPass !== suConfirm}
-              endNode={<ShowHideBtn visible={suShowCf} onToggle={() => setSuShowCf(p => !p)} es={es} />}
-            />
+              endNode={<ShowHideBtn visible={suShowCf} onToggle={() => setSuShowCf(p => !p)} es={es} />} />
             {suError && <span style={S.errorMsg}><span style={S.errorDot}>●</span> {suError}</span>}
           </div>
         )}
 
-        {/* ──── Primary CTA button ──── */}
-        <div style={{ padding: '2px 22px 0' }}>
+        {/* ── Primary CTA ── */}
+        <div style={{ padding: '0 20px' }}>
           {authTab === 'signin' && forgotPw === 'hidden' && (
             <button style={{ ...S.btnPrimary, ...(loading ? S.btnLoading : {}) }} onClick={handleSignIn} disabled={loading}>
               {loading ? '…' : (es ? 'Iniciar Sesión' : 'Sign In')}
@@ -586,30 +567,24 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
           )}
         </div>
 
-        {/* ──── "Already have account?" (sign-up only) ──── */}
+        {/* ── Already have account (sign-up only) ── */}
         {authTab === 'signup' && (
-          <div style={{ textAlign: 'center' as const, padding: '0 22px' }}>
-            <span style={{ fontSize: 13, color: '#6B7280' }}>
-              {es ? '¿Ya tienes una cuenta? ' : 'Already have an account? '}
-            </span>
-            <button
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: NAVY, textDecoration: 'underline', textUnderlineOffset: '2px' }}
-              onClick={() => { setAuthTab('signin'); setSuError(''); }}
-            >
+          <div style={{ textAlign: 'center' as const, padding: '0 20px', marginTop: -4 }}>
+            <span style={{ fontSize: 12, color: '#6B7280' }}>{es ? '¿Ya tienes una cuenta? ' : 'Already have an account? '}</span>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, color: NAVY, textDecoration: 'underline', textUnderlineOffset: '2px' }}
+              onClick={() => { setAuthTab('signin'); setSuError(''); }}>
               {es ? 'Iniciar Sesión' : 'Sign In'}
             </button>
           </div>
         )}
 
-        {/* ──── OR divider + Guest button (not shown during forgot-pw sub-flows) ──── */}
-        {forgotPw !== 'form' && forgotPw !== 'sent' && (
+        {/* ── OR + Guest ── */}
+        {showGuestDivider && (
           <>
             <div style={S.orRow}>
-              <div style={S.orLine} />
-              <span style={S.orText}>or</span>
-              <div style={S.orLine} />
+              <div style={S.orLine} /><span style={S.orText}>or</span><div style={S.orLine} />
             </div>
-            <div style={{ padding: '0 22px' }}>
+            <div style={{ padding: '0 20px' }}>
               <button style={S.btnGuest} onClick={onGuestLogin} disabled={loading}>
                 {t('continueAsGuest')}
               </button>
@@ -617,72 +592,19 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
           </>
         )}
 
-        {/* ──── Bright Sky Services (collapsible) ──── */}
-        <div style={{ margin: '4px 22px 0', borderTop: `1px solid ${BORDER}`, paddingTop: 12 }}>
-          <button
-            style={{
-              width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 0,
-            }}
-            onClick={() => setShowServices(v => !v)}
-          >
-            <div style={{ textAlign: 'left' as const }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: NAVY, letterSpacing: 0.1 }}>
-                {es ? 'Explorar Bright Sky Construction' : 'Explore Bright Sky Construction'}
-              </div>
-              {!showServices && (
-                <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500, marginTop: 2 }}>
-                  {es ? 'Descubre herramientas que pronto estarán disponibles.' : 'Discover tools coming soon for your team.'}
-                </div>
-              )}
-            </div>
-            <span style={{
-              fontSize: 13, color: '#9CA3AF', marginLeft: 8, flexShrink: 0,
-              display: 'inline-block',
-              transform: showServices ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.25s ease',
-            }}>▼</span>
-          </button>
+        {/* ── Explore Bright Sky (tap-to-modal row) ── */}
+        <ExploreRow />
 
-          {/* Collapsible body */}
-          <div style={{
-            maxHeight: showServices ? '420px' : '0px',
-            overflow: 'hidden',
-            transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1)',
-          }}>
-            <div style={{ paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p style={{ margin: 0, fontSize: 12, color: '#6B7280', lineHeight: 1.5 }}>
-                {es
-                  ? 'Descubre herramientas adicionales que pronto estarán disponibles para tu equipo.'
-                  : 'Discover additional tools that will soon be available for your team.'}
-              </p>
-              <ServiceCard
-                icon="🕒"
-                title="Employee Time Tracker"
-                desc={es
-                  ? 'Registra horas de trabajo de empleados, asistencia y hojas de tiempo.'
-                  : 'Track employee work hours, attendance, and timesheets.'}
-              />
-              <ServiceCard
-                icon="📍"
-                title="Employee Route Tracker"
-                desc={es
-                  ? 'Visualiza rutas de empleados, historial GPS y actividad de campo.'
-                  : 'View employee travel routes, GPS history, and field activity.'}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ──── Legal + version ──── */}
-        <LegalRow />
-
-        {/* ──── Footer branding ──── */}
-        <PoweredBy />
+        {/* ── Footer ── */}
+        <Footer />
       </div>
 
-      <div style={{ ...S.spacer, minHeight: 20 }} />
+      <div style={{ ...S.spacer, minHeight: 16 }} />
 
+      {/* ── Modals ── */}
+      {showServicesModal && (
+        <BrightSkyServicesModal es={es} onClose={() => setShowServicesModal(false)} />
+      )}
       {showPrivacy && (
         <PrivacyPolicyModal initialTab={privacyTab} onClose={() => setShowPrivacy(false)} />
       )}
@@ -693,281 +615,118 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const S: Record<string, React.CSSProperties> = {
   root: {
-    position:      'fixed',
-    inset:         0,
-    overflowY:     'auto',
-    display:       'flex',
-    flexDirection: 'column',
-    alignItems:    'center',
-    padding:       '0 16px',
-    boxSizing:     'border-box',
+    position: 'fixed', inset: 0, overflowY: 'auto',
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    padding: '0 16px', boxSizing: 'border-box',
   },
   bg: {
-    position:      'fixed',
-    inset:         0,
-    background:    `linear-gradient(158deg, ${NAVY} 0%, ${NAVY} 36%, #F0EEE8 36%)`,
-    zIndex:        0,
-    pointerEvents: 'none',
+    position: 'fixed', inset: 0,
+    background: `linear-gradient(158deg, ${NAVY} 0%, ${NAVY} 36%, #F0EEE8 36%)`,
+    zIndex: 0, pointerEvents: 'none',
   },
-  spacer: {
-    flex:      '1 0 0',
-    minHeight: 32,
-  },
+  spacer: { flex: '1 0 0', minHeight: 24 },
   card: {
-    width:           '100%',
-    maxWidth:        400,
+    width: '100%', maxWidth: 400,
     backgroundColor: '#FFFFFF',
-    borderRadius:    20,
-    boxShadow:       '0 12px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
-    display:         'flex',
-    flexDirection:   'column',
-    gap:             12,
-    position:        'relative',
-    zIndex:          1,
-    overflow:        'hidden',
-    paddingBottom:   18,
-    flexShrink:      0,
+    borderRadius: 20,
+    boxShadow: '0 12px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
+    display: 'flex', flexDirection: 'column', gap: 8,
+    position: 'relative', zIndex: 1,
+    overflow: 'hidden', paddingBottom: 12, flexShrink: 0,
   },
   topAccent: {
-    height:     5,
+    height: 5,
     background: `linear-gradient(90deg, ${NAVY}, ${GOLD2} 50%, ${NAVY})`,
     flexShrink: 0,
   },
-  tickStrip: {
-    padding:   '0 20px',
-    marginTop: -4,
-    opacity:   0.9,
-  },
-  logoRow: {
-    display:    'flex',
-    alignItems: 'center',
-    gap:        13,
-    padding:    '0 22px',
-    marginTop:  2,
-  },
+  tickStrip: { padding: '0 20px', marginTop: -4, opacity: 0.9 },
+  logoRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', marginTop: 1 },
   logoWrap: {
-    width:           56,
-    height:          56,
-    borderRadius:    14,
-    backgroundColor: NAVY,
-    display:         'flex',
-    alignItems:      'center',
-    justifyContent:  'center',
-    flexShrink:      0,
-    boxShadow:       '0 2px 10px rgba(22,58,99,0.30)',
-    overflow:        'hidden',
+    width: 50, height: 50, borderRadius: 13, backgroundColor: NAVY,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, boxShadow: '0 2px 10px rgba(22,58,99,0.30)', overflow: 'hidden',
   },
-  logoRod: {
-    width:        '100%',
-    height:       '100%',
-    objectFit:    'contain',
-    mixBlendMode: 'screen',
-    display:      'block',
-  },
-  logoText: {
-    display:       'flex',
-    flexDirection: 'column',
-    gap:           3,
-    minWidth:      0,
-  },
-  appName: {
-    fontSize:      17,
-    fontWeight:    800,
-    color:         NAVY,
-    letterSpacing: '-0.3px',
-    lineHeight:    1.2,
-  },
-  appTag: {
-    fontSize:   11.5,
-    color:      '#6B7280',
-    lineHeight: 1.3,
-  },
-  divider: {
-    height:          1.5,
-    backgroundColor: '#F3F4F6',
-    margin:          '0 22px',
-  },
+  logoRod: { width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'screen', display: 'block' },
+  logoText: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 },
+  appName: { fontSize: 16, fontWeight: 800, color: NAVY, letterSpacing: '-0.3px', lineHeight: 1.2 },
+  appTag:  { fontSize: 11, color: '#6B7280', lineHeight: 1.3 },
+  divider: { height: 1.5, backgroundColor: '#F3F4F6', margin: '0 20px' },
   // Tab control
   tabBtn: {
-    flex:       1,
-    height:     40,
-    fontSize:   14,
-    fontWeight: 700,
-    border:     'none',
-    background: 'none',
-    borderRadius: 9,
-    cursor:     'pointer',
-    position:   'relative',
-    zIndex:     1,
-    transition: 'color 0.22s',
-    lineHeight: 1,
+    flex: 1, height: 36, fontSize: 14, fontWeight: 700,
+    border: 'none', background: 'none', borderRadius: 8,
+    cursor: 'pointer', position: 'relative', zIndex: 1,
+    transition: 'color 0.22s', lineHeight: 1,
   },
-  // Form fields
+  // Typography
   title: {
-    margin:        0,
-    fontSize:      21,
-    fontWeight:    800,
-    color:         '#111827',
-    letterSpacing: '-0.3px',
-    fontFamily:    'inherit',
+    margin: 0, fontSize: 20, fontWeight: 800, color: '#111827',
+    letterSpacing: '-0.3px', fontFamily: 'inherit',
   },
-  subtitle: {
-    margin:     '3px 0 0',
-    fontSize:   13,
-    color:      '#6B7280',
-    lineHeight: 1.45,
-  },
-  label: {
-    fontSize:      12,
-    fontWeight:    700,
-    color:         '#374151',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  inputIcon: {
-    position:      'absolute',
-    left:          14,
-    fontSize:      15,
-    fontWeight:    700,
-    color:         '#9CA3AF',
-    pointerEvents: 'none',
-    userSelect:    'none',
-    zIndex:        1,
-  },
+  subtitle: { margin: '2px 0 0', fontSize: 12, color: '#6B7280', lineHeight: 1.4 },
+  // Fields
+  label: { fontSize: 11, fontWeight: 700, color: '#374151', letterSpacing: 0.3, textTransform: 'uppercase' as const },
+  inputIcon: { position: 'absolute', left: 13, fontSize: 14, fontWeight: 700, color: '#9CA3AF', pointerEvents: 'none', userSelect: 'none', zIndex: 1 },
   input: {
-    height:          48,
-    width:           '100%',
-    borderRadius:    12,
-    border:          `1.5px solid ${BORDER}`,
-    padding:         '0 14px 0 38px',
-    fontSize:        15,
-    color:           '#111827',
-    backgroundColor: '#FAFAFA',
-    outline:         'none',
-    boxSizing:       'border-box',
-    transition:      'border-color 0.15s, box-shadow 0.15s',
+    height: 44, width: '100%', borderRadius: 11,
+    border: `1.5px solid ${BORDER}`, padding: '0 14px 0 36px',
+    fontSize: 14, color: '#111827', backgroundColor: '#FAFAFA',
+    outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s',
   },
-  inputErr: {
-    borderColor:     ERR,
-    backgroundColor: '#FFF5F5',
-  },
-  errorMsg: {
-    fontSize:   12,
-    color:      ERR,
-    fontWeight: 500,
-    display:    'flex',
-    alignItems: 'center',
-    gap:        5,
-    marginTop:  -4,
-  },
-  errorDot: { fontSize: 7 },
+  inputErr: { borderColor: ERR, backgroundColor: '#FFF5F5' },
+  errorMsg: { fontSize: 11, color: ERR, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5, marginTop: -3 },
+  errorDot: { fontSize: 6 },
   // Buttons
   btnPrimary: {
-    height:          50,
-    width:           '100%',
-    borderRadius:    13,
-    backgroundColor: NAVY,
-    border:          `2px solid ${GOLD2}`,
-    color:           '#FFFFFF',
-    fontSize:        16,
-    fontWeight:      800,
-    letterSpacing:   0.8,
-    cursor:          'pointer',
-    transition:      'opacity 0.15s, transform 0.1s',
-    boxShadow:       '0 4px 16px rgba(22,58,99,0.28)',
+    height: 46, width: '100%', borderRadius: 13,
+    backgroundColor: NAVY, border: `2px solid ${GOLD2}`,
+    color: '#FFFFFF', fontSize: 15, fontWeight: 800,
+    letterSpacing: 0.8, cursor: 'pointer',
+    transition: 'opacity 0.15s', boxShadow: '0 4px 16px rgba(22,58,99,0.28)',
   },
-  btnLoading: {
-    opacity: 0.6,
-    cursor:  'default',
-  },
+  btnLoading: { opacity: 0.6, cursor: 'default' },
   btnGuest: {
-    height:          48,
-    width:           '100%',
-    borderRadius:    13,
-    backgroundColor: GOLD_LIGHT,
-    border:          `1.5px solid ${GOLD2}`,
-    color:           NAVY,
-    fontSize:        16,
-    fontWeight:      700,
-    letterSpacing:   0.4,
-    cursor:          'pointer',
-    transition:      'background-color 0.15s, opacity 0.15s',
+    height: 44, width: '100%', borderRadius: 13,
+    backgroundColor: GOLD_LIGHT, border: `1.5px solid ${GOLD2}`,
+    color: NAVY, fontSize: 15, fontWeight: 700,
+    letterSpacing: 0.4, cursor: 'pointer', transition: 'background-color 0.15s',
   },
-  orRow: {
-    display:      'flex',
-    alignItems:   'center',
-    gap:          10,
-    padding:      '0 22px',
-    marginTop:    -4,
-    marginBottom: -4,
-  },
-  orLine: {
-    flex:            1,
-    height:          1,
-    backgroundColor: BORDER,
-  },
-  orText: {
-    fontSize:      12,
-    color:         '#9CA3AF',
-    fontWeight:    600,
-    letterSpacing: 0.3,
-  },
+  // OR divider
+  orRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', marginTop: -2, marginBottom: -2 },
+  orLine: { flex: 1, height: 1, backgroundColor: BORDER },
+  orText: { fontSize: 12, color: '#9CA3AF', fontWeight: 600, letterSpacing: 0.3 },
+  // Footer
   legalRow: {
-    display:        'flex',
-    alignItems:     'center',
-    justifyContent: 'center',
-    gap:            8,
-    padding:        '0 22px',
-    marginTop:      -4,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    gap: 7, padding: '0 20px', marginTop: -2,
   },
   legalLink: {
-    background:          'none',
-    border:              'none',
-    color:               '#9CA3AF',
-    fontSize:            11,
-    fontWeight:          600,
-    cursor:              'pointer',
-    padding:             '4px 0',
-    textDecoration:      'underline',
-    textUnderlineOffset: '2px',
-    letterSpacing:       0.2,
+    background: 'none', border: 'none', color: '#9CA3AF', fontSize: 11,
+    fontWeight: 600, cursor: 'pointer', padding: '3px 0',
+    textDecoration: 'underline', textUnderlineOffset: '2px', letterSpacing: 0.2,
   },
-  legalDot: {
-    fontSize: 11,
-    color:    '#9CA3AF',
-  },
-  // Completing / check-email screens
-  centerBlock: {
-    display:        'flex',
-    flexDirection:  'column',
-    alignItems:     'center',
-    padding:        '12px 22px 8px',
-    gap:            10,
-  },
+  legalDot: { fontSize: 11, color: '#9CA3AF' },
+  // Completing screen
+  centerBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 20px 8px', gap: 10 },
   spinner: {
-    width:          36,
-    height:         36,
-    borderRadius:   '50%',
-    border:         '3px solid rgba(20,58,99,0.12)',
-    borderTopColor: NAVY,
-    animation:      'loginSpin 0.8s linear infinite',
+    width: 34, height: 34, borderRadius: '50%',
+    border: '3px solid rgba(20,58,99,0.12)', borderTopColor: NAVY,
+    animation: 'loginSpin 0.8s linear infinite',
   },
-  centerTitle: {
-    margin:        0,
-    fontSize:      15,
-    fontWeight:    700,
-    color:         '#374151',
-    textAlign:     'center',
-  },
+  centerTitle: { margin: 0, fontSize: 14, fontWeight: 700, color: '#374151', textAlign: 'center' },
 };
 
-// Inject spinner keyframe once
+// ─── Keyframe injection ───────────────────────────────────────────────────────
 if (typeof document !== 'undefined') {
-  const id = 'login-spin-kf';
+  const id = 'login-anim-kf';
   if (!document.getElementById(id)) {
     const s = document.createElement('style');
     s.id = id;
-    s.textContent = `@keyframes loginSpin { to { transform: rotate(360deg); } }`;
+    s.textContent = `
+      @keyframes loginSpin { to { transform: rotate(360deg); } }
+      @keyframes loginModalIn { from{opacity:0;transform:scale(0.92) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);} }
+      .login-modal-in { animation: loginModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+    `;
     document.head.appendChild(s);
   }
 }
