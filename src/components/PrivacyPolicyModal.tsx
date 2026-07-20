@@ -184,7 +184,7 @@ function TermsContent() {
 
       <Section title="8. Governing Law">
         <p>
-          These terms are governed by the laws of the State of [Your State], United States,
+          These terms are governed by the laws of the State of Georgia, United States,
           without regard to conflict of law provisions.
         </p>
       </Section>
