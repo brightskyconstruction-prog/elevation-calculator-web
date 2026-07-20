@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { INCHES_OPTIONS, FRACTION_OPTIONS } from '../constants';
 import { useLang } from '../LangContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 // ─── Modal animation (idempotent injection) ───────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
@@ -332,6 +333,7 @@ function ConverterView() {
 
   const [convHistory, setConvHistory] = useState<ConvItem[]>(() => loadJson(KEY_CONV, []));
   const [showAllConvs,setShowAllConvs]= useState(false);
+  const [convConfirm, setConvConfirm] = useState<null | { onConfirm: () => void }>(null);
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CONV, JSON.stringify(convHistory)); } catch {}
@@ -407,8 +409,13 @@ function ConverterView() {
   };
 
   const handleDeleteAllConvs = () => {
-    if (!window.confirm(t('deleteConvsConfirm'))) return;
-    setConvHistory([]); setShowAllConvs(false);
+    setConvConfirm({
+      onConfirm: () => {
+        setConvHistory([]);
+        setShowAllConvs(false);
+        setConvConfirm(null);
+      },
+    });
   };
 
   return (
@@ -516,6 +523,16 @@ function ConverterView() {
       {showAllConvs && (
         <AllConvsModal history={convHistory} onClose={() => setShowAllConvs(false)} onDeleteAll={handleDeleteAllConvs} />
       )}
+      {convConfirm && (
+        <ConfirmModal
+          message={t('deleteConvsConfirm')}
+          confirmLabel={t('deleteAll')}
+          cancelLabel={t('cancel')}
+          danger
+          onConfirm={convConfirm.onConfirm}
+          onCancel={() => setConvConfirm(null)}
+        />
+      )}
     </>
   );
 }
@@ -613,6 +630,7 @@ function CalculatorView() {
   const [showAllCalcs, setShowAllCalcs] = useState(false);
   const [showOpModal,  setShowOpModal]  = useState(false);
   const [menuOpenId,   setMenuOpenId]   = useState<string | null>(null);
+  const [calcConfirm,  setCalcConfirm]  = useState<null | { onConfirm: () => void }>(null);
 
 
   useEffect(() => {
@@ -660,8 +678,11 @@ function CalculatorView() {
   };
 
   const handleDeleteAll = () => {
-    if (!window.confirm(t('deleteCalcsConfirm'))) return;
-    setHistory([]); setShowAllCalcs(false);
+    setCalcConfirm({
+      onConfirm: () => {
+        setHistory([]); setShowAllCalcs(false); setCalcConfirm(null);
+      },
+    });
   };
 
   // Restore a history item into the input cards for editing
@@ -677,9 +698,13 @@ function CalculatorView() {
 
   // Delete a single history item (with confirmation)
   const handleDeleteItem = (item: CalcHistItem) => {
-    if (!window.confirm(t('deleteCalcConfirm'))) return;
-    setHistory(prev => prev.filter(h => h.id !== item.id));
-    setMenuOpenId(null);
+    setCalcConfirm({
+      onConfirm: () => {
+        setHistory(prev => prev.filter(h => h.id !== item.id));
+        setMenuOpenId(null);
+        setCalcConfirm(null);
+      },
+    });
   };
 
   return (
@@ -853,6 +878,16 @@ function CalculatorView() {
       {/* Close ⋮ menu when tapping outside */}
       {menuOpenId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setMenuOpenId(null)} />
+      )}
+      {calcConfirm && (
+        <ConfirmModal
+          message={t('deleteCalcsConfirm')}
+          confirmLabel={t('deleteAll')}
+          cancelLabel={t('cancel')}
+          danger
+          onConfirm={calcConfirm.onConfirm}
+          onCancel={() => setCalcConfirm(null)}
+        />
       )}
     </>
   );

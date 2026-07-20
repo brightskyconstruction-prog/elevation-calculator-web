@@ -9,10 +9,11 @@ import CalculatorScreen   from './screens/CalculatorScreen';
 import SplashScreenWeb    from './screens/SplashScreenWeb';
 import LoginScreenWeb     from './screens/LoginScreenWeb';
 import SlopeScreen        from './screens/SlopeScreen';
-import TutorialScreen     from './screens/TutorialScreen';
+// TutorialScreen removed — no real video content yet
 import OfflineIndicator   from './components/OfflineIndicator';
 import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
+import ConfirmModal       from './components/ConfirmModal';
 import { isFirebaseConfigured, onAuthChanged, signOutFirebase } from './firebase';
 import {
   loadUserData,
@@ -93,15 +94,50 @@ function AppInner() {
 
   const handleTabSwitch = useCallback((tab: MainTab) => {
     if (activeTab === 'add' && tab !== 'add' && addScreenDirty.current) {
-      if (!window.confirm(t('unsavedPointConfirm'))) return;
-      addScreenDirty.current = false;
+      showConfirm({
+        message:      t('unsavedPointConfirm'),
+        confirmLabel: t('exitAppConfirm'),
+        cancelLabel:  t('continueEditing'),
+        danger:       false,
+        onConfirm: () => {
+          addScreenDirty.current = false;
+          setConfirmProps(null);
+          setActiveTab(tab);
+        },
+      });
+      return;
     }
     setActiveTab(tab);
-  }, [activeTab, t]);
+  }, [activeTab, t, showConfirm]);
   const [editPoint,     setEditPoint]     = useState<SurveyPoint | undefined>(undefined);
   const [showSettings,  setShowSettings]  = useState(false);
   const [showLauncher,  setShowLauncher]  = useState(false);
   useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
+
+  // ── Confirm modal state ─────────────────────────────────────────
+  // A single shared confirm modal instance used for logout + unsaved-changes.
+  const [confirmProps, setConfirmProps] = useState<null | {
+    message:      string;
+    confirmLabel: string;
+    cancelLabel:  string;
+    danger:       boolean;
+    onConfirm:    () => void;
+  }>(null);
+  const showConfirm = useCallback((opts: {
+    message:       string;
+    confirmLabel?: string;
+    cancelLabel?:  string;
+    danger?:       boolean;
+    onConfirm:     () => void;
+  }) => {
+    setConfirmProps({
+      message:      opts.message,
+      confirmLabel: opts.confirmLabel ?? 'Confirm',
+      cancelLabel:  opts.cancelLabel  ?? 'Cancel',
+      danger:       opts.danger       ?? false,
+      onConfirm:    opts.onConfirm,
+    });
+  }, []);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
   const [slopeFromId,   setSlopeFromId]   = useState<string | null>(null);
@@ -329,14 +365,22 @@ function AppInner() {
     syncEmailRef.current = null;
   }, []);
 
-  const handleLogout = useCallback(async () => {
-    if (!window.confirm(t('logoutConfirm'))) return;
-    await logoutUser();
-    try { localStorage.removeItem('auth:email'); } catch {}
-    setEmail('');
-    setAppState('login');
-    setShowSettings(false);
-  }, [t, logoutUser]);
+  const handleLogout = useCallback(() => {
+    showConfirm({
+      message:      t('logoutConfirm'),
+      confirmLabel: t('logout'),
+      cancelLabel:  t('cancel'),
+      danger:       false,
+      onConfirm: async () => {
+        setConfirmProps(null);
+        await logoutUser();
+        try { localStorage.removeItem('auth:email'); } catch {}
+        setEmail('');
+        setAppState('login');
+        setShowSettings(false);
+      },
+    });
+  }, [t, logoutUser, showConfirm]);
 
   // ── Navigation ──────────────────────────────────────────────────
   const handleEditPoint = useCallback((pt: SurveyPoint) => {
@@ -370,7 +414,6 @@ function AppInner() {
     { id: 'slope',    label: t('tabSlope')  },
     { id: 'sets',     label: t('tabSets'),  lines: (lang === 'en' ? ['View', 'Sets'] : ['Ver', 'Conj.']) },
     { id: 'calc',     label: t('tabCalc')   },
-    { id: 'tutorial', label: '?',           lines: ['Help', '?']  },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
@@ -438,7 +481,6 @@ function AppInner() {
       <nav style={styles.tabBar} role="tablist">
         {MAIN_TABS.map(tab => {
           const isActive = activeTab === tab.id;
-          const isTutorial = tab.id === 'tutorial';
           return (
             <button
               key={tab.id}
@@ -447,8 +489,6 @@ function AppInner() {
               style={{
                 ...styles.tab,
                 ...(isActive ? styles.tabActive : {}),
-                ...(isTutorial ? styles.tabTutorial : {}),
-                ...(isActive && isTutorial ? styles.tabTutorialActive : {}),
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
@@ -491,9 +531,6 @@ function AppInner() {
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
           <CalculatorScreen />
-        </div>
-        <div style={{ ...styles.screen, display: activeTab === 'tutorial' ? 'flex' : 'none' }}>
-          <TutorialScreen />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'slope'  ? 'flex' : 'none' }}>
           <SlopeScreen
@@ -539,6 +576,18 @@ function AppInner() {
 
       {/* ── First-run onboarding ─────────────────────────────────── */}
       <OnboardingOverlay />
+
+      {/* ── Shared confirm dialog (logout, unsaved-changes) ─────── */}
+      {confirmProps && (
+        <ConfirmModal
+          message={confirmProps.message}
+          confirmLabel={confirmProps.confirmLabel}
+          cancelLabel={confirmProps.cancelLabel}
+          danger={confirmProps.danger}
+          onConfirm={confirmProps.onConfirm}
+          onCancel={() => setConfirmProps(null)}
+        />
+      )}
 
       {/* ── Offline banner (fixed, renders above everything) ────── */}
       <OfflineIndicator />

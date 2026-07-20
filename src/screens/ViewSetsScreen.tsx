@@ -4,6 +4,7 @@ import { SurveySet, SurveyPoint } from '../types';
 import { fmtTimestamp } from '../constants';
 import { useLang } from '../LangContext';
 import { strings } from '../i18n';
+import ConfirmModal from '../components/ConfirmModal';
 
 // ─── Animations ───────────────────────────────────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
@@ -363,9 +364,10 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
   const allSets                             = getSets(projectId);
 
   // view state
-  const [menuPtId,     setMenuPtId]     = useState<string | null>(null);
-  const [moveMenuPtId, setMoveMenuPtId] = useState<string | null>(null);
-  const [toastMsg,     setToastMsg]     = useState('');
+  const [menuPtId,      setMenuPtId]      = useState<string | null>(null);
+  const [moveMenuPtId,  setMoveMenuPtId]  = useState<string | null>(null);
+  const [toastMsg,      setToastMsg]      = useState('');
+  const [removeConfirm, setRemoveConfirm] = useState<null | { pt: SurveyPoint }>(null);
 
   // edit state
   const [isEdit,          setIsEdit]          = useState(false);
@@ -459,12 +461,8 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
   };
 
   const handleRemoveFromSet = (pt: SurveyPoint) => {
-    const msg = lang === 'es'
-      ? `¿Quitar ${pt.label} de este conjunto?`
-      : `Remove ${pt.label} from this set?`;
-    if (!window.confirm(msg)) return;
-    updatePoint(projectId, pt.id, { setId: undefined });
     setMenuPtId(null);
+    setRemoveConfirm({ pt });
   };
 
   const handleMoveToSet = (pt: SurveyPoint, targetSet: SurveySet) => {
@@ -820,6 +818,21 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
           )
         )}
       </div>
+      {removeConfirm && (
+        <ConfirmModal
+          message={lang === 'es'
+            ? `¿Quitar ${removeConfirm.pt.label} de este conjunto?`
+            : `Remove ${removeConfirm.pt.label} from this set?`}
+          confirmLabel={lang === 'es' ? 'Quitar' : 'Remove'}
+          cancelLabel={lang === 'es' ? 'Cancelar' : 'Cancel'}
+          danger
+          onConfirm={() => {
+            updatePoint(projectId, removeConfirm.pt.id, { setId: undefined });
+            setRemoveConfirm(null);
+          }}
+          onCancel={() => setRemoveConfirm(null)}
+        />
+      )}
     </div>
   );
 }
@@ -932,13 +945,14 @@ export default function ViewSetsScreen({ projectId }: Props) {
   const sets   = getSets(projectId);
   const points = getPoints(projectId);
 
-  const [filter,       setFilter]       = useState<Filter>('latest');
-  const [search,       setSearch]       = useState('');
-  const [rawIdx,       setRawIdx]       = useState<number | null>(null);
-  const [detailSet,    setDetailSet]    = useState<SurveySet | null>(null);
-  const [showManage,   setShowManage]   = useState(false);
-  const [showAllModal, setShowAllModal] = useState(false);
-  const [exporting,    setExporting]    = useState(false);
+  const [filter,              setFilter]              = useState<Filter>('latest');
+  const [search,              setSearch]              = useState('');
+  const [rawIdx,              setRawIdx]              = useState<number | null>(null);
+  const [detailSet,           setDetailSet]           = useState<SurveySet | null>(null);
+  const [showManage,          setShowManage]          = useState(false);
+  const [showAllModal,        setShowAllModal]        = useState(false);
+  const [exporting,           setExporting]           = useState(false);
+  const [singleDeleteConfirm, setSingleDeleteConfirm] = useState<null | { name: string; onConfirm: () => void }>(null);
 
   const displayed = useMemo(() => {
     let arr = [...sets];
@@ -968,11 +982,17 @@ export default function ViewSetsScreen({ projectId }: Props) {
   const handleDeleteThis = () => {
     if (!curSet) return;
     setShowManage(false);
-    if (!window.confirm(strings[lang].deleteSingleSet(curSet.name))) return;
-    const ptIds = points.filter(p => p.setId === curSet.id).map(p => p.id);
-    if (ptIds.length > 0) deletePoints(projectId, ptIds);
-    deleteSet(projectId, curSet.id);
-    setRawIdx(null);
+    const captured = curSet;
+    setSingleDeleteConfirm({
+      name: captured.name,
+      onConfirm: () => {
+        const ptIds = points.filter(p => p.setId === captured.id).map(p => p.id);
+        if (ptIds.length > 0) deletePoints(projectId, ptIds);
+        deleteSet(projectId, captured.id);
+        setRawIdx(null);
+        setSingleDeleteConfirm(null);
+      },
+    });
   };
 
   const handleDeleteAll = () => {
@@ -1119,6 +1139,17 @@ export default function ViewSetsScreen({ projectId }: Props) {
       {detailSetLive && (
         <SetDetailView set={detailSetLive} points={detailPoints}
           projectId={projectId} onClose={() => setDetailSet(null)} />
+      )}
+
+      {singleDeleteConfirm && (
+        <ConfirmModal
+          message={strings[lang].deleteSingleSet(singleDeleteConfirm.name)}
+          confirmLabel={lang === 'es' ? 'Eliminar' : 'Delete'}
+          cancelLabel={lang === 'es' ? 'Cancelar' : 'Cancel'}
+          danger
+          onConfirm={singleDeleteConfirm.onConfirm}
+          onCancel={() => setSingleDeleteConfirm(null)}
+        />
       )}
     </div>
   );

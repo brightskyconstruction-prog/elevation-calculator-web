@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://elevation-calculator-web.vercel.app/sitemap.xml
+

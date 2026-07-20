@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, type CSSProperties, type Rea
 import { useSurveyStore } from '../stores/surveyStore';
 import { useLang } from '../LangContext';
 import { SurveyPoint, SurveySet } from '../types';
+import ConfirmModal from '../components/ConfirmModal';
 
 // ─── Modal animation (shared id — injected once across all screens) ────────────
 if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim')) {
@@ -185,6 +186,7 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
 }) {
   const { t } = useLang();
   const dc = dirColor(calc.dir);
+  const [detailConfirm, setDetailConfirm] = useState<null | { onConfirm: () => void }>(null);
 
   function dirLabel(dir: string) {
     if (dir === 'uphill')   return t('slopeUphill');
@@ -193,7 +195,12 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
   }
 
   const handleDelete = () => {
-    if (window.confirm(t('slopeDeleteCalcConfirm'))) onDelete();
+    setDetailConfirm({
+      onConfirm: () => {
+        setDetailConfirm(null);
+        onDelete();
+      },
+    });
   };
 
   return (
@@ -257,6 +264,16 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
           </div>
         </div>
       </div>
+      {detailConfirm && (
+        <ConfirmModal
+          message={t('slopeDeleteCalcConfirm')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('cancel')}
+          danger
+          onConfirm={detailConfirm.onConfirm}
+          onCancel={() => setDetailConfirm(null)}
+        />
+      )}
     </CenteredOverlay>
   );
 }
@@ -804,6 +821,7 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
   const [detailCalc,     setDetailCalc]     = useState<SavedCalc | null>(null);
   const [menuId,         setMenuId]         = useState<string | null>(null);
   const [showHistoryTip, setShowHistoryTip] = useState(false);
+  const [histConfirm,    setHistConfirm]    = useState<null | { onConfirm: () => void }>(null);
 
   const visibleCalcs = savedCalcs.slice(0, HISTORY_VISIBLE);
   const hasMore      = savedCalcs.length > HISTORY_VISIBLE;
@@ -846,7 +864,7 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
             <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '11px 16px', fontSize: 15, fontWeight: 700, color: NAVY, background: 'none', border: 'none', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}
               onClick={e => { e.stopPropagation(); setMenuId(null); handleEdit(c); }}>{t('edit')}</button>
             <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '11px 16px', fontSize: 15, fontWeight: 700, color: RED_DARK, background: 'none', border: 'none', cursor: 'pointer' }}
-              onClick={e => { e.stopPropagation(); setMenuId(null); if (window.confirm(t('slopeDeleteCalcConfirm'))) onDelete(c.id); }}>{t('delete')}</button>
+              onClick={e => { e.stopPropagation(); setMenuId(null); setHistConfirm({ onConfirm: () => { onDelete(c.id); setHistConfirm(null); } }); }}>{t('delete')}</button>
           </div>
         )}
       </div>
@@ -889,6 +907,16 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
             onClose={() => setDetailCalc(null)}
             onEdit={() => handleEdit(detailCalc)}
             onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
+          />
+        )}
+        {histConfirm && (
+          <ConfirmModal
+            message={t('slopeDeleteCalcConfirm')}
+            confirmLabel={t('delete')}
+            cancelLabel={t('cancel')}
+            danger
+            onConfirm={histConfirm.onConfirm}
+            onCancel={() => setHistConfirm(null)}
           />
         )}
       </div>
@@ -939,6 +967,17 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
           onClose={() => setDetailCalc(null)}
           onEdit={() => handleEdit(detailCalc)}
           onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
+        />
+      )}
+
+      {histConfirm && (
+        <ConfirmModal
+          message={t('slopeDeleteCalcConfirm')}
+          confirmLabel={t('delete')}
+          cancelLabel={t('cancel')}
+          danger
+          onConfirm={histConfirm.onConfirm}
+          onCancel={() => setHistConfirm(null)}
         />
       )}
 

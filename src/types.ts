@@ -60,7 +60,7 @@ export interface HistItem {
 
 // ─── Tab identifiers ───────────────────────────────────────────────────────────
 
-export type MainTab   = 'add' | 'points' | 'sets' | 'calc' | 'slope' | 'tutorial';
+export type MainTab   = 'add' | 'points' | 'sets' | 'calc' | 'slope';
 export type CalcTab   = 'calculator' | 'converter';
 export type PointsTab = 'compare' | 'graph' | 'single';
 export type SetsTab   = 'latest' | 'name' | 'search';
