@@ -92,30 +92,9 @@ function AppInner() {
     addScreenDirty.current = dirty;
   }, []);
 
-  const handleTabSwitch = useCallback((tab: MainTab) => {
-    if (activeTab === 'add' && tab !== 'add' && addScreenDirty.current) {
-      showConfirm({
-        message:      t('unsavedPointConfirm'),
-        confirmLabel: t('exitAppConfirm'),
-        cancelLabel:  t('continueEditing'),
-        danger:       false,
-        onConfirm: () => {
-          addScreenDirty.current = false;
-          setConfirmProps(null);
-          setActiveTab(tab);
-        },
-      });
-      return;
-    }
-    setActiveTab(tab);
-  }, [activeTab, t, showConfirm]);
-  const [editPoint,     setEditPoint]     = useState<SurveyPoint | undefined>(undefined);
-  const [showSettings,  setShowSettings]  = useState(false);
-  const [showLauncher,  setShowLauncher]  = useState(false);
-  useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
-
   // ── Confirm modal state ─────────────────────────────────────────
   // A single shared confirm modal instance used for logout + unsaved-changes.
+  // Declared before handleTabSwitch so showConfirm is in scope when used.
   const [confirmProps, setConfirmProps] = useState<null | {
     message:      string;
     confirmLabel: string;
@@ -138,6 +117,28 @@ function AppInner() {
       onConfirm:    opts.onConfirm,
     });
   }, []);
+
+  const handleTabSwitch = useCallback((tab: MainTab) => {
+    if (activeTab === 'add' && tab !== 'add' && addScreenDirty.current) {
+      showConfirm({
+        message:      t('unsavedPointConfirm'),
+        confirmLabel: t('exitAppConfirm'),
+        cancelLabel:  t('continueEditing'),
+        danger:       false,
+        onConfirm: () => {
+          addScreenDirty.current = false;
+          setConfirmProps(null);
+          setActiveTab(tab);
+        },
+      });
+      return;
+    }
+    setActiveTab(tab);
+  }, [activeTab, t, showConfirm]);
+  const [editPoint,     setEditPoint]     = useState<SurveyPoint | undefined>(undefined);
+  const [showSettings,  setShowSettings]  = useState(false);
+  const [showLauncher,  setShowLauncher]  = useState(false);
+  useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
   const [slopeFromId,   setSlopeFromId]   = useState<string | null>(null);
