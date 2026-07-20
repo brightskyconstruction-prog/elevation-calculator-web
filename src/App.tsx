@@ -9,7 +9,7 @@ import CalculatorScreen   from './screens/CalculatorScreen';
 import SplashScreenWeb    from './screens/SplashScreenWeb';
 import LoginScreenWeb     from './screens/LoginScreenWeb';
 import SlopeScreen        from './screens/SlopeScreen';
-// TutorialScreen removed — no real video content yet
+import TutorialScreen     from './screens/TutorialScreen';
 import OfflineIndicator   from './components/OfflineIndicator';
 import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
@@ -415,6 +415,7 @@ function AppInner() {
     { id: 'slope',    label: t('tabSlope')  },
     { id: 'sets',     label: t('tabSets'),  lines: (lang === 'en' ? ['View', 'Sets'] : ['Ver', 'Conj.']) },
     { id: 'calc',     label: t('tabCalc')   },
+    { id: 'tutorial', label: '?',           lines: ['Help', '?']  },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
@@ -481,7 +482,8 @@ function AppInner() {
       {/* ── Main tab bar ────────────────────────────────────────── */}
       <nav style={styles.tabBar} role="tablist">
         {MAIN_TABS.map(tab => {
-          const isActive = activeTab === tab.id;
+          const isActive   = activeTab === tab.id;
+          const isTutorial = tab.id === 'tutorial';
           return (
             <button
               key={tab.id}
@@ -490,6 +492,8 @@ function AppInner() {
               style={{
                 ...styles.tab,
                 ...(isActive ? styles.tabActive : {}),
+                ...(isTutorial ? styles.tabTutorial : {}),
+                ...(isActive && isTutorial ? styles.tabTutorialActive : {}),
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
@@ -532,6 +536,9 @@ function AppInner() {
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
           <CalculatorScreen />
+        </div>
+        <div style={{ ...styles.screen, display: activeTab === 'tutorial' ? 'flex' : 'none' }}>
+          <TutorialScreen />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'slope'  ? 'flex' : 'none' }}>
           <SlopeScreen
