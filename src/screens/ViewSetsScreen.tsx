@@ -393,6 +393,7 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
   const withBm   = points.filter(p => (p.bmElevation ?? 0) > 0);
   const elevs    = withBm.map(p => p.bmElevation!);
   const highElev = elevs.length > 0 ? Math.max(...elevs) : null;
+  const lowElev  = elevs.length > 0 ? Math.min(...elevs) : null;
   const avgElev  = elevs.length > 0 ? elevs.reduce((s, e) => s + e, 0) / elevs.length : null;
   const refPt    = sorted.find(p => p.id === referenceId);
 
@@ -540,9 +541,8 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
           <button style={{ background:'none', border:'none', color:'#fff', fontSize:22, fontWeight:700, lineHeight:1, cursor:'pointer', padding:'4px 4px', opacity:0.85, flexShrink:0 }} onClick={onClose}>✕</button>
         </div>
 
-        {/* ── Stats strip — single horizontal row (req #2) ─────────────────── */}
-        <div className="svs-stats-row"
-          style={{ display:'flex', overflowX:'auto', gap:6, padding:'8px 12px', borderBottom:`1px solid ${BORDER}`, flexShrink:0 }}>
+        {/* ── Stats strip — all 5 cards in one row, no scrolling ─────────── */}
+        <div style={{ display:'flex', flexWrap:'nowrap' as const, gap:3, padding:'7px 10px', borderBottom:`1px solid ${BORDER}`, flexShrink:0 }}>
           {/* Points */}
           <div style={sdS.stat}>
             <span style={sdS.statLbl}>{lang === 'es' ? 'Puntos' : 'Points'}</span>
@@ -551,22 +551,29 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
           {/* Benchmark */}
           {refPt && (
             <div style={{ ...sdS.stat, backgroundColor:'#FFF3CD', border:`1px solid #F5A623` }}>
-              <span style={{ ...sdS.statLbl, color:GOLD_LBL }}>{lang === 'es' ? 'Refer.' : 'Benchmark'}</span>
-              <span style={{ ...sdS.statVal, color:GOLD_TXT }}>{(refPt.bmElevation ?? 0).toFixed(3)}<span style={{ fontSize:9, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={{ ...sdS.statLbl, color:GOLD_LBL }}>{lang === 'es' ? 'Ref.' : 'Bmark'}</span>
+              <span style={{ ...sdS.statVal, color:GOLD_TXT }}>{(refPt.bmElevation ?? 0).toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
             </div>
           )}
           {/* Highest */}
-          {highElev != null && highElev !== refPt?.bmElevation && (
+          {highElev != null && (
             <div style={sdS.stat}>
-              <span style={sdS.statLbl}>{lang === 'es' ? 'Mayor' : 'Highest'}</span>
-              <span style={sdS.statVal}>{highElev.toFixed(3)}<span style={{ fontSize:9, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={sdS.statLbl}>{lang === 'es' ? 'Max' : 'High'}</span>
+              <span style={sdS.statVal}>{highElev.toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
+            </div>
+          )}
+          {/* Lowest */}
+          {lowElev != null && (
+            <div style={sdS.stat}>
+              <span style={sdS.statLbl}>{lang === 'es' ? 'Min' : 'Low'}</span>
+              <span style={sdS.statVal}>{lowElev.toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
             </div>
           )}
           {/* Average */}
           {avgElev != null && elevs.length > 1 && (
             <div style={sdS.stat}>
               <span style={sdS.statLbl}>{lang === 'es' ? 'Prom.' : 'Avg.'}</span>
-              <span style={sdS.statVal}>{avgElev.toFixed(3)}<span style={{ fontSize:9, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={sdS.statVal}>{avgElev.toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
             </div>
           )}
         </div>
@@ -704,9 +711,10 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
                           <span style={{ fontSize:13, fontWeight:800, color:BLUE_A, letterSpacing:0.4 }}>{pt.label}</span>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          {pt.pointName && <div style={{ fontSize:15, fontWeight:700, color:TEXT_P }}>{pt.pointName}</div>}
-                          {pt.takenBy   && <div style={{ fontSize:12, fontWeight:600, color:TEXT_S, marginTop:1 }}>{pt.takenBy}</div>}
-                          {!pt.pointName && !pt.takenBy && <div style={{ fontSize:12, color:TEXT_D }}>—</div>}
+                          <div style={{ fontSize:15, fontWeight:700, color: pt.pointName ? TEXT_P : TEXT_D, fontStyle: pt.pointName ? 'normal' : 'italic' }}>
+                            {pt.pointName || (lang === 'es' ? 'Punto Sin Nombre' : 'Unnamed Point')}
+                          </div>
+                          {pt.takenBy && <div style={{ fontSize:12, fontWeight:600, color:TEXT_S, marginTop:1 }}>{pt.takenBy}</div>}
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3, flexShrink:0 }}>
                           <div style={{ display:'flex', alignItems:'center', gap:3 }}>
@@ -818,9 +826,9 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
 
 const sdS: Record<string, React.CSSProperties> = {
   // Stats row — req #2: smaller labels, single row
-  stat:    { flexShrink:0, backgroundColor:SURFACE, borderRadius:7, padding:'6px 11px', display:'flex', flexDirection:'column', alignItems:'center', gap:1, minWidth:58 },
-  statLbl: { fontSize:9, fontWeight:700, color:TEXT_S, letterSpacing:0.2, whiteSpace:'nowrap' as const },
-  statVal: { fontSize:14, fontWeight:800, color:TEXT_P, fontFamily:'monospace', lineHeight:1.2 },
+  stat:    { flex:1, minWidth:0, backgroundColor:SURFACE, borderRadius:6, padding:'5px 4px', display:'flex', flexDirection:'column', alignItems:'center', gap:1 },
+  statLbl: { fontSize:8, fontWeight:700, color:TEXT_S, letterSpacing:0.1, whiteSpace:'nowrap' as const },
+  statVal: { fontSize:12, fontWeight:800, color:TEXT_P, fontFamily:'monospace', lineHeight:1.25 },
   // Point cells
   cell:    { flex:1, backgroundColor:SURFACE, borderRadius:6, padding:'7px 9px', display:'flex', flexDirection:'column', gap:2 },
   cellLbl: { fontSize:11, fontWeight:800, color:TEXT_S, letterSpacing:0.4, textTransform:'uppercase' as const },
@@ -906,33 +914,6 @@ function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: {
                   {isCur && <span style={{ fontSize:16, fontWeight:800, color:BLUE_A, flexShrink:0 }}>✓</span>}
                 </div>
 
-                {/* Point list — always visible (no toggle) */}
-                {ptCount > 0 && (
-                  <div style={{ borderTop:`1px solid ${BORDER}` }}>
-                    {setPoints.map((pt, pi) => (
-                      <div key={pt.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderBottom: pi < ptCount - 1 ? `1px solid ${BORDER}` : 'none', backgroundColor:'#FAFAFA' }}>
-                        <div style={{ width:32, height:32, backgroundColor:BLUE_D, borderRadius:5, border:`1px solid ${BLUE}`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                          <span style={{ fontSize:9, fontWeight:800, color:BLUE_A }}>{pt.label}</span>
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:12, fontWeight:700, color:TEXT_P, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>
-                            {pt.pointName ? `${pt.label} · ${pt.pointName}` : pt.label}
-                          </div>
-                          {(pt.bmElevation ?? 0) > 0 && (
-                            <div style={{ fontSize:11, fontWeight:600, color:CHARCOAL, fontFamily:'monospace' }}>
-                              {(pt.bmElevation!).toFixed(3)} ft
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {ptCount === 0 && (
-                  <div style={{ borderTop:`1px solid ${BORDER}`, padding:'9px 14px', fontSize:12, color:TEXT_D, fontStyle:'italic' }}>
-                    {lang === 'es' ? 'Sin puntos' : 'No points'}
-                  </div>
-                )}
               </div>
             );
           })}
