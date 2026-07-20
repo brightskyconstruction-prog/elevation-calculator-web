@@ -1027,19 +1027,19 @@ export default function ViewSetsScreen({ projectId }: Props) {
       )}
 
       {/* Toolbar */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'5px 10px', backgroundColor:CARD, borderBottom:`1px solid ${BORDER}`, flexShrink:0 }}>
-        <span style={{ fontSize:13, fontWeight:800, color:TEXT_P, letterSpacing:0.6, textTransform:'uppercase' as const }}>
+      <div style={{ display:'flex', alignItems:'stretch', justifyContent:'space-between', padding:'5px 10px', backgroundColor:CARD, borderBottom:`1px solid ${BORDER}`, flexShrink:0 }}>
+        <span style={{ fontSize:13, fontWeight:800, color:TEXT_P, letterSpacing:0.6, textTransform:'uppercase' as const, display:'flex', alignItems:'center' }}>
           {strings[lang].svsSets(sets.length)}
         </span>
         {sets.length > 0 && (
-          <div style={{ display:'flex', gap:6 }}>
+          <div style={{ display:'flex', gap:6, alignItems:'stretch' }}>
             <button
-              style={{ height:30, padding:'0 11px', backgroundColor:exporting ? '#D1FAE5' : GREEN_D, border:`1px solid ${exporting ? '#6EE7B7' : GREEN_B}`, borderRadius:6, fontSize:13, fontWeight:700, color:exporting ? '#065F46' : GREEN, cursor:exporting ? 'default' : 'pointer', display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap' as const, transition:'background-color 0.15s' }}
+              style={{ minHeight:34, padding:'6px 11px', backgroundColor:exporting ? '#D1FAE5' : GREEN_D, border:`1px solid ${exporting ? '#6EE7B7' : GREEN_B}`, borderRadius:6, fontSize:13, fontWeight:700, color:exporting ? '#065F46' : GREEN, cursor:exporting ? 'default' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5, whiteSpace:'nowrap' as const, transition:'background-color 0.15s' }}
               onClick={handleExport} disabled={exporting}>
               {exporting ? '⏳' : '⬇'} {lang === 'es' ? 'Exportar' : 'Export'}
             </button>
             <button
-              style={{ height:30, padding:'0 12px', backgroundColor:BLUE_D, border:`1px solid ${BLUE}`, borderRadius:6, fontSize:13, fontWeight:700, color:BLUE_A, cursor:'pointer' }}
+              style={{ minHeight:34, padding:'6px 12px', backgroundColor:BLUE_D, border:`1px solid ${BLUE}`, borderRadius:6, fontSize:13, fontWeight:700, color:BLUE_A, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center' as const, lineHeight:1.3 }}
               onClick={() => setShowManage(true)}>
               {t('manageSets')}
             </button>
@@ -1078,10 +1078,10 @@ export default function ViewSetsScreen({ projectId }: Props) {
                   <div style={{ fontSize:15, fontWeight:700, color:BLUE_A }}>{ptCount}</div>
                 </div>
               </div>
-              <div style={{ display:'flex', gap:6 }}>
-                <button style={{ flex:1, height:36, backgroundColor:BLUE_D, border:`1px solid ${BLUE}`, borderRadius:7, fontSize:14, fontWeight:700, color:BLUE_A, cursor:'pointer' }}
+              <div style={{ display:'flex', gap:6, alignItems:'stretch' }}>
+                <button style={{ flex:1, minHeight:44, padding:'8px 10px', backgroundColor:BLUE_D, border:`1px solid ${BLUE}`, borderRadius:7, fontSize:14, fontWeight:700, color:BLUE_A, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center' as const, lineHeight:1.3 }}
                   onClick={() => setDetailSet(curSet)}>{t('viewSetDetails')}</button>
-                <button style={{ height:36, padding:'0 14px', backgroundColor:SURFACE, border:`1px solid ${BORDER}`, borderRadius:7, fontSize:14, fontWeight:700, color:TEXT_S, cursor:'pointer' }}
+                <button style={{ minHeight:44, padding:'8px 14px', backgroundColor:SURFACE, border:`1px solid ${BORDER}`, borderRadius:7, fontSize:14, fontWeight:700, color:TEXT_S, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center' as const, lineHeight:1.3 }}
                   onClick={() => setShowAllModal(true)}>{t('viewAllSets')}</button>
               </div>
             </div>

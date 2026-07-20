@@ -729,8 +729,8 @@ function BrightSkyLauncherModal({ onClose }: { onClose: () => void }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' as const, marginBottom: 3 }}>
                   <span style={{ fontSize: 15, fontWeight: 800, color: '#111827', lineHeight: 1.2 }}>{svc.title}</span>
                   {svc.featured && (
-                    <span style={{ fontSize: 9, fontWeight: 800, color: NAVY, backgroundColor: '#DBEAFE', borderRadius: 4, padding: '2px 6px', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, lineHeight: 1.6 }}>
-                      Featured
+                    <span style={{ fontSize: 9, fontWeight: 800, color: '#92400E', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 20, padding: '2px 8px', letterSpacing: 0.5, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const, lineHeight: 1.6 }}>
+                      Coming Soon
                     </span>
                   )}
                 </div>
