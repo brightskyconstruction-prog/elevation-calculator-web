@@ -250,12 +250,54 @@ function AppInner() {
     syncEmailRef.current = uid || null;
     if (!isFirebaseConfigured() || !uid) return;
 
+    // ── Restore-point fallback ───────────────────────────────────────────────
+    // logoutUser saves a uid-tagged snapshot of local data before clearing.
+    // If Firestore is unavailable or has no record, we restore from this so
+    // sign-out → sign-in never results in a blank screen.
+    const applyRestorePoint = () => {
+      try {
+        const raw = localStorage.getItem('elevCalc:restore');
+        if (!raw) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parsed = JSON.parse(raw) as any;
+        // Only restore if this snapshot belongs to the current user.
+        if (parsed?.uid !== uid) return;
+        const snapshot = parsed.data as Record<string, string>;
+        applyLocalData(snapshot);
+        const surveyRaw = snapshot['elevation-calculator-v1'];
+        if (surveyRaw) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const s = (JSON.parse(surveyRaw) as any)?.state;
+          if (s) {
+            hydrateStore({
+              projects:        s.projects        ?? [],
+              points:          s.points          ?? [],
+              sets:            s.sets            ?? [],
+              history:         s.history         ?? [],
+              activeProjectId: s.activeProjectId ?? 'default-project',
+            });
+          }
+        }
+        console.info('[CloudSync] Restored from local restore-point.');
+      } catch (restoreErr) {
+        console.warn('[CloudSync] Restore-point recovery failed:', restoreErr);
+      }
+    };
+
     try {
       // Migrate data from legacy btoa(email) path on first login with new auth
       await migrateUserData(userEmail, uid);
 
       const cloudData = await loadUserData(uid);
-      if (!cloudData) return; // first-time user — local (empty) state is fine
+      if (!cloudData) {
+        // No Firestore record yet (new user, or flush failed on last logout).
+        // Try the restore-point saved during the last logout.
+        applyRestorePoint();
+        return;
+      }
+
+      // Successful cloud load — discard the restore-point (no longer needed).
+      try { localStorage.removeItem('elevCalc:restore'); } catch {}
 
       applyLocalData(cloudData);
 
@@ -278,7 +320,10 @@ function AppInner() {
         }
       }
     } catch (err) {
-      console.warn('[CloudSync] load failed, using local data:', err);
+      // Firestore read failed (network error, permission denied, etc.).
+      // Fall back to the local restore-point saved during the last logout.
+      console.warn('[CloudSync] load failed, trying restore-point:', err);
+      applyRestorePoint();
     }
 
     // Load / create the user's profile (non-blocking)
@@ -301,10 +346,14 @@ function AppInner() {
       clearTimeout(syncTimerRef.current);
       syncTimerRef.current = null;
     }
-    if (uid) {
+
+    // Capture a snapshot BEFORE any clearing so the same object
+    // is used for both the Firestore flush and the local restore-point.
+    const localSnapshot = uid ? collectLocalData() : null;
+
+    if (uid && localSnapshot) {
       try {
-        const data = collectLocalData();
-        await saveUserData(uid, data);
+        await saveUserData(uid, localSnapshot);
       } catch (err) {
         console.warn('[CloudSync] final flush failed:', err);
       }
@@ -314,6 +363,16 @@ function AppInner() {
 
     // Sign out from Firebase so auth state is cleared
     await signOutFirebase();
+
+    // Save a local restore-point BEFORE wiping device data.
+    // loginUser reads this back if Firestore is unavailable on the next sign-in,
+    // preventing a blank screen after sign-out → sign-in on the same device.
+    // The uid tag ensures it is only restored for the same account.
+    if (uid && localSnapshot && Object.keys(localSnapshot).length > 0) {
+      try {
+        localStorage.setItem('elevCalc:restore', JSON.stringify({ uid, data: localSnapshot }));
+      } catch {}
+    }
 
     // Clear device-local cache so next user on this device starts fresh
     clearLocalData();
