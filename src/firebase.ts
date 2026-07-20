@@ -8,6 +8,10 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   ActionCodeSettings,
   User,
 } from 'firebase/auth';
@@ -161,6 +165,44 @@ export async function completeEmailSignIn(email: string, link: string): Promise<
  */
 export function getStoredSignInEmail(): string | null {
   try { return localStorage.getItem(EMAIL_FOR_SIGNIN_KEY); } catch { return null; }
+}
+
+// ─── Email + Password authentication ──────────────────────────────────────────
+
+/**
+ * Sign in with email and password.
+ */
+export async function signInWithPassword(email: string, password: string): Promise<User> {
+  const auth   = getFirebaseAuth();
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  try { localStorage.setItem('auth:email', email); } catch {}
+  return result.user;
+}
+
+/**
+ * Create a new account with email and password.
+ * Optionally sets a display name on the created user.
+ */
+export async function signUpWithPassword(
+  email: string,
+  password: string,
+  displayName?: string,
+): Promise<User> {
+  const auth   = getFirebaseAuth();
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  if (displayName && result.user) {
+    await updateProfile(result.user, { displayName });
+  }
+  try { localStorage.setItem('auth:email', email); } catch {}
+  return result.user;
+}
+
+/**
+ * Send a password-reset email to the given address.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const auth = getFirebaseAuth();
+  await sendPasswordResetEmail(auth, email);
 }
 
 // ─── Auth ready promise ───────────────────────────────────────────────────────
