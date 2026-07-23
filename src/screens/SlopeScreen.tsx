@@ -14,6 +14,11 @@ if (typeof document !== 'undefined' && !document.getElementById('anp-modal-anim'
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
     .anp-modal-in { animation: anpModalIn 0.20s cubic-bezier(0.22,1,0.36,1) both; }
+    @keyframes targetResultsIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .target-results-in { animation: targetResultsIn 0.28s cubic-bezier(0.22,1,0.36,1) both; }
   `;
   document.head.appendChild(_ss);
 }
@@ -1021,157 +1026,456 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
   );
 }
 
+// ─── Target Elevation Graph ───────────────────────────────────────────────────
+function TargetElevGraph({ startElev, reqElev, distN, dir }: {
+  startElev: number; reqElev: number; distN: number; dir: 'uphill' | 'downhill';
+}) {
+  const dc  = dir === 'uphill' ? GREEN_DARK : RED_DARK;
+  const W = 340, H = 210;
+  const PL = 56, PR = 18, PT = 32, PB = 32;
+  const PW = W - PL - PR;
+  const PH = H - PT - PB;
+
+  const minE   = Math.min(startElev, reqElev);
+  const maxE   = Math.max(startElev, reqElev);
+  const rangeE = Math.max(maxE - minE, 0.5);
+  const padE   = rangeE * 0.42;
+  const yMin   = minE - padE;
+  const yMax   = maxE + padE;
+
+  const yFor = (e: number) => PT + PH * (1 - (e - yMin) / (yMax - yMin));
+  const xA = PL, xB = PL + PW;
+  const yA = yFor(startElev);
+  const yB = yFor(reqElev);
+
+  const elevChange = Math.abs(reqElev - startElev);
+  const slopePct   = distN > 0 ? (elevChange / distN) * 100 : 0;
+
+  const ticks: number[] = [];
+  for (let i = 0; i <= 4; i++) ticks.push(yMin + (yMax - yMin) * (i / 4));
+
+  // Arrow head along slope line direction
+  const dx = xB - xA, dy = yB - yA;
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const as = 9;
+  const ax1 = xB - ux * as - uy * as * 0.5;
+  const ay1 = yB - uy * as + ux * as * 0.5;
+  const ax2 = xB - ux * as + uy * as * 0.5;
+  const ay2 = yB - uy * as - ux * as * 0.5;
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+      {/* Chart area */}
+      <rect x={PL} y={PT} width={PW} height={PH} fill="#F8FAFF" rx="3" />
+      <rect x={PL} y={PT} width={PW} height={PH} fill="none" stroke="#DCE3F0" strokeWidth="0.75" rx="3" />
+
+      {/* Y-axis ticks + labels */}
+      {ticks.map((tick, i) => {
+        const ty = yFor(tick);
+        if (ty < PT - 2 || ty > PT + PH + 2) return null;
+        return (
+          <g key={i}>
+            <line x1={PL} y1={ty} x2={PL + PW} y2={ty}
+              stroke="#D1D8E4" strokeWidth="0.5" strokeDasharray="3,4" />
+            <text x={PL - 4} y={ty + 3.5} textAnchor="end"
+              fontSize="7.5" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(1)}</text>
+          </g>
+        );
+      })}
+
+      {/* Y axis unit label */}
+      <text x={9} y={PT + PH / 2} textAnchor="middle" fontSize="7" fontWeight="700" fill={TEXT_DIS}
+        transform={`rotate(-90 9 ${PT + PH / 2})`}>Elev (ft)</text>
+
+      {/* Fill */}
+      <polygon
+        points={`${xA},${yA} ${xB},${yB} ${xB},${PT + PH} ${xA},${PT + PH}`}
+        fill={`${dc}18`}
+      />
+
+      {/* Baseline at start elevation */}
+      <line x1={xA} y1={yA} x2={xB} y2={yA}
+        stroke={TEXT_DIS} strokeWidth="0.8" strokeDasharray="3,5" opacity="0.5" />
+
+      {/* Vertical diff line at end */}
+      {Math.abs(yA - yB) > 5 && (
+        <line x1={xB} y1={yA} x2={xB} y2={yB}
+          stroke={dc} strokeWidth="1" strokeDasharray="4,3" opacity="0.4" />
+      )}
+
+      {/* Main slope line */}
+      <line x1={xA} y1={yA} x2={xB} y2={yB} stroke={dc} strokeWidth="2.5" />
+
+      {/* Arrow head */}
+      <polygon points={`${xB},${yB} ${ax1},${ay1} ${ax2},${ay2}`} fill={dc} />
+
+      {/* START marker */}
+      <circle cx={xA} cy={yA} r={5.5} fill={BLUE} />
+      <circle cx={xA} cy={yA} r={2.8} fill={BLUE_ACC} />
+      <text x={xA} y={yA - 12} textAnchor="middle" fontSize="9" fontWeight="900" fill={NAVY}>START</text>
+      <text x={xA} y={PT + PH + 14} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_PRI}>{startElev.toFixed(2)} ft</text>
+
+      {/* TARGET marker */}
+      <circle cx={xB} cy={yB} r={5.5} fill={dc} />
+      <circle cx={xB} cy={yB} r={2.8} fill="#fff" />
+      <text x={xB} y={yB - 12} textAnchor="middle" fontSize="9" fontWeight="900" fill={dc}>TARGET</text>
+      <text x={xB} y={PT + PH + 14} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={dc}>{reqElev.toFixed(2)} ft</text>
+
+      {/* Grade label on the slope */}
+      <text x={PL + PW / 2} y={(yA + yB) / 2 - 10} textAnchor="middle"
+        fontSize="12" fontWeight="900" fill={dc}>
+        {dir === 'uphill' ? '↗' : '↘'} {slopePct.toFixed(2)}%
+      </text>
+
+      {/* Distance label */}
+      <text x={PL + PW / 2} y={PT + PH + 27} textAnchor="middle"
+        fontSize="7.5" fontWeight="700" fill={TEXT_DIS}>
+        {'← '}{distN.toFixed(1)} ft horizontal{' →'}
+      </text>
+    </svg>
+  );
+}
+
 // ─── 3. Target Slope Tab ──────────────────────────────────────────────────────
 function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Record<string, SurveySet> }) {
   const { t, lang } = useLang();
+
+  // Form state
   const [startId,       setStartId]       = useState<string | null>(null);
   const [slopePct,      setSlopePct]      = useState('');
   const [distance,      setDistance]      = useState('');
   const [dir,           setDir]           = useState<'uphill' | 'downhill'>('downhill');
   const [showPicker,    setShowPicker]    = useState(false);
   const [showTargetTip, setShowTargetTip] = useState(false);
-  const [slopeFocused,  setSlopeFocused]  = useState(false);
-  const [distFocused,   setDistFocused]   = useState(false);
 
-  // Controlled display values — show placeholder when empty+unfocused, blank when focused
-  const slopeDisplay = (!slopePct && !slopeFocused) ? '2.00' : slopePct;
-  const distDisplay  = (!distance && !distFocused)  ? '0.00' : distance;
+  // UI mode
+  const [showResults, setShowResults] = useState(false);
+  const [resultsKey,  setResultsKey]  = useState(0);   // re-triggers CSS animation on direction change
 
-  const handleClear = useCallback(() => {
-    setStartId(null);
-    setSlopePct('');
-    setDistance('');
-    setDir('downhill');
-  }, []);
+  // Touch tracking for inline validation
+  const [touched, setTouched] = useState({ slope: false, dist: false });
+
+  // Snapshot of inputs at Calculate time
+  const [committed, setCommitted] = useState<{ startElev: number; distN: number; slopeN: number } | null>(null);
 
   const startPt   = startId ? points.find(p => p.id === startId) ?? null : null;
   const startElev = startPt?.bmElevation ?? 0;
   const slopeN    = parseFloat(slopePct);
   const distN     = parseFloat(distance);
 
-  const valid = startPt != null && startElev > 0 &&
-    !isNaN(slopeN) && slopeN >= 0 &&
-    !isNaN(distN)  && distN  > 0;
+  const validStart = startPt != null && startElev > 0;
+  const validSlope = !isNaN(slopeN) && slopeN > 0;
+  const validDist  = !isNaN(distN)  && distN  > 0;
+  const canCalc    = validStart && validSlope && validDist;
 
-  const elevChange = valid ? distN * (slopeN / 100) : 0;
-  const reqElev    = valid ? (dir === 'uphill' ? startElev + elevChange : startElev - elevChange) : 0;
-  const rc         = dir === 'uphill' ? GREEN_DARK : RED_DARK;
+  // Live calculation from committed snapshot + current direction toggle
+  const liveResult = useMemo(() => {
+    if (!committed) return null;
+    const elevChange = committed.distN * (committed.slopeN / 100);
+    const reqElev    = dir === 'uphill'
+      ? committed.startElev + elevChange
+      : committed.startElev - elevChange;
+    return { startElev: committed.startElev, elevChange, reqElev, distN: committed.distN, slopeN: committed.slopeN };
+  }, [committed, dir]);
+
+  const handleCalculate = useCallback(() => {
+    if (!canCalc) return;
+    setCommitted({ startElev, distN, slopeN });
+    setShowResults(true);
+    setResultsKey(k => k + 1);
+  }, [canCalc, startElev, distN, slopeN]);
+
+  const handleCalcAnother = useCallback(() => {
+    setShowResults(false);
+    setCommitted(null);
+    setSlopePct('');
+    setDistance('');
+    setTouched({ slope: false, dist: false });
+    // preserve startId and dir
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setStartId(null);
+    setSlopePct('');
+    setDistance('');
+    setDir('downhill');
+    setShowResults(false);
+    setCommitted(null);
+    setTouched({ slope: false, dist: false });
+  }, []);
+
+  const handleDirChange = (newDir: 'uphill' | 'downhill') => {
+    setDir(newDir);
+    if (showResults) setResultsKey(k => k + 1);   // re-animate results on direction flip
+  };
+
+  const rc = dir === 'uphill' ? GREEN_DARK : RED_DARK;
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-        <div>
-          {/* START POINT label + Clear + ⓘ on the same row — no wasted left space */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-            <div style={{ ...LBL, marginBottom: 0 }}>{t('slopeStartPoint')}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2 }}
-                onClick={handleClear}
-              >{t('slopeClearBtn')}</button>
-              <button
-                style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
-                onClick={() => setShowTargetTip(true)}
-              >ⓘ</button>
+      {/* ── Input fields (collapses after Calculate) ───────────── */}
+      <div style={{
+        maxHeight:    showResults ? 0 : 1400,
+        opacity:      showResults ? 0 : 1,
+        overflow:     'hidden',
+        transition:   'max-height 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.24s ease',
+        pointerEvents: showResults ? 'none' : 'auto',
+      }}>
+        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+          {/* START POINT */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ ...LBL, marginBottom: 0 }}>{t('slopeStartPoint')}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  style={{ height: 34, paddingLeft: 14, paddingRight: 14, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                  onClick={handleClear}
+                >{t('slopeClearBtn')}</button>
+                <button
+                  style={{ background: 'none', border: 'none', color: '#1D4ED8', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: '4px 6px', minWidth: 36, minHeight: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 0 0.5px #1D4ED8)' }}
+                  onClick={() => setShowTargetTip(true)}
+                >ⓘ</button>
+              </div>
+            </div>
+            <div
+              role="button" tabIndex={0}
+              aria-label={startPt ? `${startPt.label} selected, tap to change` : 'Tap to select start point'}
+              style={{ backgroundColor: startPt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${startPt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '9px 12px', cursor: 'pointer', minHeight: 52 }}
+              onClick={() => setShowPicker(true)}
+              onKeyDown={e => e.key === 'Enter' && setShowPicker(true)}
+            >
+              {startPt ? (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{startPt.label}{startPt.pointName ? ` · ${startPt.pointName}` : ''}</div>
+                  {startElev > 0
+                    ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 3 }}>{t('slopeCurrElev')} {startElev.toFixed(2)} {t('slopeFtUnit')}</div>
+                    : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 3, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
+                  }
+                </>
+              ) : (
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', marginTop: 6 }}>{t('slopeTapSelectStart')}</div>
+              )}
             </div>
           </div>
-          <div
-            style={{ backgroundColor: startPt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${startPt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '7px 10px', cursor: 'pointer', minHeight: 48 }}
-            onClick={() => setShowPicker(true)}
-          >
-            {startPt ? (
-              <>
-                <div style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{startPt.label}{startPt.pointName ? ` · ${startPt.pointName}` : ''}</div>
-                {startElev > 0
-                  ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{t('slopeCurrElev')} {startElev.toFixed(2)} {t('slopeFtUnit')}</div>
-                  : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
-                }
-              </>
-            ) : (
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', marginTop: 5 }}>{t('slopeTapSelectStart')}</div>
+
+          {/* TARGET SLOPE */}
+          <div>
+            <div style={{ ...LBL, marginBottom: 6 }}>{t('slopeTargetSlope')}</div>
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              border: `1.5px solid ${touched.slope && slopePct !== '' && !validSlope ? RED_DARK : validSlope ? BLUE_ACC : BORDER}`,
+              borderRadius: 8, backgroundColor: SURFACE, overflow: 'hidden',
+              transition: 'border-color 0.18s',
+            }}>
+              <input
+                type="text" inputMode="decimal"
+                value={slopePct}
+                placeholder="2.00"
+                aria-label={t('slopeTargetSlope')}
+                onChange={e => setSlopePct(e.target.value)}
+                onBlur={() => setTouched(prev => ({ ...prev, slope: true }))}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Done') (e.target as HTMLInputElement).blur(); }}
+                style={{ flex: 1, height: 44, border: 'none', outline: 'none', padding: '0 10px', fontSize: 17, fontWeight: 700, color: TEXT_PRI, backgroundColor: 'transparent', minWidth: 0 }}
+              />
+              {slopePct.length > 0 && (
+                <button
+                  tabIndex={-1}
+                  aria-label="Clear slope"
+                  style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 15, cursor: 'pointer', padding: '0 4px', lineHeight: 1, minWidth: 28, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={() => setSlopePct('')}
+                >✕</button>
+              )}
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_SEC, paddingRight: 12, paddingLeft: 4, flexShrink: 0 }}>%</span>
+            </div>
+            {touched.slope && slopePct !== '' && !validSlope && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 4 }}>
+                {lang === 'es' ? 'Ingresa un porcentaje mayor que 0' : 'Enter a slope percentage greater than 0'}
+              </div>
             )}
           </div>
-        </div>
 
-        <div>
-          <div style={LBL}>{t('slopeTargetSlope')}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input
-              type="text" inputMode="decimal" value={slopeDisplay}
-              onChange={e => setSlopePct(e.target.value)}
-              onFocus={() => setSlopeFocused(true)}
-              onBlur={() => setSlopeFocused(false)}
-              style={{ flex: 1, height: 38, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!slopePct && !slopeFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
-            />
-            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>%</span>
+          {/* HORIZONTAL DISTANCE */}
+          <div>
+            <div style={{ ...LBL, marginBottom: 6 }}>{t('slopeHorizDist')}</div>
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              border: `1.5px solid ${touched.dist && distance !== '' && !validDist ? RED_DARK : validDist ? BLUE_ACC : BORDER}`,
+              borderRadius: 8, backgroundColor: SURFACE, overflow: 'hidden',
+              transition: 'border-color 0.18s',
+            }}>
+              <input
+                type="text" inputMode="decimal"
+                value={distance}
+                placeholder="0.00"
+                aria-label={t('slopeHorizDist')}
+                onChange={e => setDistance(e.target.value)}
+                onBlur={() => setTouched(prev => ({ ...prev, dist: true }))}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Done') (e.target as HTMLInputElement).blur(); }}
+                style={{ flex: 1, height: 44, border: 'none', outline: 'none', padding: '0 10px', fontSize: 17, fontWeight: 700, color: TEXT_PRI, backgroundColor: 'transparent', minWidth: 0 }}
+              />
+              {distance.length > 0 && (
+                <button
+                  tabIndex={-1}
+                  aria-label="Clear distance"
+                  style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 15, cursor: 'pointer', padding: '0 4px', lineHeight: 1, minWidth: 28, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onClick={() => setDistance('')}
+                >✕</button>
+              )}
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_SEC, paddingRight: 12, paddingLeft: 4, flexShrink: 0 }}>{t('slopeFtUnit')}</span>
+            </div>
+            {touched.dist && distance !== '' && !validDist && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 4 }}>
+                {lang === 'es' ? 'Ingresa una distancia mayor que 0' : 'Enter a distance greater than 0'}
+              </div>
+            )}
           </div>
-        </div>
 
-        <div>
-          <div style={LBL}>{t('slopeHorizDist')}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input
-              type="text" inputMode="decimal" value={distDisplay}
-              onChange={e => setDistance(e.target.value)}
-              onFocus={() => setDistFocused(true)}
-              onBlur={() => setDistFocused(false)}
-              style={{ flex: 1, height: 38, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!distance && !distFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
-            />
-            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI }}>{t('slopeFtUnit')}</span>
-          </div>
-        </div>
-
-        <div>
-          <div style={LBL}>{t('slopeDirection')}</div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {(['downhill', 'uphill'] as const).map(d => {
-              const active = dir === d;
-              const btnC   = d === 'uphill' ? GREEN_DARK : RED_DARK;
-              return (
-                <button key={d}
-                  style={{ flex: 1, minHeight: 40, padding: '6px 8px', borderRadius: 7, border: `1.5px solid ${active ? btnC : BORDER}`, backgroundColor: active ? `${btnC}14` : SURFACE, fontSize: 15, fontWeight: 800, color: active ? btnC : TEXT_SEC, cursor: 'pointer' }}
-                  onClick={() => setDir(d)}
-                >{d === 'downhill' ? `↘ ${t('slopeDownhill')}` : `↗ ${t('slopeUphill')}`}</button>
-              );
-            })}
-          </div>
         </div>
       </div>
 
-      {valid && (
-        /* Single 3-column row: Start Elevation | Elev. Change | Required Elevation */
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, alignItems: 'stretch' }}>
-
-          {/* Start Elevation */}
-          <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeStartElev')}</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.2 }}>{startElev.toFixed(2)}<span style={{ fontSize: 12, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span></div>
-          </div>
-
-          {/* Elevation Change */}
-          <div style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 4 }}>{t('slopeElevChange')}</div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: rc, fontFamily: 'monospace', lineHeight: 1.2 }}>
-              {dir === 'uphill' ? '+' : '−'}{elevChange.toFixed(2)}<span style={{ fontSize: 12, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
-            </div>
-          </div>
-
-          {/* Required Elevation — color-coded to match direction */}
-          <div style={{ backgroundColor: rc, borderRadius: 9, padding: '8px 9px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: `0 2px 8px ${rc}44` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.80)', letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('slopeReqElev')}</div>
-              <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)' }}>{dir === 'uphill' ? '↗' : '↘'}</span>
-            </div>
-            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1.2, marginTop: 4 }}>
-              {reqElev.toFixed(2)}<span style={{ fontSize: 12, fontWeight: 700, marginLeft: 2 }}>{t('slopeFtUnit')}</span>
-            </div>
-          </div>
-
+      {/* ── Direction toggle (always visible) ─────────────────────── */}
+      <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 12px' }}>
+        <div style={{ ...LBL, marginBottom: 8 }}>{t('slopeDirection')}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['downhill', 'uphill'] as const).map(d => {
+            const active = dir === d;
+            const btnC   = d === 'uphill' ? GREEN_DARK : RED_DARK;
+            return (
+              <button
+                key={d}
+                aria-pressed={active}
+                style={{
+                  flex: 1, minHeight: 48, padding: '8px 10px',
+                  borderRadius: 8,
+                  border: `2px solid ${active ? btnC : BORDER}`,
+                  backgroundColor: active ? `${btnC}14` : SURFACE,
+                  fontSize: 15, fontWeight: 800,
+                  color: active ? btnC : TEXT_SEC,
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s, background-color 0.2s, color 0.2s, box-shadow 0.2s',
+                  boxShadow: active ? `0 2px 10px ${btnC}30` : 'none',
+                }}
+                onClick={() => handleDirChange(d)}
+              >
+                {d === 'downhill' ? `↘ ${t('slopeDownhill')}` : `↗ ${t('slopeUphill')}`}
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
 
-      {/* Target Slope info tip modal */}
+      {/* ── Calculate button (collapses after Calculate) ──────────── */}
+      <div style={{
+        maxHeight:    showResults ? 0 : 80,
+        opacity:      showResults ? 0 : 1,
+        overflow:     'hidden',
+        transition:   'max-height 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease',
+        pointerEvents: showResults ? 'none' : 'auto',
+      }}>
+        <button
+          disabled={!canCalc}
+          onClick={handleCalculate}
+          aria-label={t('slopeCalculateBtn')}
+          style={{
+            width: '100%', height: 52,
+            backgroundColor: canCalc ? BLUE_ACC : '#CBD5E1',
+            border: 'none', borderRadius: 12,
+            color: canCalc ? '#fff' : '#9CA3AF',
+            fontSize: 17, fontWeight: 800, letterSpacing: 0.3,
+            cursor: canCalc ? 'pointer' : 'default',
+            transition: 'background-color 0.22s, box-shadow 0.22s',
+            boxShadow: canCalc ? '0 3px 14px rgba(59,130,246,0.38)' : 'none',
+          }}
+        >{t('slopeCalculateBtn')}</button>
+        {/* Inline hint when fields incomplete */}
+        {!canCalc && (touched.slope || touched.dist) && (
+          <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_DIS, textAlign: 'center' as const, marginTop: 5 }}>
+            {lang === 'es' ? 'Completa todos los campos para calcular' : 'Complete all fields to calculate'}
+          </div>
+        )}
+      </div>
+
+      {/* ── Results section (expands after Calculate) ─────────────── */}
+      <div style={{
+        maxHeight:  showResults ? 2000 : 0,
+        opacity:    showResults ? 1 : 0,
+        overflow:   'hidden',
+        transition: 'max-height 0.36s cubic-bezier(0.4,0,0.2,1), opacity 0.28s ease',
+      }}>
+        {liveResult && (
+          <div key={resultsKey} className="target-results-in"
+               style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+            {/* Slope profile graph */}
+            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 6px 4px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+              <div style={{ paddingLeft: 10, paddingBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
+                  {lang === 'es' ? 'Perfil de Pendiente' : 'Slope Profile'}
+                </span>
+              </div>
+              <TargetElevGraph
+                startElev={liveResult.startElev}
+                reqElev={liveResult.reqElev}
+                distN={liveResult.distN}
+                dir={dir}
+              />
+            </div>
+
+            {/* 3 result cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+
+              {/* Card 1 — Start Elevation */}
+              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 10px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
+                  {t('slopeStartElev')}
+                </div>
+                <div style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.1 }}>
+                  {liveResult.startElev.toFixed(2)}
+                  <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, marginLeft: 2 }}>ft</span>
+                </div>
+              </div>
+
+              {/* Card 2 — Elevation Change */}
+              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${rc}44`, padding: '10px 10px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
+                  {t('slopeElevChange')}
+                </div>
+                <div style={{ fontSize: 17, fontWeight: 900, color: rc, fontFamily: 'monospace', lineHeight: 1.1 }}>
+                  {dir === 'uphill' ? '+' : '−'}{liveResult.elevChange.toFixed(2)}
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 2 }}>ft</span>
+                </div>
+              </div>
+
+              {/* Card 3 — Required Elevation (highlighted) */}
+              <div style={{ backgroundColor: rc, borderRadius: 10, padding: '10px 10px', boxShadow: `0 3px 14px ${rc}44`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
+                    {t('slopeReqElev')}
+                  </div>
+                  <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.88)' }}>{dir === 'uphill' ? '↗' : '↘'}</span>
+                </div>
+                <div style={{ fontSize: 17, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1.1 }}>
+                  {liveResult.reqElev.toFixed(2)}
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 2 }}>ft</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Calculate Another Target */}
+            <button
+              style={{ width: '100%', height: 50, backgroundColor: 'transparent', border: `2px solid ${NAVY}`, borderRadius: 12, color: NAVY, fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.2, transition: 'background-color 0.18s' }}
+              onClick={handleCalcAnother}
+            >
+              {lang === 'es' ? 'Calcular Otro Objetivo' : 'Calculate Another Target'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Info tip modal ─────────────────────────────────────────── */}
       {showTargetTip && (
         <CenteredOverlay onClose={() => setShowTargetTip(false)}>
           <div style={{ width: '100%', maxWidth: 380, backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
@@ -1185,20 +1489,20 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
               {lang === 'es' ? (
                 <>
                   <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Punto de Inicio</strong> — Toca el campo y selecciona el punto desde donde se mide. Solo se muestran puntos con datos de elevación.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Pendiente Objetivo</strong> — Ingresa el porcentaje de pendiente deseado (p. ej., 2.00 para un 2%). El campo se borrará automáticamente al tocarlo.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Distancia Horizontal</strong> — Ingresa la distancia horizontal en pies. El campo se borrará automáticamente al tocarlo.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Pendiente Objetivo</strong> — Ingresa el porcentaje de pendiente deseado (p. ej., 3.5 para un 3.5%). Toca ✕ para limpiar.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Distancia Horizontal</strong> — Ingresa la distancia horizontal en pies. Toca ✕ para limpiar.</p>
                   <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Dirección</strong> — Elige <strong style={{ color: TEXT_PRI }}>Bajada</strong> si el terreno desciende, o <strong style={{ color: TEXT_PRI }}>Subida</strong> si asciende desde el punto de inicio.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Cómo se Calcula</strong> — Elevación Requerida = Elevación de Inicio ± (Pendiente % × Distancia). Los resultados muestran la Elevación de Inicio, el Cambio de Elevación y la Elevación Requerida al final del recorrido.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Limpiar</strong> — Toca Limpiar para restablecer todos los campos y comenzar un nuevo cálculo.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Cómo se Calcula</strong> — Elevación Requerida = Elevación de Inicio ± (Pendiente % × Distancia). Después de calcular, cambia la dirección para comparar Bajada/Subida instantáneamente sin recalcular.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Limpiar</strong> — Toca Limpiar para restablecer todos los campos y volver a la entrada.</p>
                 </>
               ) : (
                 <>
                   <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Start Point</strong> — Tap the field and select the point you're measuring from. Only points with elevation data are shown.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Target Slope</strong> — Enter the desired slope percentage (e.g. 2.00 for 2%). The field clears automatically when you tap it.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Horizontal Distance</strong> — Enter the horizontal distance in feet. The field clears automatically when you tap it.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Target Slope</strong> — Enter the desired slope percentage (e.g. 3.5 for 3.5%). Tap ✕ to clear.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Horizontal Distance</strong> — Enter the horizontal distance in feet. Tap ✕ to clear.</p>
                   <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Direction</strong> — Choose <strong style={{ color: TEXT_PRI }}>Downhill</strong> if the grade descends, or <strong style={{ color: TEXT_PRI }}>Uphill</strong> if it rises from your start point.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>How it Calculates</strong> — Required Elevation = Start Elevation ± (Slope % × Distance). Results show Start Elevation, Elevation Change, and the Required Elevation you need to reach at the end of the run.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Clear</strong> — Tap Clear to reset all fields and start a new calculation.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>How it Calculates</strong> — Required Elevation = Start Elevation ± (Slope % × Distance). After calculating, toggle Direction to instantly compare Downhill vs Uphill without re-entering inputs.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Clear</strong> — Tap Clear to reset all fields and return to input mode.</p>
                 </>
               )}
               <button
