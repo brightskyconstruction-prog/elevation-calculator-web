@@ -468,13 +468,13 @@ function AppInner() {
 
   // ── Main tab definitions (translated) ───────────────────────────
   // `lines` forces a two-line label for tabs that need to wrap.
-  const MAIN_TABS: { id: MainTab; label: string; lines?: [string, string] }[] = [
+  const MAIN_TABS: { id: MainTab; label: string; lines?: [string, string]; compact?: boolean; ariaLabel?: string }[] = [
     { id: 'add',      label: t('tabAdd')    },
     { id: 'points',   label: t('tabPoints') },
     { id: 'slope',    label: t('tabSlope')  },
     { id: 'sets',     label: t('tabSets'),  lines: (lang === 'en' ? ['View', 'Sets'] : ['Ver', 'Conj.']) },
-    { id: 'calc',     label: t('tabCalc')   },
-    { id: 'tutorial', label: '?',           lines: ['Help', '?']  },
+    { id: 'calc',     label: '🧮',          compact: true, ariaLabel: t('tabCalc') },
+    { id: 'tutorial', label: '?',           compact: true, ariaLabel: 'Help'       },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
@@ -541,18 +541,20 @@ function AppInner() {
       {/* ── Main tab bar ────────────────────────────────────────── */}
       <nav style={styles.tabBar} role="tablist">
         {MAIN_TABS.map(tab => {
-          const isActive   = activeTab === tab.id;
-          const isTutorial = tab.id === 'tutorial';
+          const isActive  = activeTab === tab.id;
+          const isCompact = tab.compact === true;
           return (
             <button
               key={tab.id}
               role="tab"
               aria-selected={isActive}
+              aria-label={tab.ariaLabel ?? tab.label}
+              title={tab.ariaLabel}
               style={{
                 ...styles.tab,
-                ...(isActive ? styles.tabActive : {}),
-                ...(isTutorial ? styles.tabTutorial : {}),
-                ...(isActive && isTutorial ? styles.tabTutorialActive : {}),
+                ...(isActive  ? styles.tabActive       : {}),
+                ...(isCompact ? styles.tabCompact      : {}),
+                ...(isActive && isCompact ? styles.tabCompactActive : {}),
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
@@ -561,6 +563,8 @@ function AppInner() {
                   <span>{tab.lines[0]}</span>
                   <span>{tab.lines[1]}</span>
                 </span>
+              ) : isCompact ? (
+                <span style={{ fontSize: '20px', lineHeight: 1 }}>{tab.label}</span>
               ) : tab.label}
             </button>
           );
@@ -1009,7 +1013,7 @@ const styles: Record<string, React.CSSProperties> = {
     display:         'flex',
     alignItems:      'center',
     justifyContent:  'center',
-    fontSize:        '12.5px',
+    fontSize:        '14px',
     fontWeight:      '600',
     lineHeight:      '1.2',
     textAlign:       'center' as const,
@@ -1027,10 +1031,14 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight:      '700',
     boxShadow:       '0 1px 4px rgba(20,58,99,0.12)',
   },
-  tabTutorial: {
+  tabCompact: {
+    flex:            0,
+    width:           44,
+    flexShrink:      0,
+    padding:         '4px 0',
     color:           '#6B7280',
   },
-  tabTutorialActive: {
+  tabCompactActive: {
     color:           NAVY,
     backgroundColor: '#DBEAFE',
     fontWeight:      '700',
