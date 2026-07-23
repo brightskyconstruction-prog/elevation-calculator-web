@@ -466,15 +466,33 @@ function AppInner() {
 
   const projectId = activeProjectId ?? 'default-project';
 
-  // ── Main tab definitions (translated) ───────────────────────────
-  // `lines` forces a two-line label for tabs that need to wrap.
-  const MAIN_TABS: { id: MainTab; label: string; lines?: [string, string]; compact?: boolean; ariaLabel?: string }[] = [
-    { id: 'add',      label: t('tabAdd')    },
-    { id: 'points',   label: t('tabPoints') },
-    { id: 'slope',    label: t('tabSlope')  },
-    { id: 'sets',     label: t('tabSets'),  lines: (lang === 'en' ? ['View', 'Sets'] : ['Ver', 'Conj.']) },
-    { id: 'calc',     label: '🧮',          compact: true, ariaLabel: t('tabCalc') },
-    { id: 'tutorial', label: '?',           compact: true, ariaLabel: 'Help'       },
+  // ── Main tab definitions ─────────────────────────────────────────────────────
+  // `lines`    → two-line wrapped label (centered).
+  // `icon`     → replaces text with an SVG icon component.
+  // `flex`     → proportional width (all values sum to 100).
+  // `ariaLabel`→ accessible name for screen readers.
+  const MAIN_TABS: {
+    id:        MainTab;
+    label?:    string;
+    lines?:    [string, string];
+    icon?:     React.ReactNode;
+    flex:      number;
+    ariaLabel: string;
+  }[] = [
+    { id: 'add',      label: t('tabAdd'),
+      flex: 18, ariaLabel: t('tabAdd') },
+    { id: 'points',   label: t('tabPoints'),
+      lines: lang === 'en' ? ['Compare', 'Height'] : ['Comparar', 'Altura'],
+      flex: 22, ariaLabel: t('tabPoints') },
+    { id: 'slope',    label: t('tabSlope'),
+      flex: 16, ariaLabel: t('tabSlope') },
+    { id: 'sets',     label: t('tabSets'),
+      lines: lang === 'en' ? ['View', 'Sets'] : ['Ver', 'Conj.'],
+      flex: 20, ariaLabel: t('tabSets') },
+    { id: 'calc',     icon: <CalcIcon />,
+      flex: 12, ariaLabel: t('tabCalc') },
+    { id: 'tutorial', label: '?',
+      flex: 12, ariaLabel: 'Help' },
   ];
 
   // ── Render ──────────────────────────────────────────────────────
@@ -541,31 +559,35 @@ function AppInner() {
       {/* ── Main tab bar ────────────────────────────────────────── */}
       <nav style={styles.tabBar} role="tablist">
         {MAIN_TABS.map(tab => {
-          const isActive  = activeTab === tab.id;
-          const isCompact = tab.compact === true;
+          const isActive = activeTab === tab.id;
+          const isIcon   = !!tab.icon;
+          const isHelp   = tab.id === 'tutorial';
           return (
             <button
               key={tab.id}
               role="tab"
               aria-selected={isActive}
-              aria-label={tab.ariaLabel ?? tab.label}
+              aria-label={tab.ariaLabel}
               title={tab.ariaLabel}
               style={{
                 ...styles.tab,
-                ...(isActive  ? styles.tabActive       : {}),
-                ...(isCompact ? styles.tabCompact      : {}),
-                ...(isActive && isCompact ? styles.tabCompactActive : {}),
+                flex: tab.flex,
+                ...(isActive ? styles.tabActive : {}),
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
-              {tab.lines ? (
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.15 }}>
+              {isIcon ? (
+                tab.icon
+              ) : tab.lines ? (
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.2, gap: 0 }}>
                   <span>{tab.lines[0]}</span>
                   <span>{tab.lines[1]}</span>
                 </span>
-              ) : isCompact ? (
-                <span style={{ fontSize: '20px', lineHeight: 1 }}>{tab.label}</span>
-              ) : tab.label}
+              ) : isHelp ? (
+                <span style={{ fontSize: '19px', fontWeight: 800, lineHeight: 1, letterSpacing: 0 }}>?</span>
+              ) : (
+                tab.label
+              )}
             </button>
           );
         })}
@@ -882,6 +904,27 @@ function SettingsIcon() {
   );
 }
 
+// ─── Calculator tab icon (Material-style, stroke-based) ──────────────────────
+function CalcIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+         aria-hidden="true">
+      {/* Body */}
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      {/* Display — filled */}
+      <rect x="7" y="5" width="10" height="4" rx="0.75"
+            fill="currentColor" stroke="none" />
+      {/* Button grid: 2 rows × 2 cols + 1 tall right key */}
+      <rect x="7"    y="11" width="3" height="3" rx="0.75" />
+      <rect x="10.5" y="11" width="3" height="3" rx="0.75" />
+      <rect x="14"   y="11" width="3" height="7" rx="0.75" />
+      <rect x="7"    y="15" width="3" height="3" rx="0.75" />
+      <rect x="10.5" y="15" width="3" height="3" rx="0.75" />
+    </svg>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const GOLD = '#F4B02A';
 const NAVY = '#143A63';
@@ -1007,15 +1050,16 @@ const styles: Record<string, React.CSSProperties> = {
     gap:             2,
   },
   tab: {
-    flex:            1,
+    // flex is set per-tab inline (proportional widths)
     minWidth:        0,
-    padding:         '4px 2px',
+    padding:         '5px 3px',
     display:         'flex',
     alignItems:      'center',
     justifyContent:  'center',
-    fontSize:        '14px',
+    fontSize:        '15px',
     fontWeight:      '600',
     lineHeight:      '1.2',
+    letterSpacing:   '0.01em',
     textAlign:       'center' as const,
     color:           '#6B7280',
     backgroundColor: 'transparent',
@@ -1023,6 +1067,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius:    16,
     cursor:          'pointer',
     whiteSpace:      'normal' as const,
+    minHeight:       44,
     transition:      'background-color 0.2s, color 0.2s, box-shadow 0.2s',
   },
   tabActive: {
@@ -1030,18 +1075,6 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: '#DBEAFE',
     fontWeight:      '700',
     boxShadow:       '0 1px 4px rgba(20,58,99,0.12)',
-  },
-  tabCompact: {
-    flex:            0,
-    width:           44,
-    flexShrink:      0,
-    padding:         '4px 0',
-    color:           '#6B7280',
-  },
-  tabCompactActive: {
-    color:           NAVY,
-    backgroundColor: '#DBEAFE',
-    fontWeight:      '700',
   },
   content: {
     flex:          1,
