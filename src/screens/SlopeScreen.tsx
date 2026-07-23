@@ -1213,7 +1213,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
   const rc = dir === 'uphill' ? GREEN_DARK : RED_DARK;
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
 
       {/* ── Input fields (collapses after Calculate) ───────────── */}
       <div style={{
@@ -1223,15 +1223,15 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
         transition:   'max-height 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.24s ease',
         pointerEvents: showResults ? 'none' : 'auto',
       }}>
-        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
 
           {/* START POINT */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <div style={{ ...LBL, marginBottom: 0 }}>{t('slopeStartPoint')}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
-                  style={{ height: 34, paddingLeft: 14, paddingRight: 14, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                  style={{ height: 32, paddingLeft: 14, paddingRight: 14, backgroundColor: NAVY, border: 'none', borderRadius: 7, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                   onClick={handleClear}
                 >{t('slopeClearBtn')}</button>
                 <button
@@ -1243,7 +1243,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
             <div
               role="button" tabIndex={0}
               aria-label={startPt ? `${startPt.label} selected, tap to change` : 'Tap to select start point'}
-              style={{ backgroundColor: startPt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${startPt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '9px 12px', cursor: 'pointer', minHeight: 52 }}
+              style={{ backgroundColor: startPt ? BLUE_DEEP : SURFACE, border: `1.5px solid ${startPt ? BLUE_ACC : BORDER}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', minHeight: 44 }}
               onClick={() => setShowPicker(true)}
               onKeyDown={e => e.key === 'Enter' && setShowPicker(true)}
             >
@@ -1251,19 +1251,19 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
                 <>
                   <div style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{startPt.label}{startPt.pointName ? ` · ${startPt.pointName}` : ''}</div>
                   {startElev > 0
-                    ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 3 }}>{t('slopeCurrElev')} {startElev.toFixed(2)} {t('slopeFtUnit')}</div>
-                    : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 3, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
+                    ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{t('slopeCurrElev')} {startElev.toFixed(2)} {t('slopeFtUnit')}</div>
+                    : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
                   }
                 </>
               ) : (
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', marginTop: 6 }}>{t('slopeTapSelectStart')}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#6B7280', marginTop: 3 }}>{t('slopeTapSelectStart')}</div>
               )}
             </div>
           </div>
 
           {/* TARGET SLOPE */}
           <div>
-            <div style={{ ...LBL, marginBottom: 6 }}>{t('slopeTargetSlope')}</div>
+            <div style={{ ...LBL, marginBottom: 4 }}>{t('slopeTargetSlope')}</div>
             <div style={{
               display: 'flex', alignItems: 'center',
               border: `1.5px solid ${touched.slope && slopePct !== '' && !validSlope ? RED_DARK : validSlope ? BLUE_ACC : BORDER}`,
@@ -1278,20 +1278,20 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
                 onChange={e => setSlopePct(e.target.value)}
                 onBlur={() => setTouched(prev => ({ ...prev, slope: true }))}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Done') (e.target as HTMLInputElement).blur(); }}
-                style={{ flex: 1, height: 44, border: 'none', outline: 'none', padding: '0 10px', fontSize: 17, fontWeight: 700, color: TEXT_PRI, backgroundColor: 'transparent', minWidth: 0 }}
+                style={{ flex: 1, height: 38, border: 'none', outline: 'none', padding: '0 10px', fontSize: 17, fontWeight: 700, color: TEXT_PRI, backgroundColor: 'transparent', minWidth: 0 }}
               />
               {slopePct.length > 0 && (
                 <button
                   tabIndex={-1}
                   aria-label="Clear slope"
-                  style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 15, cursor: 'pointer', padding: '0 4px', lineHeight: 1, minWidth: 28, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 15, cursor: 'pointer', padding: '0 4px', lineHeight: 1, minWidth: 28, minHeight: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   onClick={() => setSlopePct('')}
                 >✕</button>
               )}
               <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_SEC, paddingRight: 12, paddingLeft: 4, flexShrink: 0 }}>%</span>
             </div>
             {touched.slope && slopePct !== '' && !validSlope && (
-              <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 3 }}>
                 {lang === 'es' ? 'Ingresa un porcentaje mayor que 0' : 'Enter a slope percentage greater than 0'}
               </div>
             )}
@@ -1299,7 +1299,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
           {/* HORIZONTAL DISTANCE */}
           <div>
-            <div style={{ ...LBL, marginBottom: 6 }}>{t('slopeHorizDist')}</div>
+            <div style={{ ...LBL, marginBottom: 4 }}>{t('slopeHorizDist')}</div>
             <div style={{
               display: 'flex', alignItems: 'center',
               border: `1.5px solid ${touched.dist && distance !== '' && !validDist ? RED_DARK : validDist ? BLUE_ACC : BORDER}`,
@@ -1314,20 +1314,20 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
                 onChange={e => setDistance(e.target.value)}
                 onBlur={() => setTouched(prev => ({ ...prev, dist: true }))}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === 'Done') (e.target as HTMLInputElement).blur(); }}
-                style={{ flex: 1, height: 44, border: 'none', outline: 'none', padding: '0 10px', fontSize: 17, fontWeight: 700, color: TEXT_PRI, backgroundColor: 'transparent', minWidth: 0 }}
+                style={{ flex: 1, height: 38, border: 'none', outline: 'none', padding: '0 10px', fontSize: 17, fontWeight: 700, color: TEXT_PRI, backgroundColor: 'transparent', minWidth: 0 }}
               />
               {distance.length > 0 && (
                 <button
                   tabIndex={-1}
                   aria-label="Clear distance"
-                  style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 15, cursor: 'pointer', padding: '0 4px', lineHeight: 1, minWidth: 28, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 15, cursor: 'pointer', padding: '0 4px', lineHeight: 1, minWidth: 28, minHeight: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   onClick={() => setDistance('')}
                 >✕</button>
               )}
               <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_SEC, paddingRight: 12, paddingLeft: 4, flexShrink: 0 }}>{t('slopeFtUnit')}</span>
             </div>
             {touched.dist && distance !== '' && !validDist && (
-              <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 3 }}>
                 {lang === 'es' ? 'Ingresa una distancia mayor que 0' : 'Enter a distance greater than 0'}
               </div>
             )}
@@ -1337,9 +1337,9 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
       </div>
 
       {/* ── Direction toggle (always visible) ─────────────────────── */}
-      <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 12px' }}>
-        <div style={{ ...LBL, marginBottom: 8 }}>{t('slopeDirection')}</div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '7px 10px' }}>
+        <div style={{ ...LBL, marginBottom: 5 }}>{t('slopeDirection')}</div>
+        <div style={{ display: 'flex', gap: 6 }}>
           {(['downhill', 'uphill'] as const).map(d => {
             const active = dir === d;
             const btnC   = d === 'uphill' ? GREEN_DARK : RED_DARK;
@@ -1348,7 +1348,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
                 key={d}
                 aria-pressed={active}
                 style={{
-                  flex: 1, minHeight: 48, padding: '8px 10px',
+                  flex: 1, minHeight: 40, padding: '5px 10px',
                   borderRadius: 8,
                   border: `2px solid ${active ? btnC : BORDER}`,
                   backgroundColor: active ? `${btnC}14` : SURFACE,
@@ -1369,7 +1369,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
       {/* ── Calculate button (collapses after Calculate) ──────────── */}
       <div style={{
-        maxHeight:    showResults ? 0 : 80,
+        maxHeight:    showResults ? 0 : 70,
         opacity:      showResults ? 0 : 1,
         overflow:     'hidden',
         transition:   'max-height 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease',
@@ -1380,19 +1380,19 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
           onClick={handleCalculate}
           aria-label={t('slopeCalculateBtn')}
           style={{
-            width: '100%', height: 52,
-            backgroundColor: canCalc ? BLUE_ACC : '#CBD5E1',
-            border: 'none', borderRadius: 12,
+            width: '100%', height: 44,
+            backgroundColor: canCalc ? NAVY : '#CBD5E1',
+            border: 'none', borderRadius: 9,
             color: canCalc ? '#fff' : '#9CA3AF',
             fontSize: 17, fontWeight: 800, letterSpacing: 0.3,
             cursor: canCalc ? 'pointer' : 'default',
             transition: 'background-color 0.22s, box-shadow 0.22s',
-            boxShadow: canCalc ? '0 3px 14px rgba(59,130,246,0.38)' : 'none',
+            boxShadow: canCalc ? '0 3px 10px rgba(20,58,99,0.32)' : 'none',
           }}
         >{t('slopeCalculateBtn')}</button>
         {/* Inline hint when fields incomplete */}
         {!canCalc && (touched.slope || touched.dist) && (
-          <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_DIS, textAlign: 'center' as const, marginTop: 5 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: TEXT_DIS, textAlign: 'center' as const, marginTop: 4 }}>
             {lang === 'es' ? 'Completa todos los campos para calcular' : 'Complete all fields to calculate'}
           </div>
         )}
@@ -1407,11 +1407,11 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
       }}>
         {liveResult && (
           <div key={resultsKey} className="target-results-in"
-               style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+               style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
 
             {/* Slope profile graph */}
-            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 6px 4px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
-              <div style={{ paddingLeft: 10, paddingBottom: 4 }}>
+            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '6px 6px 2px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+              <div style={{ paddingLeft: 8, paddingBottom: 2 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
                   {lang === 'es' ? 'Perfil de Pendiente' : 'Slope Profile'}
                 </span>
@@ -1425,10 +1425,10 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
             </div>
 
             {/* 3 result cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
 
               {/* Card 1 — Start Elevation */}
-              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 10px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '7px 8px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
                   {t('slopeStartElev')}
                 </div>
@@ -1439,7 +1439,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
               </div>
 
               {/* Card 2 — Elevation Change */}
-              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${rc}44`, padding: '10px 10px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${rc}44`, padding: '7px 8px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
                   {t('slopeElevChange')}
                 </div>
@@ -1450,7 +1450,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
               </div>
 
               {/* Card 3 — Required Elevation (highlighted) */}
-              <div style={{ backgroundColor: rc, borderRadius: 10, padding: '10px 10px', boxShadow: `0 3px 14px ${rc}44`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ backgroundColor: rc, borderRadius: 10, padding: '7px 8px', boxShadow: `0 3px 14px ${rc}44`, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
                     {t('slopeReqElev')}
@@ -1466,7 +1466,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
             {/* Calculate Another Target */}
             <button
-              style={{ width: '100%', height: 50, backgroundColor: 'transparent', border: `2px solid ${NAVY}`, borderRadius: 12, color: NAVY, fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.2, transition: 'background-color 0.18s' }}
+              style={{ width: '100%', height: 44, backgroundColor: NAVY, border: 'none', borderRadius: 9, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.2, boxShadow: '0 3px 10px rgba(20,58,99,0.32)', transition: 'box-shadow 0.18s' }}
               onClick={handleCalcAnother}
             >
               {lang === 'es' ? 'Calcular Otro Objetivo' : 'Calculate Another Target'}
