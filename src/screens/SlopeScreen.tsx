@@ -1031,15 +1031,15 @@ function TargetElevGraph({ startElev, reqElev, distN, dir }: {
   startElev: number; reqElev: number; distN: number; dir: 'uphill' | 'downhill';
 }) {
   const dc  = dir === 'uphill' ? GREEN_DARK : RED_DARK;
-  const W = 340, H = 210;
-  const PL = 56, PR = 18, PT = 32, PB = 32;
+  const W = 340, H = 188;
+  const PL = 56, PR = 18, PT = 18, PB = 24;
   const PW = W - PL - PR;
   const PH = H - PT - PB;
 
   const minE   = Math.min(startElev, reqElev);
   const maxE   = Math.max(startElev, reqElev);
   const rangeE = Math.max(maxE - minE, 0.5);
-  const padE   = rangeE * 0.42;
+  const padE   = rangeE * 0.28;
   const yMin   = minE - padE;
   const yMax   = maxE + padE;
 
@@ -1113,23 +1113,23 @@ function TargetElevGraph({ startElev, reqElev, distN, dir }: {
       {/* START marker */}
       <circle cx={xA} cy={yA} r={5.5} fill={BLUE} />
       <circle cx={xA} cy={yA} r={2.8} fill={BLUE_ACC} />
-      <text x={xA} y={yA - 12} textAnchor="middle" fontSize="9" fontWeight="900" fill={NAVY}>START</text>
-      <text x={xA} y={PT + PH + 14} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_PRI}>{startElev.toFixed(2)} ft</text>
+      <text x={xA} y={Math.max(yA - 9, PT + 8)} textAnchor="middle" fontSize="9" fontWeight="900" fill={NAVY}>START</text>
+      <text x={xA} y={PT + PH + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_PRI}>{startElev.toFixed(2)} ft</text>
 
       {/* TARGET marker */}
       <circle cx={xB} cy={yB} r={5.5} fill={dc} />
       <circle cx={xB} cy={yB} r={2.8} fill="#fff" />
-      <text x={xB} y={yB - 12} textAnchor="middle" fontSize="9" fontWeight="900" fill={dc}>TARGET</text>
-      <text x={xB} y={PT + PH + 14} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={dc}>{reqElev.toFixed(2)} ft</text>
+      <text x={xB} y={Math.max(yB - 9, PT + 8)} textAnchor="middle" fontSize="9" fontWeight="900" fill={dc}>TARGET</text>
+      <text x={xB} y={PT + PH + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={dc}>{reqElev.toFixed(2)} ft</text>
 
       {/* Grade label on the slope */}
-      <text x={PL + PW / 2} y={(yA + yB) / 2 - 10} textAnchor="middle"
+      <text x={PL + PW / 2} y={(yA + yB) / 2 - 8} textAnchor="middle"
         fontSize="12" fontWeight="900" fill={dc}>
         {dir === 'uphill' ? '↗' : '↘'} {slopePct.toFixed(2)}%
       </text>
 
       {/* Distance label */}
-      <text x={PL + PW / 2} y={PT + PH + 27} textAnchor="middle"
+      <text x={PL + PW / 2} y={PT + PH + 21} textAnchor="middle"
         fontSize="7.5" fontWeight="700" fill={TEXT_DIS}>
         {'← '}{distN.toFixed(1)} ft horizontal{' →'}
       </text>
@@ -1407,11 +1407,11 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
       }}>
         {liveResult && (
           <div key={resultsKey} className="target-results-in"
-               style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+               style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
 
             {/* Slope profile graph */}
-            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '6px 6px 2px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
-              <div style={{ paddingLeft: 8, paddingBottom: 2 }}>
+            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '4px 4px 0px', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}>
+              <div style={{ paddingLeft: 8, paddingBottom: 1 }}>
                 <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>
                   {lang === 'es' ? 'Perfil de Pendiente' : 'Slope Profile'}
                 </span>
@@ -1425,10 +1425,10 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
             </div>
 
             {/* 3 result cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 5 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
 
               {/* Card 1 — Start Elevation */}
-              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '7px 8px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '6px 7px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
                   {t('slopeStartElev')}
                 </div>
@@ -1439,7 +1439,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
               </div>
 
               {/* Card 2 — Elevation Change */}
-              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${rc}44`, padding: '7px 8px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${rc}44`, padding: '6px 7px', boxShadow: '0 1px 6px rgba(0,0,0,0.07)', display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
                   {t('slopeElevChange')}
                 </div>
@@ -1450,7 +1450,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
               </div>
 
               {/* Card 3 — Required Elevation (highlighted) */}
-              <div style={{ backgroundColor: rc, borderRadius: 10, padding: '7px 8px', boxShadow: `0 3px 14px ${rc}44`, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ backgroundColor: rc, borderRadius: 10, padding: '6px 7px', boxShadow: `0 3px 14px ${rc}44`, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.78)', letterSpacing: 0.5, textTransform: 'uppercase' as const, lineHeight: 1.35 }}>
                     {t('slopeReqElev')}
@@ -1466,7 +1466,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
             {/* Calculate Another Target */}
             <button
-              style={{ width: '100%', height: 44, backgroundColor: NAVY, border: 'none', borderRadius: 9, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.2, boxShadow: '0 3px 10px rgba(20,58,99,0.32)', transition: 'box-shadow 0.18s' }}
+              style={{ width: '100%', height: 40, backgroundColor: NAVY, border: 'none', borderRadius: 9, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.2, boxShadow: '0 3px 10px rgba(20,58,99,0.32)', transition: 'box-shadow 0.18s' }}
               onClick={handleCalcAnother}
             >
               {lang === 'es' ? 'Calcular Otro Objetivo' : 'Calculate Another Target'}
