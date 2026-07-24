@@ -573,7 +573,7 @@ function AppInner() {
                 ...styles.tab,
                 flex: tab.flex,
                 ...(isActive ? styles.tabActive : {}),
-                fontSize: lang === 'en' ? '15px' : '13.5px',
+                fontSize: lang === 'en' ? '15px' : '13px',
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
