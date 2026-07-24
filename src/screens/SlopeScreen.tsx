@@ -39,7 +39,7 @@ const CARD      = '#FFFFFF';
 const BORDER    = '#E5E7EB';
 
 const MAX_HISTORY = 20;
-const HISTORY_VISIBLE = 4; // cards shown on History tab before "View All"
+const HISTORY_VISIBLE = 2; // cards shown on History tab before "View All"
 
 // 'profile' key retained for tab ID — its label now reads "History"
 type SlopeSubTab = 'find' | 'profile' | 'target';
@@ -1002,7 +1002,7 @@ function HistoryTab({ savedCalcs, savedTargetCalcs, onDelete, onDeleteTarget, on
           const active = activeHistTab === tab.id;
           return (
             <button key={tab.id}
-              style={{ flex: 1, minHeight: 32, padding: '4px 6px', borderRadius: 6, border: 'none', backgroundColor: active ? NAVY : 'transparent', color: active ? '#fff' : '#6B7280', fontSize: 14, fontWeight: active ? 700 : 600, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(20,58,99,0.28)' : 'none', transition: 'background-color 0.2s, color 0.2s', whiteSpace: 'normal', lineHeight: 1.2 }}
+              style={{ flex: 1, minHeight: 32, padding: '4px 6px', borderRadius: 6, border: 'none', backgroundColor: active ? NAVY : 'transparent', color: active ? '#fff' : '#6B7280', fontSize: lang === 'es' ? 12 : 14, fontWeight: active ? 700 : 600, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(20,58,99,0.28)' : 'none', transition: 'background-color 0.2s, color 0.2s', whiteSpace: 'nowrap', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}
               onClick={() => { setActiveHistTab(tab.id); setMenuId(null); }}
             >{tab.label}</button>
           );
