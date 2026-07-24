@@ -70,6 +70,20 @@ interface SavedCalc {
   savedAt:   number;
 }
 
+// ─── Saved target calculation ─────────────────────────────────────────────────
+interface SavedTargetCalc {
+  id:         string;
+  startId:    string;
+  startLabel: string;
+  startElev:  number;
+  slopeN:     number;   // percentage, e.g. 5.8
+  distN:      number;   // horizontal distance in feet
+  dir:        'uphill' | 'downhill';
+  elevChange: number;
+  reqElev:    number;
+  savedAt:    number;
+}
+
 // ─── Math helpers ─────────────────────────────────────────────────────────────
 function calcSlope(elevA: number, elevB: number, dist: number) {
   const diff  = elevB - elevA;
@@ -814,22 +828,29 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
 
 // ─── 2. History Tab ───────────────────────────────────────────────────────────
 interface HistoryTabProps {
-  savedCalcs: SavedCalc[];
-  onDelete:   (id: string) => void;
-  onEdit:     (c: SavedCalc) => void;
+  savedCalcs:       SavedCalc[];
+  savedTargetCalcs: SavedTargetCalc[];
+  onDelete:         (id: string) => void;
+  onDeleteTarget:   (id: string) => void;
+  onEdit:           (c: SavedCalc) => void;
+  onEditTarget:     (c: SavedTargetCalc) => void;
 }
 
-function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
+function HistoryTab({ savedCalcs, savedTargetCalcs, onDelete, onDeleteTarget, onEdit, onEditTarget }: HistoryTabProps) {
   const { t, lang } = useLang();
-  // 'list' = 4-entry preview, 'all' = full-page scrollable history
+  const [activeHistTab,  setActiveHistTab]  = useState<'calcs' | 'targets'>('calcs');
+  // 'list' = preview, 'all' = full-page scrollable
   const [view,           setView]           = useState<'list' | 'all'>('list');
   const [detailCalc,     setDetailCalc]     = useState<SavedCalc | null>(null);
+  const [detailTarget,   setDetailTarget]   = useState<SavedTargetCalc | null>(null);
   const [menuId,         setMenuId]         = useState<string | null>(null);
   const [showHistoryTip, setShowHistoryTip] = useState(false);
   const [histConfirm,    setHistConfirm]    = useState<null | { onConfirm: () => void }>(null);
 
-  const visibleCalcs = savedCalcs.slice(0, HISTORY_VISIBLE);
-  const hasMore      = savedCalcs.length > HISTORY_VISIBLE;
+  const visibleCalcs   = savedCalcs.slice(0, HISTORY_VISIBLE);
+  const hasMoreCalcs   = savedCalcs.length > HISTORY_VISIBLE;
+  const visibleTargets = savedTargetCalcs.slice(0, HISTORY_VISIBLE);
+  const hasMoreTargets = savedTargetCalcs.length > HISTORY_VISIBLE;
 
   const handleEdit = (c: SavedCalc) => {
     setDetailCalc(null);
@@ -837,7 +858,13 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
     onEdit(c);
   };
 
-  // Shared entry row used in both views
+  const handleEditTarget = (c: SavedTargetCalc) => {
+    setDetailTarget(null);
+    setView('list');
+    onEditTarget(c);
+  };
+
+  // ── Shared card row for slope calculations ────────────────────────────────
   function HistoryEntry({ c }: { c: SavedCalc }) {
     const dc = dirColor(c.dir);
     const isMenu = menuId === c.id;
@@ -876,61 +903,111 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
     );
   }
 
-  // ── Full-page "All Calculations" view ──────────────────────────────────────
+  // ── Shared card row for target calculations ────────────────────────────────
+  function TargetHistoryEntry({ c }: { c: SavedTargetCalc }) {
+    const dc = c.dir === 'uphill' ? GREEN_DARK : RED_DARK;
+    const dIcon = c.dir === 'uphill' ? '↗' : '↘';
+    const isMenu = menuId === c.id;
+    return (
+      <div style={{ position: 'relative' }}>
+        <div
+          style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '9px 11px', display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}
+          onClick={() => { setMenuId(null); setDetailTarget(c); }}
+        >
+          <div style={{ width: 40, height: 40, backgroundColor: dc, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: 20, color: '#fff' }}>{dIcon}</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
+              <span style={{ fontSize: 17, fontWeight: 800, color: TEXT_PRI }}>{c.startLabel} → Target</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: dc }}>{c.slopeN.toFixed(2)}%</span>
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
+              {c.distN.toFixed(1)} ft · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : '▼'}</span> {c.dir === 'uphill' ? '+' : '−'}{c.elevChange.toFixed(3)} ft
+            </div>
+          </div>
+          <button
+            style={{ background: 'none', border: 'none', color: TEXT_DIS, fontSize: 24, cursor: 'pointer', padding: '2px 4px', lineHeight: 1, flexShrink: 0 }}
+            onClick={e => { e.stopPropagation(); setMenuId(isMenu ? null : c.id); }}
+          >⋮</button>
+        </div>
+        {isMenu && (
+          <div style={{ position: 'absolute', right: 4, top: 42, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 4px 14px rgba(0,0,0,0.14)', zIndex: 10, minWidth: 120, overflow: 'hidden' }}>
+            <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '11px 16px', fontSize: 15, fontWeight: 700, color: NAVY, background: 'none', border: 'none', borderBottom: `1px solid ${BORDER}`, cursor: 'pointer' }}
+              onClick={e => { e.stopPropagation(); setMenuId(null); handleEditTarget(c); }}>{t('edit')}</button>
+            <button style={{ display: 'block', width: '100%', textAlign: 'left' as const, padding: '11px 16px', fontSize: 15, fontWeight: 700, color: RED_DARK, background: 'none', border: 'none', cursor: 'pointer' }}
+              onClick={e => { e.stopPropagation(); setMenuId(null); setHistConfirm({ onConfirm: () => { onDeleteTarget(c.id); setHistConfirm(null); } }); }}>{t('delete')}</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Full-page "View All" view (calcs or targets) ───────────────────────────
   if (view === 'all') {
+    const isTargets = activeHistTab === 'targets';
+    const allItems  = isTargets ? savedTargetCalcs : savedCalcs;
+    const title     = isTargets ? t('slopeTargHistTitle') : t('slopeHistoryTitle');
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#F5F4F0' }}>
-
-        {/* Page header */}
         <div style={{ backgroundColor: NAVY, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <button
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 16, fontWeight: 700, cursor: 'pointer', padding: '2px 0', display: 'flex', alignItems: 'center', gap: 4 }}
             onClick={() => { setMenuId(null); setView('list'); }}
           >‹ {t('slopeBackBtn')}</button>
           <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', flex: 1, textAlign: 'center' as const }}>
-            {t('slopeHistoryTitle')} ({savedCalcs.length})
+            {title} ({allItems.length})
           </span>
-          {/* spacer to balance the back button */}
           <div style={{ width: 60 }} />
         </div>
-
-        {/* Scrollable full list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {savedCalcs.length === 0 ? (
+          {allItems.length === 0 ? (
             <div style={{ padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 15, fontWeight: 600 }}>
-              {t('slopeNoHistory')}
+              {isTargets ? t('slopeTargNoHistory') : t('slopeNoHistory')}
             </div>
+          ) : isTargets ? (
+            (savedTargetCalcs).map(c => <TargetHistoryEntry key={c.id} c={c} />)
           ) : (
-            savedCalcs.map(c => <HistoryEntry key={c.id} c={c} />)
+            (savedCalcs).map(c => <HistoryEntry key={c.id} c={c} />)
           )}
         </div>
-
-        {/* Detail modal renders over the full-page view */}
         {detailCalc && (
-          <CalcDetailModal
-            calc={detailCalc}
-            onClose={() => setDetailCalc(null)}
-            onEdit={() => handleEdit(detailCalc)}
-            onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
-          />
+          <CalcDetailModal calc={detailCalc} onClose={() => setDetailCalc(null)}
+            onEdit={() => handleEdit(detailCalc)} onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }} />
+        )}
+        {detailTarget && (
+          <TargetDetailModal calc={detailTarget} onClose={() => setDetailTarget(null)}
+            onEdit={() => handleEditTarget(detailTarget)} onDelete={() => { onDeleteTarget(detailTarget.id); setDetailTarget(null); }} />
         )}
         {histConfirm && (
           <ConfirmModal
-            message={t('slopeDeleteCalcConfirm')}
-            confirmLabel={t('delete')}
-            cancelLabel={t('cancel')}
-            danger
-            onConfirm={histConfirm.onConfirm}
-            onCancel={() => setHistConfirm(null)}
-          />
+            message={isTargets ? t('slopeTargDeleteConfirm') : t('slopeDeleteCalcConfirm')}
+            confirmLabel={t('delete')} cancelLabel={t('cancel')} danger
+            onConfirm={histConfirm.onConfirm} onCancel={() => setHistConfirm(null)} />
         )}
       </div>
     );
   }
 
-  // ── Default: 4-entry preview list ─────────────────────────────────────────
+  // ── Default: segmented preview list ───────────────────────────────────────
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+      {/* Segmented control: Slope Calculations | Slope Targets */}
+      <div style={{ display: 'flex', backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 9, padding: 3, margin: '6px 8px 0', gap: 3, flexShrink: 0 }}>
+        {([
+          { id: 'calcs'   as const, label: t('slopeCalcsTab') },
+          { id: 'targets' as const, label: t('slopeTargsTab') },
+        ]).map(tab => {
+          const active = activeHistTab === tab.id;
+          return (
+            <button key={tab.id}
+              style={{ flex: 1, minHeight: 32, padding: '4px 6px', borderRadius: 6, border: 'none', backgroundColor: active ? NAVY : 'transparent', color: active ? '#fff' : '#6B7280', fontSize: 14, fontWeight: active ? 700 : 600, cursor: 'pointer', boxShadow: active ? '0 1px 4px rgba(20,58,99,0.28)' : 'none', transition: 'background-color 0.2s, color 0.2s', whiteSpace: 'normal', lineHeight: 1.2 }}
+              onClick={() => { setActiveHistTab(tab.id); setMenuId(null); }}
+            >{tab.label}</button>
+          );
+        })}
+      </div>
 
       {/* ⓘ button row */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '2px 8px 0', flexShrink: 0 }}>
@@ -940,50 +1017,70 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
         >ⓘ</button>
       </div>
 
-      {/* Scrollable list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px 6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-        {savedCalcs.length === 0 ? (
-          <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 15, fontWeight: 600, marginTop: 8 }}>
-            {t('slopeNoHistory')}
-          </div>
-        ) : (
-          <>
-            {/* 4 most recent — no section header */}
-            {visibleCalcs.map(c => <HistoryEntry key={c.id} c={c} />)}
-
-            {/* View All navigation row */}
-            <div
-              style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
-              onClick={() => { setMenuId(null); setView('all'); }}
-            >
-              <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>
-                {t('slopeViewAllCalcs')}{hasMore ? ` (${savedCalcs.length})` : ''}
-              </span>
-              <span style={{ fontSize: 18, color: NAVY }}>›</span>
+      {/* ── Slope Calculations list ─────────────────────────────────── */}
+      {activeHistTab === 'calcs' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px 6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {savedCalcs.length === 0 ? (
+            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '36px 20px', textAlign: 'center', color: TEXT_DIS, fontSize: 15, fontWeight: 600, marginTop: 8 }}>
+              {t('slopeNoHistory')}
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Detail Modal */}
-      {detailCalc && (
-        <CalcDetailModal
-          calc={detailCalc}
-          onClose={() => setDetailCalc(null)}
-          onEdit={() => handleEdit(detailCalc)}
-          onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }}
-        />
+          ) : (
+            <>
+              {visibleCalcs.map(c => <HistoryEntry key={c.id} c={c} />)}
+              <div
+                style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                onClick={() => { setMenuId(null); setView('all'); }}
+              >
+                <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>
+                  {t('slopeViewAllCalcs')}{hasMoreCalcs ? ` (${savedCalcs.length})` : ''}
+                </span>
+                <span style={{ fontSize: 18, color: NAVY }}>›</span>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
+      {/* ── Slope Targets list ──────────────────────────────────────── */}
+      {activeHistTab === 'targets' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px 6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {savedTargetCalcs.length === 0 ? (
+            <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '36px 20px', textAlign: 'center', marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 28 }}>📈</span>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI }}>{t('slopeTargNoHistory')}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: TEXT_DIS }}>{t('slopeTargNoHistoryHint')}</div>
+            </div>
+          ) : (
+            <>
+              {visibleTargets.map(c => <TargetHistoryEntry key={c.id} c={c} />)}
+              <div
+                style={{ backgroundColor: CARD, borderRadius: 9, border: `1px solid ${BORDER}`, padding: '10px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                onClick={() => { setMenuId(null); setView('all'); }}
+              >
+                <span style={{ fontSize: 15, fontWeight: 700, color: NAVY }}>
+                  {t('slopeTargViewAll')}{hasMoreTargets ? ` (${savedTargetCalcs.length})` : ''}
+                </span>
+                <span style={{ fontSize: 18, color: NAVY }}>›</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
+      {detailCalc && (
+        <CalcDetailModal calc={detailCalc} onClose={() => setDetailCalc(null)}
+          onEdit={() => handleEdit(detailCalc)} onDelete={() => { onDelete(detailCalc.id); setDetailCalc(null); }} />
+      )}
+      {detailTarget && (
+        <TargetDetailModal calc={detailTarget} onClose={() => setDetailTarget(null)}
+          onEdit={() => handleEditTarget(detailTarget)} onDelete={() => { onDeleteTarget(detailTarget.id); setDetailTarget(null); }} />
+      )}
       {histConfirm && (
         <ConfirmModal
-          message={t('slopeDeleteCalcConfirm')}
-          confirmLabel={t('delete')}
-          cancelLabel={t('cancel')}
-          danger
-          onConfirm={histConfirm.onConfirm}
-          onCancel={() => setHistConfirm(null)}
-        />
+          message={activeHistTab === 'targets' ? t('slopeTargDeleteConfirm') : t('slopeDeleteCalcConfirm')}
+          confirmLabel={t('delete')} cancelLabel={t('cancel')} danger
+          onConfirm={histConfirm.onConfirm} onCancel={() => setHistConfirm(null)} />
       )}
 
       {/* History info tip modal */}
@@ -999,19 +1096,17 @@ function HistoryTab({ savedCalcs, onDelete, onEdit }: HistoryTabProps) {
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', fontSize: 14, color: TEXT_SEC, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {lang === 'es' ? (
                 <>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>¿Qué muestra el Historial?</strong> — El Historial muestra tus cálculos de pendiente guardados recientemente. Cada tarjeta representa un cálculo guardado.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Información de cada tarjeta</strong> — Verás los puntos de origen y destino (p. ej., PT3 → PT9), el porcentaje de pendiente (+ para subida, − para bajada), la distancia horizontal y la diferencia de elevación.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Abrir un cálculo</strong> — Toca cualquier tarjeta para ver el Resumen de Cálculo completo, que incluye: gráfico visual, Punto de Origen y Destino, valores de elevación, diferencia de elevación, distancia, pendiente %, razón, ángulo, dirección (Subida/Bajada) y la fecha y hora en que se guardó.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Editar o eliminar</strong> — Desde el Resumen de Cálculo, toca <strong style={{ color: TEXT_PRI }}>Editar</strong> para cargar el cálculo de nuevo en Calcular Pendiente y hacer cambios, o <strong style={{ color: TEXT_PRI }}>Eliminar</strong> para borrarlo. También puedes usar el menú de tres puntos (⋮) en cualquier tarjeta para editar o eliminar rápidamente.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Ver todo el historial</strong> — Toca <em>Ver Todos los Cálculos</em> en la parte inferior para ver la lista completa de todos los cálculos guardados.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Cálculos de Pendiente</strong> — Muestra tus cálculos de pendiente entre dos puntos guardados. Toca cualquier tarjeta para ver el resumen completo con el gráfico de perfil.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Objetivos de Pendiente</strong> — Muestra tus cálculos de pendiente objetivo guardados. Cada tarjeta incluye el punto de inicio, pendiente objetivo, distancia y cambio de elevación.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Editar o eliminar</strong> — Desde el resumen o el menú de tres puntos (⋮), puedes editar o eliminar cualquier cálculo. Editar cargará los valores de vuelta en la pestaña correspondiente.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Ver todo el historial</strong> — Toca <em>Ver Todos</em> en la parte inferior para ver la lista completa.</p>
                 </>
               ) : (
                 <>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>What does History show?</strong> — History displays your most recently saved slope calculations. Each card represents one saved calculation.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>What each card shows</strong> — You'll see the From and To points (e.g. PT3 → PT9), the slope percentage (+ for uphill, − for downhill), the horizontal distance, and the elevation difference.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Opening a calculation</strong> — Tap any card to open the full Calculation Summary, which includes: a visual chart, From Point, To Point, elevation values, elevation difference, distance, slope %, ratio, angle, direction (Uphill/Downhill), and the date & time it was saved.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Edit or Delete</strong> — From the Calculation Summary, tap <strong style={{ color: TEXT_PRI }}>Edit</strong> to load the calculation back into Find Slope for changes, or <strong style={{ color: TEXT_PRI }}>Delete</strong> to remove it. You can also use the three-dot menu (⋮) on any card to quickly edit or delete without opening the summary.</p>
-                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>View all history</strong> — Tap <em>View All Calculations</em> at the bottom to see your complete list of saved calculations.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Slope Calculations</strong> — Shows your saved slope calculations between two points. Tap any card to see the full summary with profile chart.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Slope Targets</strong> — Shows your saved Target Slope calculations. Each card shows the start point, target slope, distance, and elevation change.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>Edit or Delete</strong> — From the summary or the three-dot menu (⋮), you can edit or delete any record. Edit loads the values back into the corresponding tab.</p>
+                  <p style={{ margin: 0 }}><strong style={{ color: TEXT_PRI }}>View all history</strong> — Tap <em>View All</em> at the bottom to see your complete saved list.</p>
                 </>
               )}
               <button
@@ -1137,8 +1232,105 @@ function TargetElevGraph({ startElev, reqElev, distN, dir }: {
   );
 }
 
+// ─── Target Calculation Detail Popup ─────────────────────────────────────────
+function TargetDetailModal({ calc, onClose, onEdit, onDelete }: {
+  calc: SavedTargetCalc;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useLang();
+  const dc = calc.dir === 'uphill' ? GREEN_DARK : RED_DARK;
+  const [detailConfirm, setDetailConfirm] = useState<null | { onConfirm: () => void }>(null);
+  const ratio = calc.elevChange > 0.0001 ? calc.distN / calc.elevChange : null;
+  const angle = calc.distN > 0 ? (Math.atan(calc.elevChange / calc.distN) * 180) / Math.PI : 0;
+  const dIcon = calc.dir === 'uphill' ? '↗' : '↘';
+  const dLbl  = calc.dir === 'uphill' ? t('slopeUphill') : t('slopeDownhill');
+
+  const handleDelete = () => {
+    setDetailConfirm({ onConfirm: () => { setDetailConfirm(null); onDelete(); } });
+  };
+
+  return (
+    <CenteredOverlay onClose={onClose}>
+      <div className="anp-modal-in" style={{ width: '100%', maxWidth: 430, maxHeight: '92vh', backgroundColor: CARD, borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+
+        <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>{t('slopeTargCalcDetail')}</span>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={onClose}>✕</button>
+        </div>
+
+        <div style={{ backgroundColor: dc, padding: '7px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 900, color: '#fff' }}>{dIcon} {dLbl}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{calc.startLabel} → Target</span>
+        </div>
+
+        <div style={{ overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+          <div style={{ backgroundColor: SURFACE, borderRadius: 9, padding: '6px 4px 2px' }}>
+            <TargetElevGraph startElev={calc.startElev} reqElev={calc.reqElev} distN={calc.distN} dir={calc.dir} />
+          </div>
+
+          <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('slopeDistanceLbl')}</span>
+            <span style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{calc.distN.toFixed(2)} ft</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+            {([
+              { lbl: t('slopeStartElev'),  val: `${calc.startElev.toFixed(2)} ft`, c: TEXT_PRI },
+              { lbl: t('slopeReqElev'),    val: `${calc.reqElev.toFixed(2)} ft`,   c: dc },
+              { lbl: t('slopeElevChange'), val: `${calc.dir === 'uphill' ? '+' : '−'}${calc.elevChange.toFixed(3)} ft`, c: dc },
+              { lbl: t('slopeSlopePct'),   val: `${calc.slopeN.toFixed(2)}%`,      c: dc },
+            ]).map(({ lbl, val, c }) => (
+              <div key={lbl} style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 9px' }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{lbl}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: c, fontFamily: 'monospace', lineHeight: 1.2 }}>{val}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+            <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 9px' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t('slopeRatioLbl')}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.2 }}>{ratio != null ? `1:${ratio.toFixed(1)}` : '—'}</div>
+            </div>
+            <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 9px' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.4, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t('slopeAngleLbl')}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.2 }}>{angle.toFixed(2)}°</div>
+            </div>
+          </div>
+
+          <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_SEC }}>{t('slopeDateTimeLbl')}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{fmtDateTime(calc.savedAt)}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
+            <button style={{ flex: 1, height: 42, backgroundColor: NAVY, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }} onClick={onEdit}>{t('edit')}</button>
+            <button style={{ flex: 1, height: 42, backgroundColor: RED_DARK, border: 'none', borderRadius: 8, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }} onClick={handleDelete}>{t('delete')}</button>
+          </div>
+        </div>
+      </div>
+      {detailConfirm && (
+        <ConfirmModal message={t('slopeTargDeleteConfirm')} confirmLabel={t('delete')} cancelLabel={t('cancel')} danger
+          onConfirm={detailConfirm.onConfirm} onCancel={() => setDetailConfirm(null)} />
+      )}
+    </CenteredOverlay>
+  );
+}
+
 // ─── 3. Target Slope Tab ──────────────────────────────────────────────────────
-function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Record<string, SurveySet> }) {
+interface TargetSlopeTabProps {
+  points:                     SurveyPoint[];
+  setMap:                     Record<string, SurveySet>;
+  savedTargetCalcs:           SavedTargetCalc[];
+  onSaveTarget:               (c: SavedTargetCalc) => void;
+  onUpdateTarget:             (c: SavedTargetCalc) => void;
+  pendingTargetEdit:          SavedTargetCalc | null;
+  onPendingTargetEditConsumed: () => void;
+}
+function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpdateTarget, pendingTargetEdit, onPendingTargetEditConsumed }: TargetSlopeTabProps) {
   const { t, lang } = useLang();
 
   // Form state
@@ -1151,13 +1343,20 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
 
   // UI mode
   const [showResults, setShowResults] = useState(false);
-  const [resultsKey,  setResultsKey]  = useState(0);   // re-triggers CSS animation on direction change
+  const [resultsKey,  setResultsKey]  = useState(0);
 
   // Touch tracking for inline validation
   const [touched, setTouched] = useState({ slope: false, dist: false });
 
   // Snapshot of inputs at Calculate time
   const [committed, setCommitted] = useState<{ startElev: number; distN: number; slopeN: number } | null>(null);
+
+  // Edit mode — id of the record currently being edited
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Duplicate detection dialog
+  const [showDuplModal, setShowDuplModal] = useState(false);
+  const [duplCalc,      setDuplCalc]      = useState<SavedTargetCalc | null>(null);
 
   const startPt   = startId ? points.find(p => p.id === startId) ?? null : null;
   const startElev = startPt?.bmElevation ?? 0;
@@ -1168,6 +1367,21 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
   const validSlope = !isNaN(slopeN) && slopeN > 0;
   const validDist  = !isNaN(distN)  && distN  > 0;
   const canCalc    = validStart && validSlope && validDist;
+
+  // Pre-fill form when editing from history
+  useEffect(() => {
+    if (pendingTargetEdit) {
+      setStartId(pendingTargetEdit.startId);
+      setSlopePct(pendingTargetEdit.slopeN.toString());
+      setDistance(pendingTargetEdit.distN.toString());
+      setDir(pendingTargetEdit.dir);
+      setEditingId(pendingTargetEdit.id);
+      setShowResults(false);
+      setCommitted(null);
+      setTouched({ slope: false, dist: false });
+      onPendingTargetEditConsumed();
+    }
+  }, [pendingTargetEdit, onPendingTargetEditConsumed]);
 
   // Live calculation from committed snapshot + current direction toggle
   const liveResult = useMemo(() => {
@@ -1180,11 +1394,46 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
   }, [committed, dir]);
 
   const handleCalculate = useCallback(() => {
-    if (!canCalc) return;
+    if (!canCalc || !startPt) return;
+    const elevChange = distN * (slopeN / 100);
+    const reqElev    = dir === 'uphill' ? startElev + elevChange : startElev - elevChange;
+
+    // Duplicate check — skip if we are already editing that record
+    const duplicate = savedTargetCalcs.find(c =>
+      c.id !== editingId &&
+      c.startId === startId &&
+      Math.abs(c.slopeN - slopeN) < 0.001 &&
+      Math.abs(c.distN  - distN)  < 0.001 &&
+      c.dir === dir
+    );
+    if (duplicate) {
+      setDuplCalc(duplicate);
+      setShowDuplModal(true);
+      return;
+    }
+
+    const newCalc: SavedTargetCalc = {
+      id:         editingId ?? Date.now().toString(),
+      startId:    startId!,
+      startLabel: startPt.label,
+      startElev,
+      slopeN,
+      distN,
+      dir,
+      elevChange,
+      reqElev,
+      savedAt:    Date.now(),
+    };
+    if (editingId) {
+      onUpdateTarget(newCalc);
+    } else {
+      onSaveTarget(newCalc);
+    }
+    setEditingId(null);
     setCommitted({ startElev, distN, slopeN });
     setShowResults(true);
     setResultsKey(k => k + 1);
-  }, [canCalc, startElev, distN, slopeN]);
+  }, [canCalc, startId, startPt, startElev, slopeN, distN, dir, editingId, savedTargetCalcs, onSaveTarget, onUpdateTarget]);
 
   const handleCalcAnother = useCallback(() => {
     setShowResults(false);
@@ -1192,6 +1441,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
     setSlopePct('');
     setDistance('');
     setTouched({ slope: false, dist: false });
+    setEditingId(null);
     // preserve startId and dir
   }, []);
 
@@ -1203,6 +1453,7 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
     setShowResults(false);
     setCommitted(null);
     setTouched({ slope: false, dist: false });
+    setEditingId(null);
   }, []);
 
   const handleDirChange = (newDir: 'uphill' | 'downhill') => {
@@ -1475,6 +1726,42 @@ function TargetSlopeTab({ points, setMap }: { points: SurveyPoint[]; setMap: Rec
         )}
       </div>
 
+      {/* ── Duplicate warning dialog ──────────────────────────────── */}
+      {showDuplModal && duplCalc && (
+        <CenteredOverlay onClose={() => setShowDuplModal(false)}>
+          <div className="anp-modal-in" style={{ width: '100%', maxWidth: 360, backgroundColor: CARD, borderRadius: 14, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.28)' }}>
+            <div style={{ backgroundColor: NAVY, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{t('slopeTargDuplTitle')}</span>
+              <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', fontSize: 22, cursor: 'pointer', padding: 0, lineHeight: 1 }} onClick={() => setShowDuplModal(false)}>✕</button>
+            </div>
+            <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p style={{ margin: 0, fontSize: 14, color: TEXT_SEC, lineHeight: 1.6 }}>{t('slopeTargDuplMsg')}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  style={{ height: 44, backgroundColor: NAVY, border: 'none', borderRadius: 9, color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}
+                  onClick={() => {
+                    setShowDuplModal(false);
+                    setStartId(duplCalc.startId);
+                    setSlopePct(duplCalc.slopeN.toString());
+                    setDistance(duplCalc.distN.toString());
+                    setDir(duplCalc.dir);
+                    setEditingId(duplCalc.id);
+                    setShowResults(false);
+                    setCommitted(null);
+                    setTouched({ slope: false, dist: false });
+                    setDuplCalc(null);
+                  }}
+                >{t('slopeTargEditExisting')}</button>
+                <button
+                  style={{ height: 40, backgroundColor: 'transparent', border: `1.5px solid ${BORDER}`, borderRadius: 9, color: TEXT_SEC, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => { setShowDuplModal(false); setDuplCalc(null); }}
+                >{t('cancel')}</button>
+              </div>
+            </div>
+          </div>
+        </CenteredOverlay>
+      )}
+
       {/* ── Info tip modal ─────────────────────────────────────────── */}
       {showTargetTip && (
         <CenteredOverlay onClose={() => setShowTargetTip(false)}>
@@ -1536,9 +1823,10 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
   }, [sets]);
 
   const [activeTab,   setActiveTab]   = useState<SlopeSubTab>('find');
-  const LS_KEY = `slope:calcs:${projectId}`;
 
-  const [savedCalcs,  setSavedCalcs]  = useState<SavedCalc[]>(() => {
+  // ── Slope Calculations storage ─────────────────────────────────────────────
+  const LS_KEY = `slope:calcs:${projectId}`;
+  const [savedCalcs, setSavedCalcs] = useState<SavedCalc[]>(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
       return raw ? (JSON.parse(raw) as SavedCalc[]) : [];
@@ -1547,6 +1835,16 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
   const [pendingEdit,   setPendingEdit]   = useState<SavedCalc | null>(null);
   const [pendingFromId, setPendingFromId] = useState<string | null>(null);
   const [pendingToId,   setPendingToId]   = useState<string | null>(null);
+
+  // ── Target Slope storage ───────────────────────────────────────────────────
+  const LS_TARGET_KEY = `slope:targets:${projectId}`;
+  const [savedTargetCalcs, setSavedTargetCalcs] = useState<SavedTargetCalc[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_TARGET_KEY);
+      return raw ? (JSON.parse(raw) as SavedTargetCalc[]) : [];
+    } catch { return []; }
+  });
+  const [pendingTargetEdit, setPendingTargetEdit] = useState<SavedTargetCalc | null>(null);
 
   // React to initFromId prop (set by App when "Find Slope" is tapped on Point Details)
   useEffect(() => {
@@ -1559,25 +1857,41 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initFromId, initToId]);
 
-  // Persist on every change
+  // Persist slope calcs
   useEffect(() => {
     try { localStorage.setItem(LS_KEY, JSON.stringify(savedCalcs)); } catch {}
   }, [savedCalcs, LS_KEY]);
 
+  // Persist target calcs
+  useEffect(() => {
+    try { localStorage.setItem(LS_TARGET_KEY, JSON.stringify(savedTargetCalcs)); } catch {}
+  }, [savedTargetCalcs, LS_TARGET_KEY]);
+
+  // ── Slope calc handlers ────────────────────────────────────────────────────
   const handleSave   = useCallback((c: SavedCalc) =>
     setSavedCalcs(prev => [c, ...prev].slice(0, MAX_HISTORY)), []);
   const handleDelete = useCallback((id: string) =>
     setSavedCalcs(prev => prev.filter(c => c.id !== id)), []);
-
-  // Called from HistoryTab when user taps Edit — switches to Find Slope with values loaded
   const handleEditCalc = useCallback((c: SavedCalc) => {
     setPendingEdit(c);
     setActiveTab('find');
   }, []);
 
+  // ── Target calc handlers ───────────────────────────────────────────────────
+  const handleSaveTarget = useCallback((c: SavedTargetCalc) =>
+    setSavedTargetCalcs(prev => [c, ...prev].slice(0, MAX_HISTORY)), []);
+  const handleUpdateTarget = useCallback((c: SavedTargetCalc) =>
+    setSavedTargetCalcs(prev => prev.map(x => x.id === c.id ? c : x)), []);
+  const handleDeleteTarget = useCallback((id: string) =>
+    setSavedTargetCalcs(prev => prev.filter(c => c.id !== id)), []);
+  const handleEditTargetCalc = useCallback((c: SavedTargetCalc) => {
+    setPendingTargetEdit(c);
+    setActiveTab('target');
+  }, []);
+
   const TABS: { id: SlopeSubTab; label: string }[] = [
     { id: 'find',    label: t('slopeTabFind')    },
-    { id: 'profile', label: t('slopeTabProfile') }, // label now reads "History"
+    { id: 'profile', label: t('slopeTabProfile') },
     { id: 'target',  label: t('slopeTabTarget')  },
   ];
 
@@ -1611,12 +1925,22 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
       <div style={{ flex: 1, overflow: 'hidden', display: activeTab === 'profile' ? 'flex' : 'none', flexDirection: 'column' as const }}>
         <HistoryTab
           savedCalcs={savedCalcs}
+          savedTargetCalcs={savedTargetCalcs}
           onDelete={handleDelete}
+          onDeleteTarget={handleDeleteTarget}
           onEdit={handleEditCalc}
+          onEditTarget={handleEditTargetCalc}
         />
       </div>
       <div style={{ flex: 1, overflow: 'hidden', display: activeTab === 'target'  ? 'flex' : 'none', flexDirection: 'column' as const }}>
-        <TargetSlopeTab points={points} setMap={setMap} />
+        <TargetSlopeTab
+          points={points} setMap={setMap}
+          savedTargetCalcs={savedTargetCalcs}
+          onSaveTarget={handleSaveTarget}
+          onUpdateTarget={handleUpdateTarget}
+          pendingTargetEdit={pendingTargetEdit}
+          onPendingTargetEditConsumed={() => setPendingTargetEdit(null)}
+        />
       </div>
     </div>
   );
