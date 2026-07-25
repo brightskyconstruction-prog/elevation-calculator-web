@@ -199,7 +199,7 @@ function BrightSkyServicesModal({ onClose, es }: { onClose: () => void; es: bool
 
 // ─── Main login screen ────────────────────────────────────────────────────────
 export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
-  const { t, lang } = useLang();
+  const { t, lang, setLang } = useLang();
   const es = lang === 'es';
 
   // Global state
@@ -329,13 +329,35 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
     <>
       <div style={S.topAccent} />
       <div style={S.tickStrip}><MeasureTicks /></div>
-      <div style={S.logoRow}>
-        <div style={S.logoWrap}>
-          <img src="/rod.png" alt="" style={S.logoRod} />
+      <div style={{ ...S.logoRow, justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Logo + title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+          <div style={S.logoWrap}>
+            <img src="/rod.png" alt="" style={S.logoRod} />
+          </div>
+          <div style={S.logoText}>
+            <span style={S.appName}>{t('splashTitle')}</span>
+            <span style={S.appTag}>{t('appTagline')}</span>
+          </div>
         </div>
-        <div style={S.logoText}>
-          <span style={S.appName}>{t('splashTitle')}</span>
-          <span style={S.appTag}>{t('appTagline')}</span>
+        {/* Language switcher — top-right of card */}
+        <div style={{ display: 'flex', borderRadius: 7, border: '1.5px solid #E5E7EB', overflow: 'hidden', flexShrink: 0, marginLeft: 10 }}>
+          {(['en', 'es'] as const).map(l => (
+            <button
+              key={l}
+              aria-pressed={lang === l}
+              style={{
+                height: 28, width: 36, border: 'none',
+                backgroundColor: lang === l ? NAVY : '#F3F4F6',
+                color: lang === l ? '#ffffff' : '#9CA3AF',
+                fontSize: 11, fontWeight: 700, cursor: 'pointer', lineHeight: 1,
+                transition: 'background-color 0.15s, color 0.15s',
+              }}
+              onClick={() => setLang(l)}
+            >
+              {l.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
       <div style={S.divider} />
@@ -361,7 +383,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
 
   // ── "Explore Bright Sky" compact tap-row ─────────────────────────────────
   const ExploreRow = () => (
-    <div style={{ margin: '0 20px', borderTop: `1px solid ${BORDER}`, paddingTop: 8 }}>
+    <div style={{ margin: '0 20px', borderTop: `1px solid ${BORDER}`, paddingTop: 5 }}>
       <button
         style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', borderRadius: 8 }}
         onClick={() => setShowServicesModal(true)}
@@ -462,7 +484,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
 
         {/* ── Sign In tab ── */}
         {authTab === 'signin' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: '0 20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '0 20px' }}>
 
             {forgotPw === 'hidden' && (
               <>
@@ -523,7 +545,7 @@ export default function LoginScreenWeb({ onLogin, onGuestLogin }: Props) {
 
         {/* ── Sign Up tab ── */}
         {authTab === 'signup' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '0 20px' }}>
             <div style={{ marginBottom: 1 }}>
               <h2 style={S.title}>{es ? 'Crea Tu Cuenta' : 'Create Your Account'}</h2>
               <p style={S.subtitle}>{es ? 'Guarda tus datos de topografía en todos tus dispositivos.' : 'Securely save your survey data across devices.'}</p>
@@ -632,7 +654,7 @@ const S: Record<string, React.CSSProperties> = {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     boxShadow: '0 12px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
-    display: 'flex', flexDirection: 'column', gap: 8,
+    display: 'flex', flexDirection: 'column', gap: 5,
     position: 'relative', zIndex: 1,
     overflow: 'hidden', paddingBottom: 12, flexShrink: 0,
   },
@@ -642,7 +664,7 @@ const S: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   tickStrip: { padding: '0 20px', marginTop: -4, opacity: 0.9 },
-  logoRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', marginTop: 1 },
+  logoRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px', marginTop: 0 },
   logoWrap: {
     width: 50, height: 50, borderRadius: 13, backgroundColor: NAVY,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -694,13 +716,13 @@ const S: Record<string, React.CSSProperties> = {
     letterSpacing: 0.4, cursor: 'pointer', transition: 'background-color 0.15s',
   },
   // OR divider
-  orRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', marginTop: -2, marginBottom: -2 },
+  orRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', marginTop: -4, marginBottom: -4 },
   orLine: { flex: 1, height: 1, backgroundColor: BORDER },
   orText: { fontSize: 12, color: '#9CA3AF', fontWeight: 600, letterSpacing: 0.3 },
   // Footer
   legalRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    gap: 7, padding: '0 20px', marginTop: -2,
+    gap: 7, padding: '0 20px', marginTop: -4,
   },
   legalLink: {
     background: 'none', border: 'none', color: '#9CA3AF', fontSize: 11,
