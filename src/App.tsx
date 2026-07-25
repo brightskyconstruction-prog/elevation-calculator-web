@@ -425,7 +425,7 @@ function AppInner() {
     syncEmailRef.current = null;
   }, []);
 
-  const [logoutModal, setLogoutModal] = useState<'none' | 'auth' | 'guest' | 'guest-confirm'>('none');
+  const [logoutModal, setLogoutModal] = useState<'none' | 'auth' | 'guest'>('none');
 
   const doLogout = useCallback(async () => {
     setLogoutModal('none');
@@ -662,7 +662,6 @@ function AppInner() {
           onClose={() => setLogoutModal('none')}
           onLogout={doLogout}
           onSignIn={() => { setLogoutModal('none'); setShowSettings(false); setAppState('login'); }}
-          onGuestContinue={() => setLogoutModal('guest-confirm')}
         />
       )}
 
@@ -791,21 +790,20 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
 
 // ─── Logout modal ────────────────────────────────────────────────────────────
 interface LogoutModalProps {
-  mode:           'auth' | 'guest' | 'guest-confirm';
-  email:          string;
-  t:              (key: string) => string;
-  onClose:        () => void;
-  onLogout:       () => void;
-  onSignIn:       () => void;
-  onGuestContinue: () => void;
+  mode:     'auth' | 'guest';
+  email:    string;
+  t:        (key: string) => string;
+  onClose:  () => void;
+  onLogout: () => void;
+  onSignIn: () => void;
 }
 
-function LogoutModal({ mode, email, t, onClose, onLogout, onSignIn, onGuestContinue }: LogoutModalProps) {
-  const NAVY_L  = '#143A63';
-  const BTN_H   = 48;
+function LogoutModal({ mode, email, t, onClose, onLogout, onSignIn }: LogoutModalProps) {
+  const NAVY_L = '#143A63';
+  const BTN_H  = 52;
 
   const btnBase: React.CSSProperties = {
-    height: BTN_H, borderRadius: 10, fontSize: 15, fontWeight: 800,
+    height: BTN_H, borderRadius: 10, fontSize: 16, fontWeight: 800,
     letterSpacing: 0.3, cursor: 'pointer', border: 'none', transition: 'opacity 0.15s',
   };
   const btnPrimary: React.CSSProperties = {
@@ -815,17 +813,13 @@ function LogoutModal({ mode, email, t, onClose, onLogout, onSignIn, onGuestConti
     ...btnBase, backgroundColor: 'transparent',
     border: `1.5px solid #D1D5DB`, color: '#374151',
   };
-  const btnText: React.CSSProperties = {
-    ...btnBase, backgroundColor: 'transparent', color: '#6B7280',
-    fontSize: 14, height: 40, letterSpacing: 0,
-  };
 
   const body: React.CSSProperties = {
-    padding: '20px 20px 24px',
+    padding: '20px 20px 26px',
     display: 'flex', flexDirection: 'column', gap: 14,
   };
   const para: React.CSSProperties = {
-    margin: 0, fontSize: 14, lineHeight: 1.65, color: '#374151',
+    margin: 0, fontSize: 15, lineHeight: 1.65, color: '#374151',
   };
 
   let title = '';
@@ -846,35 +840,21 @@ function LogoutModal({ mode, email, t, onClose, onLogout, onSignIn, onGuestConti
         </div>
       </>
     );
-  } else if (mode === 'guest') {
+  } else {
+    // guest — two actions only: Sign In (primary) + Continue as Guest (closes dialog)
     title = t('guestLogoutTitle');
     content = (
       <>
         <p style={{ ...para, fontWeight: 700, color: '#111827' }}>{t('guestLogoutIntro')}</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {([
-            'guestLogoutLine1', 'guestLogoutLine2', 'guestLogoutLine3',
-          ] as const).map(k => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+          {(['guestLogoutLine1', 'guestLogoutLine2', 'guestLogoutLine3'] as const).map(k => (
             <p key={k} style={para}>• {t(k)}</p>
           ))}
           <p style={{ ...para, fontWeight: 700, color: NAVY_L }}>• {t('guestLogoutLine4')}</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
           <button style={{ ...btnPrimary, width: '100%' }} onClick={onSignIn}>{t('guestSignInBtn')}</button>
-          <button style={{ ...btnOutline, width: '100%' }} onClick={onGuestContinue}>{t('guestContinueBtn')}</button>
-          <button style={{ ...btnText, width: '100%' }} onClick={onClose}>{t('cancel')}</button>
-        </div>
-      </>
-    );
-  } else {
-    // guest-confirm
-    title = t('guestConfirmTitle');
-    content = (
-      <>
-        <p style={para}>{t('guestConfirmBody')}</p>
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <button style={{ ...btnOutline, flex: 1 }} onClick={onClose}>{t('cancel')}</button>
-          <button style={{ ...btnPrimary, flex: 1 }} onClick={onLogout}>{t('logout')}</button>
+          <button style={{ ...btnOutline, width: '100%' }} onClick={onClose}>{t('guestContinueBtn')}</button>
         </div>
       </>
     );
@@ -893,7 +873,7 @@ function LogoutModal({ mode, email, t, onClose, onLogout, onSignIn, onGuestConti
         </div>
         {/* Body */}
         <div style={body}>
-          <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>{title}</p>
+          <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#111827' }}>{title}</p>
           {content}
         </div>
       </div>
