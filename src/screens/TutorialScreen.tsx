@@ -526,9 +526,23 @@ export default function TutorialScreen() {
     <div style={s.root}>
       <style>{`
         .hc-input {
-          border: none !important; outline: none !important;
-          box-shadow: none !important; -webkit-appearance: none !important;
-          appearance: none !important; background: transparent !important;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          -webkit-box-shadow: none !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+          background: transparent !important;
+          -webkit-tap-highlight-color: transparent !important;
+          tap-highlight-color: transparent !important;
+        }
+        .hc-input:focus,
+        .hc-input:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+          -webkit-box-shadow: none !important;
+          background: transparent !important;
+          border: none !important;
         }
         .hc-input::placeholder { color: #9CA3AF; }
         .hc-btn:focus-visible {
