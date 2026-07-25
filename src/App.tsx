@@ -425,22 +425,20 @@ function AppInner() {
     syncEmailRef.current = null;
   }, []);
 
+  const [logoutModal, setLogoutModal] = useState<'none' | 'auth' | 'guest' | 'guest-confirm'>('none');
+
+  const doLogout = useCallback(async () => {
+    setLogoutModal('none');
+    await logoutUser();
+    try { localStorage.removeItem('auth:email'); } catch {}
+    setEmail('');
+    setAppState('login');
+    setShowSettings(false);
+  }, [logoutUser]);
+
   const handleLogout = useCallback(() => {
-    showConfirm({
-      message:      t('logoutConfirm'),
-      confirmLabel: t('logout'),
-      cancelLabel:  t('cancel'),
-      danger:       false,
-      onConfirm: async () => {
-        setConfirmProps(null);
-        await logoutUser();
-        try { localStorage.removeItem('auth:email'); } catch {}
-        setEmail('');
-        setAppState('login');
-        setShowSettings(false);
-      },
-    });
-  }, [t, logoutUser, showConfirm]);
+    setLogoutModal(email ? 'auth' : 'guest');
+  }, [email]);
 
   // ── Navigation ──────────────────────────────────────────────────
   const handleEditPoint = useCallback((pt: SurveyPoint) => {
@@ -573,7 +571,7 @@ function AppInner() {
                 ...styles.tab,
                 flex: tab.flex,
                 ...(isActive ? styles.tabActive : {}),
-                fontSize: lang === 'en' ? '15px' : '12px',
+                fontSize: lang === 'en' ? '15px' : '13.5px',
               }}
               onClick={() => handleTabSwitch(tab.id)}
             >
@@ -655,6 +653,19 @@ function AppInner() {
         />
       )}
 
+      {/* ── Logout modal (auth or guest flow) ───────────────────── */}
+      {logoutModal !== 'none' && (
+        <LogoutModal
+          mode={logoutModal}
+          email={email}
+          t={t}
+          onClose={() => setLogoutModal('none')}
+          onLogout={doLogout}
+          onSignIn={() => { setLogoutModal('none'); setShowSettings(false); setAppState('login'); }}
+          onGuestContinue={() => setLogoutModal('guest-confirm')}
+        />
+      )}
+
       {/* ── Privacy Policy / Terms of Service modal ─────────────── */}
       {showPrivacy && (
         <PrivacyPolicyModal
@@ -724,12 +735,12 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
               </svg>
             </div>
             <div style={spS.emailBlock}>
-              <span style={spS.emailMeta}>{email ? t('loggedInAs') : 'Session'}</span>
-              <span style={spS.emailVal}>{email || 'Guest Session'}</span>
+              <span style={spS.emailMeta}>{email ? t('loggedInAs') : t('settingsSession')}</span>
+              <span style={spS.emailVal}>{email || t('settingsGuestLabel')}</span>
             </div>
           </div>
           <button style={spS.logoutBtn} onClick={onLogout}>
-            {email ? t('logout') : 'Sign In'}
+            {email ? t('logout') : t('guestSignInBtn')}
           </button>
         </div>
 
@@ -772,6 +783,118 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
         {/* ── App version ──────────────────────────────────────── */}
         <div style={spS.versionRow}>
           <span style={spS.versionText}>Grade and Elevation Calculator · v1.0</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Logout modal ────────────────────────────────────────────────────────────
+interface LogoutModalProps {
+  mode:           'auth' | 'guest' | 'guest-confirm';
+  email:          string;
+  t:              (key: string) => string;
+  onClose:        () => void;
+  onLogout:       () => void;
+  onSignIn:       () => void;
+  onGuestContinue: () => void;
+}
+
+function LogoutModal({ mode, email, t, onClose, onLogout, onSignIn, onGuestContinue }: LogoutModalProps) {
+  const NAVY_L  = '#143A63';
+  const BTN_H   = 48;
+
+  const btnBase: React.CSSProperties = {
+    height: BTN_H, borderRadius: 10, fontSize: 15, fontWeight: 800,
+    letterSpacing: 0.3, cursor: 'pointer', border: 'none', transition: 'opacity 0.15s',
+  };
+  const btnPrimary: React.CSSProperties = {
+    ...btnBase, backgroundColor: NAVY_L, color: '#fff',
+  };
+  const btnOutline: React.CSSProperties = {
+    ...btnBase, backgroundColor: 'transparent',
+    border: `1.5px solid #D1D5DB`, color: '#374151',
+  };
+  const btnText: React.CSSProperties = {
+    ...btnBase, backgroundColor: 'transparent', color: '#6B7280',
+    fontSize: 14, height: 40, letterSpacing: 0,
+  };
+
+  const body: React.CSSProperties = {
+    padding: '20px 20px 24px',
+    display: 'flex', flexDirection: 'column', gap: 14,
+  };
+  const para: React.CSSProperties = {
+    margin: 0, fontSize: 14, lineHeight: 1.65, color: '#374151',
+  };
+
+  let title = '';
+  let content: React.ReactNode = null;
+
+  if (mode === 'auth') {
+    title = t('logoutAuthTitle');
+    content = (
+      <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <p style={{ ...para, fontWeight: 600, color: '#111827' }}>{t('logoutAuthWith')}</p>
+          <p style={{ ...para, fontWeight: 800, color: NAVY_L, fontSize: 15 }}>{email}</p>
+        </div>
+        <p style={para}>{t('logoutAuthBody')}</p>
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          <button style={{ ...btnOutline, flex: 1 }} onClick={onClose}>{t('cancel')}</button>
+          <button style={{ ...btnPrimary, flex: 1 }} onClick={onLogout}>{t('logout')}</button>
+        </div>
+      </>
+    );
+  } else if (mode === 'guest') {
+    title = t('guestLogoutTitle');
+    content = (
+      <>
+        <p style={{ ...para, fontWeight: 700, color: '#111827' }}>{t('guestLogoutIntro')}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {([
+            'guestLogoutLine1', 'guestLogoutLine2', 'guestLogoutLine3',
+          ] as const).map(k => (
+            <p key={k} style={para}>• {t(k)}</p>
+          ))}
+          <p style={{ ...para, fontWeight: 700, color: NAVY_L }}>• {t('guestLogoutLine4')}</p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+          <button style={{ ...btnPrimary, width: '100%' }} onClick={onSignIn}>{t('guestSignInBtn')}</button>
+          <button style={{ ...btnOutline, width: '100%' }} onClick={onGuestContinue}>{t('guestContinueBtn')}</button>
+          <button style={{ ...btnText, width: '100%' }} onClick={onClose}>{t('cancel')}</button>
+        </div>
+      </>
+    );
+  } else {
+    // guest-confirm
+    title = t('guestConfirmTitle');
+    content = (
+      <>
+        <p style={para}>{t('guestConfirmBody')}</p>
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          <button style={{ ...btnOutline, flex: 1 }} onClick={onClose}>{t('cancel')}</button>
+          <button style={{ ...btnPrimary, flex: 1 }} onClick={onLogout}>{t('logout')}</button>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box', zIndex: 600 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="anp-modal-in" style={{ maxWidth: 420, width: '100%', backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.32)', display: 'flex', flexDirection: 'column' }}>
+        {/* NAVY header */}
+        <div style={{ backgroundColor: NAVY_L, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>Grade &amp; Elevation Calculator</span>
+          <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.85)', fontSize: 22, fontWeight: 700, lineHeight: 1, cursor: 'pointer', padding: '2px 4px' }} onClick={onClose}>✕</button>
+        </div>
+        {/* Body */}
+        <div style={body}>
+          <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#111827' }}>{title}</p>
+          {content}
         </div>
       </div>
     </div>
