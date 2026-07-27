@@ -356,16 +356,15 @@ function ManageSetModal({ curSet, allSets, onRename, onDeleteThis, onDeleteAll, 
 // ─── SetDetailView ─────────────────────────────────────────────────────────────
 interface SetDetailProps {
   set: SurveySet; points: SurveyPoint[]; projectId: string; onClose: () => void;
+  onEditPoint: (pt: SurveyPoint) => void;
 }
 
-function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
-  const { t, lang }                         = useLang();
-  const { updatePoint, updateSet, getSets } = useSurveyStore();
-  const allSets                             = getSets(projectId);
+function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDetailProps) {
+  const { t, lang }                   = useLang();
+  const { updatePoint, updateSet }    = useSurveyStore();
 
   // view state
   const [menuPtId,      setMenuPtId]      = useState<string | null>(null);
-  const [moveMenuPtId,  setMoveMenuPtId]  = useState<string | null>(null);
   const [toastMsg,      setToastMsg]      = useState('');
   const [removeConfirm, setRemoveConfirm] = useState<null | { pt: SurveyPoint }>(null);
 
@@ -399,6 +398,27 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
   const avgElev  = elevs.length > 0 ? elevs.reduce((s, e) => s + e, 0) / elevs.length : null;
   const refPt    = sorted.find(p => p.id === referenceId);
 
+  // ── Auto-recalculate derived elevations when benchmark rod reading changes ───
+  // Formula: derivedBmElev = bmElev + (bmEngFt − derivedEngFt)
+  // This catches edits made via "Edit Point" (AddNewPointScreen) or any external store update.
+  useEffect(() => {
+    const bmPt = points.find(p => p.id === referenceId);
+    if (!bmPt || (bmPt.bmElevation ?? 0) <= 0) return;
+    const bmElev  = bmPt.bmElevation!;
+    const bmEngFt = bmPt.engineeringFeet ?? 0;
+    points
+      .filter(p => p.id !== bmPt.id && (p.bmElevation ?? 0) > 0)
+      .forEach(p => {
+        const expected = bmElev + (bmEngFt - (p.engineeringFeet ?? 0));
+        if (Math.abs(expected - (p.bmElevation ?? 0)) > 0.0001) {
+          updatePoint(projectId, p.id, {
+            bmElevation: expected,
+            elevation:   expected + (p.engineeringFeet ?? 0),
+          });
+        }
+      });
+  }, [points, referenceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Enter edit mode ──────────────────────────────────────────────────────────
   const enterEdit = () => {
     setEditName(set.name);
@@ -406,7 +426,6 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
     setPendingRemovals(new Set());
     setEditNameErr(false);
     setMenuPtId(null);
-    setMoveMenuPtId(null);
     setIsEdit(true);
   };
 
@@ -465,11 +484,6 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
     setRemoveConfirm({ pt });
   };
 
-  const handleMoveToSet = (pt: SurveyPoint, targetSet: SurveySet) => {
-    updatePoint(projectId, pt.id, { setId: targetSet.id });
-    setMenuPtId(null); setMoveMenuPtId(null);
-  };
-
   const handleExportPoint = (pt: SurveyPoint) => {
     exportSinglePointCsv(pt, set.name, set.setLabel ?? '');
     setMenuPtId(null);
@@ -490,12 +504,7 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
     setMenuPtId(null);
   };
 
-  const handleDuplicate = () => {
-    showToast(lang === 'es' ? 'Próximamente…' : 'Coming soon…');
-    setMenuPtId(null);
-  };
-
-  const closeMenus = () => { setMenuPtId(null); setMoveMenuPtId(null); };
+  const closeMenus = () => { setMenuPtId(null); };
 
   // ── Edit mode removal toggle ──────────────────────────────────────────────────
   const toggleRemoval = (ptId: string) => {
@@ -505,8 +514,6 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
       return next;
     });
   };
-
-  const otherSets = allSets.filter(s => s.id !== set.id);
 
   return (
     <div
@@ -693,7 +700,6 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
                 const lat    = pt.createdLatitude;
                 const lon    = pt.createdLongitude;
                 const isMenu = menuPtId === pt.id;
-                const isMove = moveMenuPtId === pt.id;
 
                 // Elevation cell colors: benchmark = gold, all others = charcoal (req #6)
                 const elevLblColor = ptType === 'benchmark' ? GOLD_LBL : TEXT_S;
@@ -719,7 +725,7 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
                             <span style={{ fontSize:12, fontWeight:700, color:TEXT_S, backgroundColor:SURFACE, borderRadius:3, padding:'1px 6px' }}>#{idx + 1}</span>
                             <button
                               style={{ background:'none', border:'none', color:TEXT_D, fontSize:18, cursor:'pointer', padding:'2px 3px', lineHeight:1, borderRadius:4 }}
-                              onClick={e => { e.stopPropagation(); setMoveMenuPtId(null); setMenuPtId(isMenu ? null : pt.id); }}>
+                              onClick={e => { e.stopPropagation(); setMenuPtId(isMenu ? null : pt.id); }}>
                               ⋮
                             </button>
                           </div>
@@ -772,12 +778,10 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
                         onClick={e => e.stopPropagation()}
                       >
                         {[
-                          { icon:'✏️', label: lang === 'es' ? 'Editar Punto'          : 'Edit Point',            action: () => { showToast(lang === 'es' ? 'Próximamente…' : 'Coming soon…'); setMenuPtId(null); }, color: TEXT_P },
-                          { icon:'🗑', label: lang === 'es' ? 'Quitar del Conjunto'   : 'Remove Point',          action: () => handleRemoveFromSet(pt), color: RED },
-                          { icon:'↗️', label: lang === 'es' ? 'Mover a Otro Conjunto' : 'Move to Another Set',   action: () => { setMoveMenuPtId(isMove ? null : pt.id); }, color: BLUE_A },
-                          { icon:'⧉', label: lang === 'es' ? 'Duplicar Punto'        : 'Duplicate Point',       action: () => handleDuplicate(), color: TEXT_P },
-                          { icon:'⬇', label: lang === 'es' ? 'Exportar Punto'        : 'Export Point',          action: () => handleExportPoint(pt), color: GREEN },
-                          { icon:'↑', label: lang === 'es' ? 'Compartir Punto'       : 'Share Point',           action: () => handleSharePoint(pt), color: NAVY },
+                          { icon:'✏️', label: lang === 'es' ? 'Editar Punto'        : 'Edit Point',    action: () => { setMenuPtId(null); onClose(); onEditPoint(pt); }, color: TEXT_P },
+                          { icon:'🗑', label: lang === 'es' ? 'Quitar del Conjunto' : 'Remove Point',  action: () => handleRemoveFromSet(pt), color: RED },
+                          { icon:'⬇', label: lang === 'es' ? 'Exportar Punto'      : 'Export Point',  action: () => handleExportPoint(pt), color: GREEN },
+                          { icon:'↑', label: lang === 'es' ? 'Compartir Punto'     : 'Share Point',   action: () => handleSharePoint(pt), color: NAVY },
                         ].map((item, i) => (
                           <button key={i}
                             style={{ display:'flex', alignItems:'center', gap:9, width:'100%', textAlign:'left' as const, padding:'10px 13px', fontSize:13, fontWeight:700, color:item.color, backgroundColor:'transparent', border:'none', borderTop: i === 0 ? 'none' : `1px solid ${BORDER}`, cursor:'pointer' }}
@@ -786,29 +790,6 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
                             {item.label}
                           </button>
                         ))}
-
-                        {/* Move to another set sub-panel */}
-                        {isMove && (
-                          <div style={{ borderTop:`1.5px solid ${BLUE_D}`, backgroundColor:'#F8FAFF' }}>
-                            <div style={{ padding:'7px 13px 4px', fontSize:10, fontWeight:800, color:TEXT_D, letterSpacing:0.5 }}>
-                              {lang === 'es' ? 'SELECCIONAR CONJUNTO' : 'SELECT SET'}
-                            </div>
-                            {otherSets.length === 0 ? (
-                              <div style={{ padding:'6px 13px 10px', fontSize:12, color:TEXT_D }}>
-                                {lang === 'es' ? 'Sin otros conjuntos' : 'No other sets'}
-                              </div>
-                            ) : (
-                              otherSets.slice(0, 5).map(s => (
-                                <button key={s.id}
-                                  style={{ display:'flex', alignItems:'center', gap:7, width:'100%', textAlign:'left' as const, padding:'8px 13px', fontSize:12, fontWeight:700, color:NAVY, backgroundColor:'transparent', border:'none', borderTop:`1px solid ${BORDER}`, cursor:'pointer' }}
-                                  onClick={() => handleMoveToSet(pt, s)}>
-                                  {s.setLabel && <span style={{ backgroundColor:BLUE, borderRadius:3, padding:'1px 5px', fontSize:9, fontWeight:800, color:'#fff' }}>{s.setLabel}</span>}
-                                  <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{s.name}</span>
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -827,7 +808,22 @@ function SetDetailView({ set, points, projectId, onClose }: SetDetailProps) {
           cancelLabel={lang === 'es' ? 'Cancelar' : 'Cancel'}
           danger
           onConfirm={() => {
-            updatePoint(projectId, removeConfirm.pt.id, { setId: undefined });
+            const pt = removeConfirm.pt;
+            const isBenchmark = pt.id === referenceId;
+            if (isBenchmark) {
+              // Strip benchmark data; keep the point as standalone rod-reading point
+              updatePoint(projectId, pt.id, {
+                setId: undefined,
+                bmElevation: 0,
+                elevation: pt.engineeringFeet ?? 0,
+              });
+              // Clear derived elevations on all remaining points in this set
+              sorted
+                .filter(p => p.id !== pt.id && (p.bmElevation ?? 0) > 0)
+                .forEach(p => updatePoint(projectId, p.id, { bmElevation: 0, elevation: 0 }));
+            } else {
+              updatePoint(projectId, pt.id, { setId: undefined });
+            }
             setRemoveConfirm(null);
           }}
           onCancel={() => setRemoveConfirm(null)}
@@ -937,9 +933,9 @@ function ViewAllSetsModal({ sets, points, currentIdx, onSelect, onClose }: {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-interface Props { projectId: string }
+interface Props { projectId: string; onEditPoint?: (pt: SurveyPoint) => void; }
 
-export default function ViewSetsScreen({ projectId }: Props) {
+export default function ViewSetsScreen({ projectId, onEditPoint }: Props) {
   const { t, lang } = useLang();
   const { getSets, getPoints, deleteSet, deletePoints, updateSet } = useSurveyStore();
   const sets   = getSets(projectId);
@@ -1138,7 +1134,8 @@ export default function ViewSetsScreen({ projectId }: Props) {
 
       {detailSetLive && (
         <SetDetailView set={detailSetLive} points={detailPoints}
-          projectId={projectId} onClose={() => setDetailSet(null)} />
+          projectId={projectId} onClose={() => setDetailSet(null)}
+          onEditPoint={pt => { setDetailSet(null); onEditPoint?.(pt); }} />
       )}
 
       {singleDeleteConfirm && (

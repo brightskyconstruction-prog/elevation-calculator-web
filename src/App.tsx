@@ -616,7 +616,7 @@ function AppInner() {
           />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'sets'   ? 'flex' : 'none' }}>
-          <ViewSetsScreen projectId={projectId} />
+          <ViewSetsScreen projectId={projectId} onEditPoint={handleEditPoint} />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
           <CalculatorScreen />
