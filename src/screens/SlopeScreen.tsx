@@ -1891,8 +1891,8 @@ export default function SlopeScreen({ projectId, initFromId, initToId, onInitCon
 
   const TABS: { id: SlopeSubTab; label: string }[] = [
     { id: 'find',    label: t('slopeTabFind')    },
-    { id: 'profile', label: t('slopeTabProfile') },
     { id: 'target',  label: t('slopeTabTarget')  },
+    { id: 'profile', label: t('slopeTabProfile') },
   ];
 
   return (
