@@ -1009,25 +1009,29 @@ function SettingsIcon() {
 }
 
 // ─── Calculator tab icon — left: + / − stacked squares; right: = tall rect ───
+// Gap engineering (strokeWidth 1.4):
+//   row gap  path=3.0 → visible ≈1.6 units (strokes never touch)
+//   col gap  path=2.5 → visible ≈1.1 units
+//   = bars   path=3.0 → visible ≈1.6 units
 function CalcIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+         stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
          aria-hidden="true">
-      {/* Left column — + square (top): x 0.5–11, y 0.75–11.25 */}
-      <rect x="0.5"  y="0.75"  width="10.5" height="10.5" rx="2.4" />
-      {/* Left column — − square (bottom): x 0.5–11, y 12.75–23.25 */}
-      <rect x="0.5"  y="12.75" width="10.5" height="10.5" rx="2.4" />
-      {/* Right column — = tall rect: x 12.5–23.5, y 0.75–23.25 */}
-      <rect x="12.5" y="0.75"  width="11"   height="22.5" rx="2.8" />
-      {/* + symbol, center (5.75, 6) — arm 2.5 gives 2.75 pad each side */}
-      <line x1="5.75" y1="3.5"  x2="5.75" y2="8.5"  />
-      <line x1="3.25" y1="6"    x2="8.25" y2="6"    />
-      {/* = symbol, center (18, 12) — arm 3 gives 2.5 pad each side */}
-      <line x1="15"   y1="10.5" x2="21"   y2="10.5" />
-      <line x1="15"   y1="13.5" x2="21"   y2="13.5" />
-      {/* − symbol, center (5.75, 18) — arm 2.5 gives 2.75 pad each side */}
-      <line x1="3.25" y1="18"   x2="8.25" y2="18"   />
+      {/* Left top — + square: x 0.5–10.5, y 0.5–10 */}
+      <rect x="0.5" y="0.5"  width="10"   height="9.5" rx="2.2" />
+      {/* Left bottom — − square: x 0.5–10.5, y 13–22.5  (path gap = 3) */}
+      <rect x="0.5" y="13"   width="10"   height="9.5" rx="2.2" />
+      {/* Right — = tall rect: x 13–23.5, y 0.5–22.5  (col path gap = 2.5) */}
+      <rect x="13"  y="0.5"  width="10.5" height="22"  rx="2.6" />
+      {/* + symbol, center (5.5, 5.25) */}
+      <line x1="5.5"  y1="3.05" x2="5.5"  y2="7.45" />
+      <line x1="3.3"  y1="5.25" x2="7.7"  y2="5.25" />
+      {/* = symbol, center (18.25, 11.5), bars at y 10 / 13  (path gap = 3) */}
+      <line x1="15.25" y1="10"   x2="21.25" y2="10"   />
+      <line x1="15.25" y1="13"   x2="21.25" y2="13"   />
+      {/* − symbol, center (5.5, 17.75) */}
+      <line x1="3.3"  y1="17.75" x2="7.7"  y2="17.75" />
     </svg>
   );
 }
