@@ -1008,23 +1008,20 @@ function SettingsIcon() {
   );
 }
 
-// ─── Calculator tab icon (Material-style, stroke-based) ──────────────────────
+// ─── Calculator tab icon — + / = / − stagger composition ────────────────────
 function CalcIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+         stroke="currentColor" strokeWidth="2" strokeLinecap="round"
          aria-hidden="true">
-      {/* Body */}
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      {/* Display — filled */}
-      <rect x="7" y="5" width="10" height="4" rx="0.75"
-            fill="currentColor" stroke="none" />
-      {/* Button grid: 2 rows × 2 cols + 1 tall right key */}
-      <rect x="7"    y="11" width="3" height="3" rx="0.75" />
-      <rect x="10.5" y="11" width="3" height="3" rx="0.75" />
-      <rect x="14"   y="11" width="3" height="7" rx="0.75" />
-      <rect x="7"    y="15" width="3" height="3" rx="0.75" />
-      <rect x="10.5" y="15" width="3" height="3" rx="0.75" />
+      {/* + — top-left */}
+      <line x1="7"    y1="3.5"  x2="7"    y2="9.5"  />
+      <line x1="4"    y1="6.5"  x2="10"   y2="6.5"  />
+      {/* = — center-right */}
+      <line x1="12.5" y1="10.5" x2="20.5" y2="10.5" />
+      <line x1="12.5" y1="13.5" x2="20.5" y2="13.5" />
+      {/* − — bottom-left */}
+      <line x1="4"    y1="18"   x2="10"   y2="18"   />
     </svg>
   );
 }
