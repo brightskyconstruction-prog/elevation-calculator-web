@@ -1008,26 +1008,26 @@ function SettingsIcon() {
   );
 }
 
-// ─── Calculator tab icon — tiled + / = / − composition ──────────────────────
+// ─── Calculator tab icon — left: + / − stacked squares; right: = tall rect ───
 function CalcIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
          aria-hidden="true">
-      {/* + tile — top-left rounded square */}
-      <rect x="1"  y="3"  width="7"  height="7.5" rx="1.6" />
-      {/* = tile — top-right rounded rectangle */}
-      <rect x="10" y="3"  width="13" height="7.5" rx="1.6" />
-      {/* − tile — bottom-left rounded square */}
-      <rect x="1"  y="13" width="7"  height="7.5" rx="1.6" />
-      {/* + symbol, center (4.5, 6.75) */}
-      <line x1="4.5"   y1="4.7"  x2="4.5"   y2="8.8"  />
-      <line x1="2.4"   y1="6.75" x2="6.6"   y2="6.75" />
-      {/* = symbol, center (16.5, 6.75) */}
-      <line x1="11.75" y1="5.8"  x2="21.25" y2="5.8"  />
-      <line x1="11.75" y1="7.7"  x2="21.25" y2="7.7"  />
-      {/* − symbol, center (4.5, 16.75) */}
-      <line x1="2.4"   y1="16.75" x2="6.6"  y2="16.75" />
+      {/* Left column — + square (top) */}
+      <rect x="1"  y="1.5" width="10" height="9.5" rx="2.2" />
+      {/* Left column — − square (bottom) */}
+      <rect x="1"  y="13"  width="10" height="9.5" rx="2.2" />
+      {/* Right column — = tall rectangle */}
+      <rect x="13" y="1.5" width="10" height="21"  rx="2.5" />
+      {/* + symbol, center (6, 6.25) */}
+      <line x1="6"   y1="3.75" x2="6"   y2="8.75" />
+      <line x1="3.5" y1="6.25" x2="8.5" y2="6.25" />
+      {/* = symbol, center (18, 12) */}
+      <line x1="15"  y1="10.5" x2="21"  y2="10.5" />
+      <line x1="15"  y1="13.5" x2="21"  y2="13.5" />
+      {/* − symbol, center (6, 17.75) */}
+      <line x1="3.5" y1="17.75" x2="8.5" y2="17.75" />
     </svg>
   );
 }
