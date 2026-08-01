@@ -1297,7 +1297,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {/* Manage Points — new-point creation only */}
           {isNewPoint && (
             <button
-              style={{ flexShrink: 0, backgroundColor: '#FFFFFF', border: `1px solid ${NAVY}`, borderRadius: 6, padding: '2px 7px', fontSize: 10, fontWeight: 800, color: NAVY, cursor: 'pointer', lineHeight: 1.25, textAlign: 'center' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}
+              style={{ flexShrink: 0, backgroundColor: GOLD, border: `1px solid ${GOLD}`, borderRadius: 6, padding: '2px 7px', fontSize: 10, fontWeight: 800, color: NAVY, cursor: 'pointer', lineHeight: 1.25, textAlign: 'center' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}
               onClick={() => {
                 const dirty = rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '';
                 if (dirty) { setShowUnsavedWarn(true); } else { setShowManagePoint(true); }

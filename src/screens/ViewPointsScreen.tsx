@@ -1541,11 +1541,11 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                   {onEditPoint && (
                     <button onClick={() => onEditPoint(pt)} aria-label="Edit point"
-                      style={{ height: 26, padding: '0 9px', borderRadius: 6, backgroundColor: BLUE_ACC, border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ height: 26, padding: '0 9px', borderRadius: 6, backgroundColor: '#1F4E79', border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >Edit</button>
                   )}
                   <button onClick={() => handleDeleteSingle(pt)} aria-label="Delete point"
-                    style={{ height: 26, padding: '0 9px', borderRadius: 6, backgroundColor: RED, border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ height: 26, padding: '0 9px', borderRadius: 6, backgroundColor: '#C0392B', border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >Delete</button>
                 </div>
               </div>
@@ -1585,7 +1585,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 </div>
                 {/* More Info button — bottom-right of card */}
                 <button onClick={() => setViewDetailsPt(pt)} title={t('viewDetailsBtn')} aria-label={t('viewDetailsBtn')}
-                  style={{ flexShrink: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER_B}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700, color: TEXT_SEC, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
+                  style={{ flexShrink: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER_B}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600, color: '#1F2937', cursor: 'pointer', whiteSpace: 'nowrap' as const }}
                 >More Info</button>
               </div>
             </div>
