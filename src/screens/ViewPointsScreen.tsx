@@ -1363,7 +1363,7 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
   const [rawPage,         setRawPage]         = useState<number | null>(null);
   const [showAllModal,    setShowAllModal]     = useState(false);
   const [viewDetailsPt,   setViewDetailsPt]   = useState<SurveyPoint | null>(null);
-  const [overflowPt,      setOverflowPt]      = useState<SurveyPoint | null>(null);
+  // overflowPt removed — Edit/Delete are now inline buttons on the card
   const [deleteConfirmPt, setDeleteConfirmPt] = useState<SurveyPoint | null>(null);
 
   // ── Derived maps ───────────────────────────────────────────────────────────
@@ -1436,7 +1436,6 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
 
   // ── Delete handlers ────────────────────────────────────────────────────────
   const handleDeleteSingle = useCallback((delPt: SurveyPoint) => {
-    setOverflowPt(null);
     setDeleteConfirmPt(delPt);
   }, []);
 
@@ -1457,10 +1456,6 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' as const }}>
 
-      {/* ── Overflow menu backdrop ── */}
-      {overflowPt && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 190 }} onClick={() => setOverflowPt(null)} />
-      )}
 
       {/* ── Top bar ── */}
       <div style={{ backgroundColor: CARD, borderBottom: `1px solid ${BORDER_S}`, padding: '5px 10px 6px', display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
@@ -1523,7 +1518,6 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
           const badge     = ptType === 'benchmark' ? t('spBenchmarkBadge')
                           : ptType === 'derived'   ? t('spDerivedBadge')
                           : t('spStandaloneBadge');
-          const isMenuOpen = overflowPt?.id === pt.id;
           const fifData   = engToFIF(pt.engineeringFeet);
           const elevColor = ptType === 'benchmark' ? '#92610A' : TEXT_PRI;
 
@@ -1543,27 +1537,16 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                     <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_PRI, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>– {pt.pointName}</span>
                   )}
                 </div>
-                {/* ⓘ + ⋮ */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, position: 'relative' as const }}>
-                  <button onClick={() => setViewDetailsPt(pt)} title={t('viewDetailsBtn')} aria-label={t('viewDetailsBtn')}
-                    style={{ width: 30, height: 30, borderRadius: 7, backgroundColor: SURFACE, border: `1px solid ${BORDER_B}`, color: TEXT_SEC, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                  >ⓘ</button>
-                  <button onClick={e => { e.stopPropagation(); setOverflowPt(isMenuOpen ? null : pt); }} aria-label="More options"
-                    style={{ width: 30, height: 30, borderRadius: 7, backgroundColor: isMenuOpen ? NAVY : SURFACE, border: `1px solid ${isMenuOpen ? NAVY : BORDER_B}`, color: isMenuOpen ? '#fff' : TEXT_SEC, fontSize: 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                  >⋮</button>
-                  {isMenuOpen && (
-                    <div style={{ position: 'absolute', top: '100%', right: 0, zIndex: 200, backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, boxShadow: '0 8px 24px rgba(0,0,0,0.14)', overflow: 'hidden', minWidth: 165, marginTop: 4 }}
-                      onClick={e => e.stopPropagation()}>
-                      {onEditPoint && (
-                        <button style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', borderBottom: `1px solid ${BORDER_S}`, textAlign: 'left' as const, fontSize: 14, fontWeight: 700, color: BLUE_ACC, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' as const }}
-                          onClick={() => { setOverflowPt(null); onEditPoint(pt); }}
-                        ><span style={{ fontSize: 15 }}>✏</span>{tx.editThisPoint}</button>
-                      )}
-                      <button style={{ width: '100%', padding: '12px 16px', background: 'none', border: 'none', textAlign: 'left' as const, fontSize: 14, fontWeight: 700, color: RED, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' as const }}
-                        onClick={() => handleDeleteSingle(pt)}
-                      ><span style={{ fontSize: 15 }}>🗑</span>{tx.deleteThisPoint}</button>
-                    </div>
+                {/* Edit + Delete */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  {onEditPoint && (
+                    <button onClick={() => onEditPoint(pt)} aria-label="Edit point"
+                      style={{ height: 26, padding: '0 9px', borderRadius: 6, backgroundColor: BLUE_ACC, border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >Edit</button>
                   )}
+                  <button onClick={() => handleDeleteSingle(pt)} aria-label="Delete point"
+                    style={{ height: 26, padding: '0 9px', borderRadius: 6, backgroundColor: RED, border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >Delete</button>
                 </div>
               </div>
 
@@ -1585,22 +1568,25 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                 </div>
               )}
 
-              {/* ── Badge + Set row — badge/SET-X no-wrap, set name wraps ── */}
-              <div style={{ padding: '2px 12px 7px', lineHeight: 1.35, minWidth: 0 }}>
-                {/* BENCHMARK / DERIVED — no-wrap unit */}
-                <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 900, color: badgeColor }}>{badge}</span>
-                {setObj && (
-                  <>
-                    {/* / SET-X — no-wrap unit */}
-                    {setObj.setLabel && (
-                      <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 900, color: NAVY }}> / {setObj.setLabel}</span>
-                    )}
-                    {/* — separator — no-wrap so it stays with SET-X */}
-                    <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 600, color: TEXT_SEC }}> —</span>
-                    {/* Set name — wraps naturally */}
-                    <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_PRI }}> {setObj.name}</span>
-                  </>
-                )}
+              {/* ── Badge + Set row + More Info button ── */}
+              <div style={{ padding: '2px 8px 7px 12px', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                {/* Badge + set text — grows to fill space */}
+                <div style={{ flex: 1, lineHeight: 1.35, minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 900, color: badgeColor }}>{badge}</span>
+                  {setObj && (
+                    <>
+                      {setObj.setLabel && (
+                        <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 900, color: NAVY }}> / {setObj.setLabel}</span>
+                      )}
+                      <span style={{ whiteSpace: 'nowrap' as const, fontSize: 12, fontWeight: 600, color: TEXT_SEC }}> —</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: TEXT_PRI }}> {setObj.name}</span>
+                    </>
+                  )}
+                </div>
+                {/* More Info button — bottom-right of card */}
+                <button onClick={() => setViewDetailsPt(pt)} title={t('viewDetailsBtn')} aria-label={t('viewDetailsBtn')}
+                  style={{ flexShrink: 0, backgroundColor: SURFACE, border: `1px solid ${BORDER_B}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 700, color: TEXT_SEC, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
+                >More Info</button>
               </div>
             </div>
           );

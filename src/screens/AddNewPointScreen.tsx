@@ -1294,17 +1294,17 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </button>
           )}
 
-          {/* ⋮ — new-point creation only */}
+          {/* Manage Points — new-point creation only */}
           {isNewPoint && (
             <button
-              style={s.dotsBtn}
+              style={{ flexShrink: 0, backgroundColor: '#FFFFFF', border: `1px solid ${NAVY}`, borderRadius: 6, padding: '2px 7px', fontSize: 10, fontWeight: 800, color: NAVY, cursor: 'pointer', lineHeight: 1.25, textAlign: 'center' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center' }}
               onClick={() => {
                 const dirty = rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '';
                 if (dirty) { setShowUnsavedWarn(true); } else { setShowManagePoint(true); }
               }}
-              title="Manage Point"
-              aria-label="Manage Point"
-            >⋮</button>
+              title="Manage Points"
+              aria-label="Manage Points"
+            ><span>Manage</span><span>Points</span></button>
           )}
         </div>
 
