@@ -30,7 +30,7 @@ const BLUE_A = '#3B82F6';
 const BLUE_D = 'rgba(30,87,153,0.12)';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
-const KEY_CALC = 'elevCalc:history';
+const KEY_CALC = 'elevCalc:calcHistV3';
 const KEY_CONV = 'elevCalc:convHistory';
 const MAX_HIST = 20;
 
@@ -40,12 +40,19 @@ type Op       = '+' | '-';
 type SubTab   = 'calculator' | 'converter';
 type ConvMode = 'fif_to_eng' | 'eng_to_fif';
 
+// One value in an accumulated calculation session
+interface SessionStep {
+  op: Op;       // operator preceding this step (ignored for step[0])
+  mode: Mode;
+  ft: string; inches: number; frac: number; frL: string; eng: string;
+  val: number;
+}
+
+// History item: a complete session (2 steps = normal calc; 3+ = chained via Add More)
 interface CalcHistItem {
   id: string;
-  modeA: Mode; modeB: Mode; op: Op;
-  aFt: string; aIn: number; aFr: number; aFrL: string; aEng: string;
-  bFt: string; bIn: number; bFr: number; bFrL: string; bEng: string;
-  valA: number; valB: number; valR: number;
+  steps: SessionStep[];
+  result: number;
 }
 
 interface ConvItem {
@@ -140,24 +147,27 @@ function MeasureBlock({ feet, inches, fracLbl, engFt, negative = false, compact 
   );
 }
 
-// ─── Compact calc row (history item) ─────────────────────────────────────────
+// ─── Compact calc row — renders full session expression (2+ steps) ───────────
 function CompactCalcRow({ item, compact = false }: { item: CalcHistItem; compact?: boolean }) {
-  const aFIF = item.modeA === 'fif'
-    ? { feet: parseInt(item.aFt || '0', 10), inches: item.aIn, fracLbl: item.aFrL }
-    : engToFif(Math.abs(item.valA));
-  const bFIF = item.modeB === 'fif'
-    ? { feet: parseInt(item.bFt || '0', 10), inches: item.bIn, fracLbl: item.bFrL }
-    : engToFif(Math.abs(item.valB));
-  const rFIF = engToFif(Math.abs(item.valR));
   const sym  = compact ? 15 : 17;
-
+  const rFIF = engToFif(Math.abs(item.result));
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <MeasureBlock {...aFIF} engFt={item.valA} compact={compact} />
-      <span style={{ fontSize: sym, fontWeight: 700, color: TEXT_S, padding: '0 2px' }}>{item.op === '+' ? '+' : '−'}</span>
-      <MeasureBlock {...bFIF} engFt={item.valB} compact={compact} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      {item.steps.flatMap((step, i) => {
+        const fif = step.mode === 'fif'
+          ? { feet: parseInt(step.ft || '0', 10), inches: step.inches, fracLbl: step.frL }
+          : engToFif(Math.abs(step.val));
+        const out = [];
+        if (i > 0) out.push(
+          <span key={`op-${i}`} style={{ fontSize: sym, fontWeight: 700, color: TEXT_S, padding: '0 2px' }}>
+            {step.op === '+' ? '+' : '−'}
+          </span>
+        );
+        out.push(<MeasureBlock key={`v-${i}`} {...fif} engFt={step.val} compact={compact} />);
+        return out;
+      })}
       <span style={{ fontSize: sym, fontWeight: 700, color: TEXT_S, padding: '0 2px' }}>=</span>
-      <MeasureBlock {...rFIF} engFt={Math.abs(item.valR)} negative={item.valR < 0} compact={compact} />
+      <MeasureBlock {...rFIF} engFt={Math.abs(item.result)} negative={item.result < 0} compact={compact} />
     </div>
   );
 }
@@ -600,7 +610,7 @@ function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CALCULATOR VIEW
+// CALCULATOR VIEW — with sequential "Add More" chaining
 // ═══════════════════════════════════════════════════════════════════════════════
 function CalculatorView() {
   const { t } = useLang();
@@ -632,35 +642,48 @@ function CalculatorView() {
   const [menuOpenId,   setMenuOpenId]   = useState<string | null>(null);
   const [calcConfirm,  setCalcConfirm]  = useState<null | { onConfirm: () => void }>(null);
 
+  // ── Session state — tracks chained Add More calculations ──────────────────
+  const [sessionSteps,   setSessionSteps]   = useState<SessionStep[]>([]);
+  const [sessionId,      setSessionId]      = useState<string | null>(null);
+  const [addMoreActive,  setAddMoreActive]  = useState(false);  // result was copied to A
+  const [addMoreEnabled, setAddMoreEnabled] = useState(false);  // result ready for chaining
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CALC, JSON.stringify(history)); } catch {}
   }, [history]);
 
-  // Reset both result display and "already calculated" flag
   const resetCalc = () => { setResult(null); setCalcDone(false); };
 
-  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); };
-  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); };
+  const resetSession = () => {
+    setSessionSteps([]); setSessionId(null);
+    setAddMoreActive(false); setAddMoreEnabled(false);
+  };
 
-  // Feet text input handlers — validate whole numbers
-  const onFtChangeA = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only'); resetCalc(); };
-  const onFtChangeB = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setBFt(v); setBFtErr(''); } else setBFtErr('Whole numbers only'); resetCalc(); };
+  // Clear A resets everything (breaks any active session)
+  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); resetSession(); };
+  // Clear B also resets session — user is starting over
+  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); resetSession(); };
+
+  // A input handlers — modifying A while addMoreActive breaks the session
+  const onFtChangeA = (v: string) => {
+    if (addMoreActive) resetSession();
+    if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only');
+    resetCalc();
+  };
+  // B input handlers — modifying B never breaks the session
+  const onFtChangeB = (v: string) => {
+    if (v === '' || /^\d+$/.test(v)) { setBFt(v); setBFtErr(''); } else setBFtErr('Whole numbers only');
+    resetCalc();
+  };
 
   const valA    = modeA === 'eng' ? parseFloat(aEng) : fifToEng(aFt, aIn, aFr);
   const valB    = modeB === 'eng' ? parseFloat(bEng) : fifToEng(bFt, bIn, bFr);
   const canCalc = !isNaN(valA) && !isNaN(valB);
-  // Button active only when inputs are valid AND result hasn't been computed yet for this combo
   const calcEnabled = canCalc && !calcDone;
   const resultFif = result !== null ? engToFif(Math.abs(result)) : null;
 
-  // Open the op-selection modal (if inputs are valid and not already calculated)
-  const triggerCalculate = () => {
-    if (!calcEnabled) return;
-    setShowOpModal(true);
-  };
+  const triggerCalculate = () => { if (!calcEnabled) return; setShowOpModal(true); };
 
-  // Called from OpSelectionModal with the chosen operation
   const handleOpSelect = (selectedOp: Op) => {
     setShowOpModal(false);
     setOp(selectedOp);
@@ -668,42 +691,70 @@ function CalculatorView() {
     if (isNaN(raw)) return;
     setResult(raw);
     setCalcDone(true);
-    const item: CalcHistItem = {
-      id: uid(), modeA, modeB, op: selectedOp,
-      aFt, aIn, aFr, aFrL, aEng,
-      bFt, bIn, bFr, bFrL, bEng,
-      valA, valB, valR: raw,
-    };
-    setHistory(prev => [item, ...prev].slice(0, MAX_HIST));
-  };
+    setAddMoreEnabled(true);
 
-  const handleDeleteAll = () => {
-    setCalcConfirm({
-      onConfirm: () => {
-        setHistory([]); setShowAllCalcs(false); setCalcConfirm(null);
-      },
+    // Build session steps
+    let newSteps: SessionStep[];
+    let curId: string;
+    if (!addMoreActive || sessionSteps.length === 0) {
+      // First calculation — start a new session
+      newSteps = [
+        { op: '+', mode: modeA, ft: aFt, inches: aIn, frac: aFr, frL: aFrL, eng: aEng, val: valA },
+        { op: selectedOp, mode: modeB, ft: bFt, inches: bIn, frac: bFr, frL: bFrL, eng: bEng, val: valB },
+      ];
+      curId = uid();
+      setSessionId(curId);
+    } else {
+      // Continuing session — append new B step
+      newSteps = [
+        ...sessionSteps,
+        { op: selectedOp, mode: modeB, ft: bFt, inches: bIn, frac: bFr, frL: bFrL, eng: bEng, val: valB },
+      ];
+      curId = sessionId!;
+    }
+    setSessionSteps(newSteps);
+    setAddMoreActive(false);  // reset; next Calculate starts fresh unless Add More is pressed
+
+    // Upsert the history entry for this session
+    const item: CalcHistItem = { id: curId, steps: newSteps, result: raw };
+    setHistory(prev => {
+      const idx = prev.findIndex(h => h.id === curId);
+      if (idx === -1) return [item, ...prev].slice(0, MAX_HIST);
+      const upd = [...prev]; upd[idx] = item; return upd;
     });
   };
 
-  // Restore a history item into the input cards for editing
-  const handleEditItem = (item: CalcHistItem) => {
-    setModeA(item.modeA); setModeB(item.modeB);
-    setAFt(item.aFt); setAIn(item.aIn); setAFr(item.aFr); setAFrL(item.aFrL); setAEng(item.aEng);
-    setBFt(item.bFt); setBIn(item.bIn); setBFr(item.bFr); setBFrL(item.bFrL); setBEng(item.bEng);
-    setAFtErr(''); setBFtErr('');
-    setOp(item.op); // remember previous op as default suggestion in modal
-    resetCalc();
-    setMenuOpenId(null);
+  // "Add More" — moves current result into Input A, clears Input B, continues session
+  const handleAddMore = () => {
+    if (!addMoreEnabled || result === null) return;
+    setModeA('eng');
+    setAEng(String(result));    // full float precision → Input A
+    setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAFtErr('');
+    setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr('');
+    setResult(null);
+    setCalcDone(false);
+    setAddMoreEnabled(false);
+    setAddMoreActive(true);     // mark: next Calculate continues this session
   };
 
-  // Delete a single history item (with confirmation)
+  const handleDeleteAll = () => {
+    setCalcConfirm({ onConfirm: () => { setHistory([]); setShowAllCalcs(false); setCalcConfirm(null); } });
+  };
+
+  // Restore a history item — puts first two steps back into A/B cards
+  const handleEditItem = (item: CalcHistItem) => {
+    const s0 = item.steps[0]; const s1 = item.steps[1];
+    if (!s0) return;
+    setModeA(s0.mode);
+    setAFt(s0.ft); setAIn(s0.inches); setAFr(s0.frac); setAFrL(s0.frL); setAEng(s0.eng); setAFtErr('');
+    if (s1) { setModeB(s1.mode); setBFt(s1.ft); setBIn(s1.inches); setBFr(s1.frac); setBFrL(s1.frL); setBEng(s1.eng); setOp(s1.op); }
+    setBFtErr('');
+    resetCalc(); resetSession(); setMenuOpenId(null);
+  };
+
   const handleDeleteItem = (item: CalcHistItem) => {
     setCalcConfirm({
-      onConfirm: () => {
-        setHistory(prev => prev.filter(h => h.id !== item.id));
-        setMenuOpenId(null);
-        setCalcConfirm(null);
-      },
+      onConfirm: () => { setHistory(prev => prev.filter(h => h.id !== item.id)); setMenuOpenId(null); setCalcConfirm(null); },
     });
   };
 
@@ -711,27 +762,33 @@ function CalculatorView() {
     <>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 10, display: 'flex', flexDirection: 'column', gap: 10, width: '100%', boxSizing: 'border-box' }}>
 
-        {/* Calculator row: A | op | B | result */}
+        {/* "Add More" in-progress hint banner */}
+        {addMoreActive && (
+          <div style={{ backgroundColor: '#EEF4FF', borderRadius: 6, border: `1px solid ${NAVY}`, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: NAVY, textAlign: 'center' as const }}>
+            {t('addMoreHint')}
+          </div>
+        )}
+
+        {/* Calculator row: A | op | B | result — layout unchanged */}
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, minWidth: 0 }}>
 
           {/* Input A */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
-            <ModeToggle mode={modeA} onChange={m => { setModeA(m); resetCalc(); }} />
+          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${addMoreActive ? NAVY : BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
+            <ModeToggle mode={modeA} onChange={m => { if (addMoreActive) resetSession(); setModeA(m); resetCalc(); }} />
             {modeA === 'fif' ? (
               <FIFInputs
                 ft={aFt} setFt={setAFt}
-                inches={aIn} setInches={v => { setAIn(v); resetCalc(); }}
-                frac={aFr}   setFrac={v => { setAFr(v); resetCalc(); }}
-                frL={aFrL}   setFrL={v => { setAFrL(v); resetCalc(); }}
+                inches={aIn} setInches={v => { if (addMoreActive) resetSession(); setAIn(v); resetCalc(); }}
+                frac={aFr}   setFrac={v => { if (addMoreActive) resetSession(); setAFr(v); resetCalc(); }}
+                frL={aFrL}   setFrL={v => { if (addMoreActive) resetSession(); setAFrL(v); resetCalc(); }}
                 ftErr={aFtErr} onFtChange={onFtChangeA}
               />
             ) : (
               <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
+                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: addMoreActive ? '#EEF4FF' : '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={aEng}
-                onChange={e => { setAEng(e.target.value); resetCalc(); }}
-                inputMode="decimal"
-                enterKeyHint="done"
+                onChange={e => { if (addMoreActive) resetSession(); setAEng(e.target.value); resetCalc(); }}
+                inputMode="decimal" enterKeyHint="done"
                 placeholder={aEngFocused ? '' : '0.00'}
                 onFocus={() => setAEngFocused(true)}
                 onBlur={() => setAEngFocused(false)}
@@ -744,27 +801,18 @@ function CalculatorView() {
           {/* Op selector column */}
           <div style={{ width: 34, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             {(['+', '-'] as Op[]).map(o => (
-              <button
-                key={o}
-                onClick={() => { setOp(o); resetCalc(); }}
+              <button key={o} onClick={() => { setOp(o); resetCalc(); }}
                 style={{
-                  width: 34, height: 38,
-                  borderRadius: 8,
+                  width: 34, height: 38, borderRadius: 8,
                   border: `2px solid ${op === o ? GOLD : BORDER}`,
                   backgroundColor: op === o ? NAVY : CARD,
                   color: op === o ? '#FFFFFF' : TEXT_S,
-                  fontSize: o === '+' ? 24 : 28,
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'monospace',
-                  lineHeight: 1,
-                  padding: 0,
-                  transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
-                  flexShrink: 0,
+                  fontSize: o === '+' ? 24 : 28, fontWeight: 900,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'monospace', lineHeight: 1, padding: 0,
+                  transition: 'background-color 0.15s, border-color 0.15s, color 0.15s', flexShrink: 0,
                 }}
-                aria-label={o === '+' ? 'Addition' : 'Subtraction'}
-                aria-pressed={op === o}
+                aria-label={o === '+' ? 'Addition' : 'Subtraction'} aria-pressed={op === o}
               >{o === '+' ? '+' : '−'}</button>
             ))}
           </div>
@@ -785,8 +833,7 @@ function CalculatorView() {
                 style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
                 value={bEng}
                 onChange={e => { setBEng(e.target.value); resetCalc(); }}
-                inputMode="decimal"
-                enterKeyHint="done"
+                inputMode="decimal" enterKeyHint="done"
                 placeholder={bEngFocused ? '' : '0.00'}
                 onFocus={() => setBEngFocused(true)}
                 onBlur={() => setBEngFocused(false)}
@@ -796,7 +843,7 @@ function CalculatorView() {
             <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
           </div>
 
-          {/* Result card */}
+          {/* Result card — unchanged */}
           <div style={{ flex: 2.8, minWidth: 0, backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 2, overflow: 'hidden' }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase' }}>{t('result')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' }}>
@@ -813,14 +860,30 @@ function CalculatorView() {
           </div>
         </div>
 
-        {/* Primary action — full-width Calculate (always blue) */}
+        {/* Add More — disabled until a result is ready, sits directly above Calculate */}
+        <button onClick={handleAddMore} disabled={!addMoreEnabled}
+          style={{
+            width: '100%', height: 38,
+            backgroundColor: addMoreEnabled ? '#EEF4FF' : CARD,
+            border: `2px solid ${addMoreEnabled ? NAVY : BORDER}`,
+            borderRadius: 8,
+            color: addMoreEnabled ? NAVY : TEXT_D,
+            fontSize: 14, fontWeight: 800, letterSpacing: 0.5,
+            cursor: addMoreEnabled ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
+          }}
+        >
+          <span style={{ fontSize: 16, fontFamily: 'monospace', lineHeight: 1 }}>+</span>
+          {t('addMoreBtn')}
+        </button>
+
+        {/* Calculate */}
         <button
           style={{
             width: '100%', height: 40,
-            backgroundColor: NAVY,
-            border: `2px solid ${GOLD}`,
-            borderRadius: 8,
-            color: '#fff',
+            backgroundColor: NAVY, border: `2px solid ${GOLD}`,
+            borderRadius: 8, color: '#fff',
             fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
             cursor: calcEnabled ? 'pointer' : 'default',
           }}
@@ -840,7 +903,6 @@ function CalculatorView() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <CompactCalcRow item={item} compact />
                 </div>
-                {/* ⋮ overflow menu */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
                     style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: menuOpenId === item.id ? SURFACE : 'transparent', border: `1px solid ${menuOpenId === item.id ? BORDER : 'transparent'}`, fontSize: 16, fontWeight: 900, color: TEXT_S, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-1px', lineHeight: 1, padding: 0 }}
@@ -848,14 +910,10 @@ function CalculatorView() {
                   >⋮</button>
                   {menuOpenId === item.id && (
                     <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 50, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', minWidth: 160, overflow: 'hidden' }}>
-                      <button
-                        style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
-                        onClick={() => handleEditItem(item)}
-                      >✏️ {t('editCalcBtn')}</button>
-                      <button
-                        style={{ width: '100%', padding: '10px 14px', border: 'none', backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: '#C0392B', cursor: 'pointer' }}
-                        onClick={() => handleDeleteItem(item)}
-                      >🗑️ {t('deleteCalcBtn')}</button>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
+                        onClick={() => handleEditItem(item)}>✏️ {t('editCalcBtn')}</button>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: '#C0392B', cursor: 'pointer' }}
+                        onClick={() => handleDeleteItem(item)}>🗑️ {t('deleteCalcBtn')}</button>
                     </div>
                   )}
                 </div>
@@ -866,16 +924,11 @@ function CalculatorView() {
       </div>
 
       {showOpModal && (
-        <OpSelectionModal
-          onSelect={handleOpSelect}
-          onClose={() => setShowOpModal(false)}
-          suggestedOp={op}
-        />
+        <OpSelectionModal onSelect={handleOpSelect} onClose={() => setShowOpModal(false)} suggestedOp={op} />
       )}
       {showAllCalcs && (
         <AllCalcsModal history={history} onClose={() => setShowAllCalcs(false)} onDeleteAll={handleDeleteAll} />
       )}
-      {/* Close ⋮ menu when tapping outside */}
       {menuOpenId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setMenuOpenId(null)} />
       )}
