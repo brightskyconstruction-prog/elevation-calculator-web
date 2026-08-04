@@ -30,7 +30,7 @@ const BLUE_A = '#3B82F6';
 const BLUE_D = 'rgba(30,87,153,0.12)';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
-const KEY_CALC = 'elevCalc:history';
+const KEY_CALC = 'elevCalc:calcHistV2';
 const KEY_CONV = 'elevCalc:convHistory';
 const MAX_HIST = 20;
 
@@ -40,12 +40,19 @@ type Op       = '+' | '-';
 type SubTab   = 'calculator' | 'converter';
 type ConvMode = 'fif_to_eng' | 'eng_to_fif';
 
+// One row in the dynamic multi-value calculator
+interface CalcRow {
+  id: string;
+  op: Op;       // operator preceding this row — ignored for row[0]
+  mode: Mode;
+  ft: string; inches: number; frac: number; frL: string; eng: string; ftErr: string;
+}
+
+// History item — stores N rows + aggregate result
 interface CalcHistItem {
   id: string;
-  modeA: Mode; modeB: Mode; op: Op;
-  aFt: string; aIn: number; aFr: number; aFrL: string; aEng: string;
-  bFt: string; bIn: number; bFr: number; bFrL: string; bEng: string;
-  valA: number; valB: number; valR: number;
+  rows: Array<{ op: Op; mode: Mode; ft: string; inches: number; frac: number; frL: string; eng: string; val: number }>;
+  result: number;
 }
 
 interface ConvItem {
@@ -140,24 +147,27 @@ function MeasureBlock({ feet, inches, fracLbl, engFt, negative = false, compact 
   );
 }
 
-// ─── Compact calc row (history item) ─────────────────────────────────────────
+// ─── Compact calc row (history item) — multi-row ─────────────────────────────
 function CompactCalcRow({ item, compact = false }: { item: CalcHistItem; compact?: boolean }) {
-  const aFIF = item.modeA === 'fif'
-    ? { feet: parseInt(item.aFt || '0', 10), inches: item.aIn, fracLbl: item.aFrL }
-    : engToFif(Math.abs(item.valA));
-  const bFIF = item.modeB === 'fif'
-    ? { feet: parseInt(item.bFt || '0', 10), inches: item.bIn, fracLbl: item.bFrL }
-    : engToFif(Math.abs(item.valB));
-  const rFIF = engToFif(Math.abs(item.valR));
   const sym  = compact ? 15 : 17;
-
+  const rFIF = engToFif(Math.abs(item.result));
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <MeasureBlock {...aFIF} engFt={item.valA} compact={compact} />
-      <span style={{ fontSize: sym, fontWeight: 700, color: TEXT_S, padding: '0 2px' }}>{item.op === '+' ? '+' : '−'}</span>
-      <MeasureBlock {...bFIF} engFt={item.valB} compact={compact} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      {item.rows.flatMap((row, i) => {
+        const fif = row.mode === 'fif'
+          ? { feet: parseInt(row.ft || '0', 10), inches: row.inches, fracLbl: row.frL }
+          : engToFif(Math.abs(row.val));
+        const out = [];
+        if (i > 0) out.push(
+          <span key={`op-${i}`} style={{ fontSize: sym, fontWeight: 700, color: TEXT_S, padding: '0 2px' }}>
+            {row.op === '+' ? '+' : '−'}
+          </span>
+        );
+        out.push(<MeasureBlock key={`v-${i}`} {...fif} engFt={row.val} compact={compact} />);
+        return out;
+      })}
       <span style={{ fontSize: sym, fontWeight: 700, color: TEXT_S, padding: '0 2px' }}>=</span>
-      <MeasureBlock {...rFIF} engFt={Math.abs(item.valR)} negative={item.valR < 0} compact={compact} />
+      <MeasureBlock {...rFIF} engFt={Math.abs(item.result)} negative={item.result < 0} compact={compact} />
     </div>
   );
 }
@@ -537,297 +547,190 @@ function ConverterView() {
   );
 }
 
-// ─── Operation Selection Modal ────────────────────────────────────────────────
-function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
-  onSelect: (op: Op) => void;
-  onClose: () => void;
-  suggestedOp?: Op;
-}) {
-  const { t } = useLang();
-  const ops: { op: Op; sym: string; label: string }[] = [
-    { op: '+', sym: '+', label: t('additionBtn') },
-    { op: '-', sym: '−', label: t('subtractionBtn') },
-  ];
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', boxSizing: 'border-box' as const }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="anp-modal-in" style={{ backgroundColor: CARD, borderRadius: 18, maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.30)', overflow: 'hidden' }}>
-        {/* Header */}
-        <div style={{ backgroundColor: NAVY, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{t('chooseOpTitle')}</span>
-          <button style={{ background: 'none', border: 'none', color: '#fff', fontSize: 24, fontWeight: 700, cursor: 'pointer', padding: '4px 8px', opacity: 0.85, lineHeight: 1 }} onClick={onClose}>✕</button>
-        </div>
-        {/* Body */}
-        <div style={{ padding: '18px 18px 22px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <p style={{ margin: 0, fontSize: 15, color: TEXT_S, lineHeight: 1.6, textAlign: 'center' }}>{t('chooseOpDesc')}</p>
-          <div style={{ display: 'flex', gap: 12 }}>
-            {ops.map(({ op, sym, label }) => {
-              const active = suggestedOp === op;
-              return (
-                <button
-                  key={op}
-                  style={{
-                    flex: 1, height: 96,
-                    backgroundColor: active ? NAVY : CARD,
-                    border: `2.5px solid ${active ? GOLD : '#C5D2E4'}`,
-                    borderRadius: 14, cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    boxShadow: active ? '0 4px 14px rgba(20,58,99,0.22)' : '0 2px 6px rgba(0,0,0,0.07)',
-                    transition: 'background-color 0.15s, border-color 0.15s, box-shadow 0.15s',
-                  }}
-                  onClick={() => onSelect(op)}
-                >
-                  {/* Symbol badge */}
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 12,
-                    backgroundColor: active ? GOLD : '#DDE6F0',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <span style={{ fontSize: 30, fontWeight: 900, color: active ? NAVY : NAVY, lineHeight: 1, fontFamily: 'monospace' }}>{sym}</span>
-                  </div>
-                  <span style={{ fontSize: 16, fontWeight: 800, color: active ? '#fff' : TEXT_P, letterSpacing: 0.3 }}>{label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
-// CALCULATOR VIEW
+// CALCULATOR VIEW — dynamic multi-row list
 // ═══════════════════════════════════════════════════════════════════════════════
 function CalculatorView() {
   const { t } = useLang();
-  const [modeA, setModeA] = useState<Mode>('fif');
-  const [modeB, setModeB] = useState<Mode>('fif');
-  const [op,    setOp]    = useState<Op>('+');
 
-  const [aFt,    setAFt]    = useState('');
-  const [aIn,    setAIn]    = useState(0);
-  const [aFr,    setAFr]    = useState(0);
-  const [aFrL,   setAFrL]   = useState('None');
-  const [aEng,   setAEng]   = useState('');
-  const [aFtErr, setAFtErr] = useState('');
+  const makeRow = (op: Op = '+'): CalcRow => ({
+    id: uid(), op, mode: 'fif',
+    ft: '', inches: 0, frac: 0, frL: 'None', eng: '', ftErr: '',
+  });
 
-  const [bFt,    setBFt]    = useState('');
-  const [bIn,    setBIn]    = useState(0);
-  const [bFr,    setBFr]    = useState(0);
-  const [bFrL,   setBFrL]   = useState('None');
-  const [bEng,   setBEng]   = useState('');
-  const [bFtErr, setBFtErr] = useState('');
-
-  const [result,       setResult]       = useState<number | null>(null);
+  const [rows,         setRows]         = useState<CalcRow[]>(() => [makeRow(), makeRow()]);
   const [calcDone,     setCalcDone]     = useState(false);
-  const [aEngFocused,  setAEngFocused]  = useState(false);
-  const [bEngFocused,  setBEngFocused]  = useState(false);
   const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(KEY_CALC, []));
   const [showAllCalcs, setShowAllCalcs] = useState(false);
-  const [showOpModal,  setShowOpModal]  = useState(false);
   const [menuOpenId,   setMenuOpenId]   = useState<string | null>(null);
   const [calcConfirm,  setCalcConfirm]  = useState<null | { onConfirm: () => void }>(null);
-
+  const [engFocused,   setEngFocused]   = useState<string | null>(null);
 
   useEffect(() => {
     try { localStorage.setItem(KEY_CALC, JSON.stringify(history)); } catch {}
   }, [history]);
 
-  // Reset both result display and "already calculated" flag
-  const resetCalc = () => { setResult(null); setCalcDone(false); };
-
-  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); };
-  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); };
-
-  // Feet text input handlers — validate whole numbers
-  const onFtChangeA = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only'); resetCalc(); };
-  const onFtChangeB = (v: string) => { if (v === '' || /^\d+$/.test(v)) { setBFt(v); setBFtErr(''); } else setBFtErr('Whole numbers only'); resetCalc(); };
-
-  const valA    = modeA === 'eng' ? parseFloat(aEng) : fifToEng(aFt, aIn, aFr);
-  const valB    = modeB === 'eng' ? parseFloat(bEng) : fifToEng(bFt, bIn, bFr);
-  const canCalc = !isNaN(valA) && !isNaN(valB);
-  // Button active only when inputs are valid AND result hasn't been computed yet for this combo
-  const calcEnabled = canCalc && !calcDone;
-  const resultFif = result !== null ? engToFif(Math.abs(result)) : null;
-
-  // Open the op-selection modal (if inputs are valid and not already calculated)
-  const triggerCalculate = () => {
-    if (!calcEnabled) return;
-    setShowOpModal(true);
+  // Row value — blank fields treated as 0 so total is always a valid number
+  const rowVal = (r: CalcRow): number => {
+    if (r.mode === 'eng') { const v = parseFloat(r.eng); return isNaN(v) ? 0 : v; }
+    const f = r.ft === '' ? 0 : parseFloat(r.ft);
+    if (isNaN(f) || f < 0) return 0;
+    return f + r.inches / 12 + r.frac / 12;
   };
 
-  // Called from OpSelectionModal with the chosen operation
-  const handleOpSelect = (selectedOp: Op) => {
-    setShowOpModal(false);
-    setOp(selectedOp);
-    const raw = selectedOp === '+' ? valA + valB : valA - valB;
-    if (isNaN(raw)) return;
-    setResult(raw);
-    setCalcDone(true);
+  const total   = rows.reduce<number>((acc, r, i) => { const v = rowVal(r); return i === 0 ? v : (r.op === '+' ? acc + v : acc - v); }, 0);
+  const isEmpty = rows.every(r => r.ft === '' && r.eng === '' && r.inches === 0 && r.frac === 0);
+  const totalFif = engToFif(Math.abs(total));
+
+  const resetCalc = () => setCalcDone(false);
+
+  const updateRow = (id: string, patch: Partial<CalcRow>) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r));
+    resetCalc();
+  };
+
+  const addRow    = () => { setRows(prev => [...prev, makeRow('+')]); resetCalc(); };
+  const removeRow = (id: string) => { if (rows.length <= 2) return; setRows(prev => prev.filter(r => r.id !== id)); resetCalc(); };
+  const clearAll  = () => { setRows([makeRow(), makeRow()]); setCalcDone(false); };
+
+  const handleCalculate = () => {
+    if (isEmpty || calcDone) return;
     const item: CalcHistItem = {
-      id: uid(), modeA, modeB, op: selectedOp,
-      aFt, aIn, aFr, aFrL, aEng,
-      bFt, bIn, bFr, bFrL, bEng,
-      valA, valB, valR: raw,
+      id: uid(),
+      rows: rows.map(r => ({ op: r.op, mode: r.mode, ft: r.ft, inches: r.inches, frac: r.frac, frL: r.frL, eng: r.eng, val: rowVal(r) })),
+      result: total,
     };
     setHistory(prev => [item, ...prev].slice(0, MAX_HIST));
+    setCalcDone(true);
   };
 
-  const handleDeleteAll = () => {
-    setCalcConfirm({
-      onConfirm: () => {
-        setHistory([]); setShowAllCalcs(false); setCalcConfirm(null);
-      },
-    });
-  };
-
-  // Restore a history item into the input cards for editing
   const handleEditItem = (item: CalcHistItem) => {
-    setModeA(item.modeA); setModeB(item.modeB);
-    setAFt(item.aFt); setAIn(item.aIn); setAFr(item.aFr); setAFrL(item.aFrL); setAEng(item.aEng);
-    setBFt(item.bFt); setBIn(item.bIn); setBFr(item.bFr); setBFrL(item.bFrL); setBEng(item.bEng);
-    setAFtErr(''); setBFtErr('');
-    setOp(item.op); // remember previous op as default suggestion in modal
-    resetCalc();
+    setRows(item.rows.map(r => ({ id: uid(), op: r.op, mode: r.mode, ft: r.ft, inches: r.inches, frac: r.frac, frL: r.frL, eng: r.eng, ftErr: '' })));
+    setCalcDone(false);
     setMenuOpenId(null);
   };
 
-  // Delete a single history item (with confirmation)
   const handleDeleteItem = (item: CalcHistItem) => {
-    setCalcConfirm({
-      onConfirm: () => {
-        setHistory(prev => prev.filter(h => h.id !== item.id));
-        setMenuOpenId(null);
-        setCalcConfirm(null);
-      },
-    });
+    setCalcConfirm({ onConfirm: () => { setHistory(prev => prev.filter(h => h.id !== item.id)); setMenuOpenId(null); setCalcConfirm(null); } });
   };
+
+  const handleDeleteAll = () => {
+    setCalcConfirm({ onConfirm: () => { setHistory([]); setShowAllCalcs(false); setCalcConfirm(null); } });
+  };
+
+  const calcEnabled = !isEmpty && !calcDone;
 
   return (
     <>
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 10, display: 'flex', flexDirection: 'column', gap: 10, width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 10, display: 'flex', flexDirection: 'column', gap: 6, width: '100%', boxSizing: 'border-box' }}>
 
-        {/* Calculator row: A | op | B | result */}
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, minWidth: 0 }}>
+        {/* ── Row list ── */}
+        {rows.map((row, i) => (
+          <div key={row.id}>
 
-          {/* Input A */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
-            <ModeToggle mode={modeA} onChange={m => { setModeA(m); resetCalc(); }} />
-            {modeA === 'fif' ? (
-              <FIFInputs
-                ft={aFt} setFt={setAFt}
-                inches={aIn} setInches={v => { setAIn(v); resetCalc(); }}
-                frac={aFr}   setFrac={v => { setAFr(v); resetCalc(); }}
-                frL={aFrL}   setFrL={v => { setAFrL(v); resetCalc(); }}
-                ftErr={aFtErr} onFtChange={onFtChangeA}
-              />
-            ) : (
-              <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
-                value={aEng}
-                onChange={e => { setAEng(e.target.value); resetCalc(); }}
-                inputMode="decimal"
-                enterKeyHint="done"
-                placeholder={aEngFocused ? '' : '0.00'}
-                onFocus={() => setAEngFocused(true)}
-                onBlur={() => setAEngFocused(false)}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              />
+            {/* Op connector between adjacent rows */}
+            {i > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '3px 0' }}>
+                {(['+', '-'] as Op[]).map(o => (
+                  <button key={o} onClick={() => updateRow(row.id, { op: o })} aria-pressed={row.op === o}
+                    style={{
+                      width: 40, height: 32, borderRadius: 8,
+                      border: `2px solid ${row.op === o ? GOLD : BORDER}`,
+                      backgroundColor: row.op === o ? NAVY : CARD,
+                      color: row.op === o ? '#fff' : TEXT_S,
+                      fontSize: o === '+' ? 22 : 26, fontWeight: 900,
+                      cursor: 'pointer', fontFamily: 'monospace', lineHeight: 1, padding: 0,
+                      transition: 'background-color 0.12s, border-color 0.12s, color 0.12s',
+                    }}
+                  >{o === '+' ? '+' : '−'}</button>
+                ))}
+              </div>
             )}
-            <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
-          </div>
 
-          {/* Op selector column */}
-          <div style={{ width: 34, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            {(['+', '-'] as Op[]).map(o => (
-              <button
-                key={o}
-                onClick={() => { setOp(o); resetCalc(); }}
-                style={{
-                  width: 34, height: 38,
-                  borderRadius: 8,
-                  border: `2px solid ${op === o ? GOLD : BORDER}`,
-                  backgroundColor: op === o ? NAVY : CARD,
-                  color: op === o ? '#FFFFFF' : TEXT_S,
-                  fontSize: o === '+' ? 24 : 28,
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'monospace',
-                  lineHeight: 1,
-                  padding: 0,
-                  transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
-                  flexShrink: 0,
-                }}
-                aria-label={o === '+' ? 'Addition' : 'Subtraction'}
-                aria-pressed={op === o}
-              >{o === '+' ? '+' : '−'}</button>
-            ))}
-          </div>
+            {/* Row card */}
+            <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {/* Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 18 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: TEXT_D, letterSpacing: 0.8, textTransform: 'uppercase' as const }}>Value {i + 1}</span>
+                {rows.length > 2 && (
+                  <button onClick={() => removeRow(row.id)}
+                    style={{ width: 22, height: 22, border: 'none', borderRadius: 4, backgroundColor: '#FDECEC', color: '#C0392B', fontSize: 13, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>
+                    ✕
+                  </button>
+                )}
+              </div>
 
-          {/* Input B */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
-            <ModeToggle mode={modeB} onChange={m => { setModeB(m); resetCalc(); }} />
-            {modeB === 'fif' ? (
-              <FIFInputs
-                ft={bFt} setFt={setBFt}
-                inches={bIn} setInches={v => { setBIn(v); resetCalc(); }}
-                frac={bFr}   setFrac={v => { setBFr(v); resetCalc(); }}
-                frL={bFrL}   setFrL={v => { setBFrL(v); resetCalc(); }}
-                ftErr={bFtErr} onFtChange={onFtChangeB}
-              />
-            ) : (
-              <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
-                value={bEng}
-                onChange={e => { setBEng(e.target.value); resetCalc(); }}
-                inputMode="decimal"
-                enterKeyHint="done"
-                placeholder={bEngFocused ? '' : '0.00'}
-                onFocus={() => setBEngFocused(true)}
-                onBlur={() => setBEngFocused(false)}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              />
-            )}
-            <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
-          </div>
-
-          {/* Result card */}
-          <div style={{ flex: 2.8, minWidth: 0, backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 2, overflow: 'hidden' }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase' }}>{t('result')}</span>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' }}>
-              {result !== null && resultFif ? (
-                <>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{result.toFixed(2)} ft</span>
-                  <div style={{ height: 1, width: '80%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={15} />
-                </>
-              ) : (
-                <span style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.25)' }}>—</span>
-              )}
+              {/* Mode toggle + inputs */}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start' }}>
+                <ModeToggle mode={row.mode} onChange={m => updateRow(row.id, { mode: m })} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {row.mode === 'fif' ? (
+                    <FIFInputs
+                      ft={row.ft}         setFt={v => updateRow(row.id, { ft: v })}
+                      inches={row.inches} setInches={v => updateRow(row.id, { inches: v })}
+                      frac={row.frac}     setFrac={v => updateRow(row.id, { frac: v })}
+                      frL={row.frL}       setFrL={v => updateRow(row.id, { frL: v })}
+                      ftErr={row.ftErr}
+                      onFtChange={v => {
+                        if (v === '' || /^\d+$/.test(v)) updateRow(row.id, { ft: v, ftErr: '' });
+                        else updateRow(row.id, { ftErr: 'Whole numbers only' });
+                      }}
+                    />
+                  ) : (
+                    <input
+                      style={{ width: '100%', minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
+                      value={row.eng}
+                      onChange={e => updateRow(row.id, { eng: e.target.value })}
+                      inputMode="decimal"
+                      enterKeyHint="done"
+                      placeholder={engFocused === row.id ? '' : '0.00'}
+                      onFocus={() => setEngFocused(row.id)}
+                      onBlur={() => setEngFocused(null)}
+                      onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
+          </div>
+        ))}
+
+        {/* ── Add Value button ── */}
+        <button onClick={addRow}
+          style={{ height: 36, backgroundColor: CARD, border: `1.5px dashed ${BLUE}`, borderRadius: 8, color: BLUE, fontSize: 14, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+          <span style={{ fontSize: 18, lineHeight: 1, fontFamily: 'monospace', fontWeight: 900 }}>+</span> Add Value
+        </button>
+
+        {/* ── Live total box ── */}
+        <div style={{ backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.55)', letterSpacing: 1, flexShrink: 0 }}>TOTAL</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            {!isEmpty ? (
+              <>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', lineHeight: 1.2 }}>
+                  {total < 0 ? '−' : ''}{Math.abs(total).toFixed(2)} ft
+                </span>
+                <StackedFraction feet={totalFif.feet} inches={totalFif.inches} fracLbl={totalFif.fracLbl} negative={total < 0} color="rgba(255,255,255,0.85)" size={14} />
+              </>
+            ) : (
+              <span style={{ fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,0.25)', lineHeight: 1 }}>—</span>
+            )}
           </div>
         </div>
 
-        {/* Primary action — full-width Calculate (always blue) */}
-        <button
-          style={{
-            width: '100%', height: 40,
-            backgroundColor: NAVY,
-            border: `2px solid ${GOLD}`,
-            borderRadius: 8,
-            color: '#fff',
-            fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
-            cursor: calcEnabled ? 'pointer' : 'default',
-          }}
-          onClick={triggerCalculate}
-        >{t('calculate')}</button>
+        {/* ── Action row ── */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={clearAll}
+            style={{ flex: 1, height: 40, backgroundColor: CARD, border: `2px solid ${NAVY}`, borderRadius: 8, color: NAVY, fontSize: 13, fontWeight: 800, letterSpacing: 0.5, cursor: 'pointer' }}>
+            {t('allClear')}
+          </button>
+          <button onClick={handleCalculate}
+            style={{ flex: 2, height: 40, backgroundColor: NAVY, border: `2px solid ${GOLD}`, borderRadius: 8, color: '#fff', fontSize: 17, fontWeight: 800, letterSpacing: 1.5, cursor: calcEnabled ? 'pointer' : 'default', opacity: calcEnabled ? 1 : 0.7 }}>
+            {t('calculate')}
+          </button>
+        </div>
 
-        {/* Recent Calculations */}
+        {/* ── Recent Calculations ── */}
         {history.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
@@ -840,7 +743,6 @@ function CalculatorView() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <CompactCalcRow item={item} compact />
                 </div>
-                {/* ⋮ overflow menu */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
                     style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: menuOpenId === item.id ? SURFACE : 'transparent', border: `1px solid ${menuOpenId === item.id ? BORDER : 'transparent'}`, fontSize: 16, fontWeight: 900, color: TEXT_S, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-1px', lineHeight: 1, padding: 0 }}
@@ -848,14 +750,10 @@ function CalculatorView() {
                   >⋮</button>
                   {menuOpenId === item.id && (
                     <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 50, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', minWidth: 160, overflow: 'hidden' }}>
-                      <button
-                        style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
-                        onClick={() => handleEditItem(item)}
-                      >✏️ {t('editCalcBtn')}</button>
-                      <button
-                        style={{ width: '100%', padding: '10px 14px', border: 'none', backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: '#C0392B', cursor: 'pointer' }}
-                        onClick={() => handleDeleteItem(item)}
-                      >🗑️ {t('deleteCalcBtn')}</button>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
+                        onClick={() => handleEditItem(item)}>✏️ {t('editCalcBtn')}</button>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: '#C0392B', cursor: 'pointer' }}
+                        onClick={() => handleDeleteItem(item)}>🗑️ {t('deleteCalcBtn')}</button>
                     </div>
                   )}
                 </div>
@@ -865,17 +763,9 @@ function CalculatorView() {
         )}
       </div>
 
-      {showOpModal && (
-        <OpSelectionModal
-          onSelect={handleOpSelect}
-          onClose={() => setShowOpModal(false)}
-          suggestedOp={op}
-        />
-      )}
       {showAllCalcs && (
         <AllCalcsModal history={history} onClose={() => setShowAllCalcs(false)} onDeleteAll={handleDeleteAll} />
       )}
-      {/* Close ⋮ menu when tapping outside */}
       {menuOpenId && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setMenuOpenId(null)} />
       )}
