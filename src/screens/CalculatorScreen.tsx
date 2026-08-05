@@ -132,21 +132,6 @@ function StackedFraction({ feet, inches, fracLbl, negative = false, color = '#ff
   );
 }
 
-// ─── Measure block (FIF + Eng Ft stacked) ────────────────────────────────────
-function MeasureBlock({ feet, inches, fracLbl, engFt, negative = false, compact = false }: {
-  feet: number; inches: number; fracLbl: string; engFt: number;
-  negative?: boolean; compact?: boolean;
-}) {
-  const sz = compact ? 14 : 15;
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-      <StackedFraction feet={feet} inches={inches} fracLbl={fracLbl} negative={negative} color={TEXT_P} size={sz} />
-      <span style={{ fontSize: sz, fontWeight: 600, color: TEXT_S, fontFamily: 'monospace' }}>
-        {negative && engFt > 0 ? '−' : ''}{Math.abs(engFt).toFixed(2)} ft
-      </span>
-    </div>
-  );
-}
 
 // ─── Text helpers for single-line expression display ─────────────────────────
 function stepValToText(step: SessionStep): string {
@@ -1045,7 +1030,7 @@ function CalculatorView() {
             {history.slice(0, 2).map((item, i) => (
               <div key={item.id} style={{ padding: '8px 12px', borderBottom: i === 0 && history.length > 1 ? `1px solid ${BORDER}` : 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <CompactCalcRow item={item} compact />
+                  <CompactCalcRow item={item} />
                 </div>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
