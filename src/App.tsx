@@ -1058,9 +1058,11 @@ function HelpIcon() {
       <line x1="4.5" y1="17"  x2="13.5" y2="17"  />
       {/* Right bubble — front layer, white fill masks left bubble and portions of = lines */}
       <path d="M 18.4 16.5 A 8.5 8.5 0 1 0 16.1 17.6 L 22.5 22 Z" fill="white" />
-      {/* ? — no inner circle; 238° CCW arc fills right bubble directly */}
-      <path d="M 10 10 A 4 4 0 1 0 17 10 Q 17 12 13.5 12" />
-      {/* ? dot */}
+      {/* ? — three quadratic beziers forming a clean C-hook, centered at bubble cx=13.5 cy≈9.5
+             Entry (10,8.7) → top (13.5,5) → right (17,8.7) → stem (13.5,12)
+             Vertical centre ≈ (5 + 14.65) / 2 = 9.8 ≈ bubble cy=9.5          */}
+      <path d="M 10 8.7 Q 10 5 13.5 5 Q 17 5 17 8.7 Q 17 11.5 13.5 12" />
+      {/* ? dot — centred below stem gap */}
       <circle cx="13.5" cy="13.8" r="0.85" fill="currentColor" stroke="none" />
     </svg>
   );
