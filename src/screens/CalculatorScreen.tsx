@@ -133,48 +133,67 @@ function StackedFraction({ feet, inches, fracLbl, negative = false, color = '#ff
 }
 
 
-// ─── Text helpers for single-line expression display ─────────────────────────
-function stepValToText(step: SessionStep): string {
+// ─── Step value node (FIF or decimal, inline) ────────────────────────────────
+function StepValueNode({ step, size = 13 }: { step: SessionStep; size?: number }) {
   if (step.mode === 'eng') {
-    const v = parseFloat(step.eng);
-    return isNaN(v) ? '?' : `${Math.abs(v).toFixed(2)} ft`;
+    return (
+      <span style={{ fontSize: size, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
+        {Math.abs(parseFloat(step.eng) || 0).toFixed(2)} ft
+      </span>
+    );
   }
-  const noFrac = !step.frL || step.frL === 'None' || step.frL === '0/0';
-  const frPart = noFrac ? '"' : ` ${step.frL.replace('"', '')}"`;
-  return `${step.ft || '0'}'-${step.inches}${frPart}`;
+  return (
+    <StackedFraction
+      feet={parseInt(step.ft || '0', 10)}
+      inches={step.inches}
+      fracLbl={step.frL}
+      color={NAVY} size={size}
+    />
+  );
 }
 
-function resultToText(result: number): string {
-  const fif = engToFif(Math.abs(result));
-  const neg = result < 0 ? '−' : '';
-  const noFrac = !fif.fracLbl || fif.fracLbl === 'None';
-  const frPart = noFrac ? '"' : ` ${fif.fracLbl.replace('"', '')}"`;
-  return `${neg}${fif.feet}'-${fif.inches}${frPart}`;
-}
-
-function itemExprText(item: CalcHistItem): string {
-  return item.steps.map((step, i) => {
-    const opPart = i === 0 ? '' : (step.op === '+' ? ' + ' : ' − ');
-    return opPart + stepValToText(step);
-  }).join('') + ' = ' + resultToText(item.result);
-}
-
-// ─── Compact calc row — single-line expression + result summary ───────────────
+// ─── Compact calc row — expression (last ≤3 ops) + result summary ─────────────
 function CompactCalcRow({ item }: { item: CalcHistItem }) {
   const { t } = useLang();
   const rFIF    = engToFif(Math.abs(item.result));
-  const opCount = item.steps.length - 1; // number of +/− operations
+  const opCount = item.steps.length - 1;
+  // Show at most last 3 steps; prefix "…" if earlier steps were cut
+  const showFrom   = item.steps.length > 3 ? item.steps.length - 3 : 0;
+  const showSteps  = item.steps.slice(showFrom);
+  const truncated  = showFrom > 0;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {/* Single-line expression — truncates with ellipsis if too wide */}
-      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11, fontWeight: 600, color: TEXT_S, fontFamily: 'monospace', letterSpacing: 0.1 }}>
-        {itemExprText(item)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      {/* Expression row — flex, clips at end if still too wide */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden', flexWrap: 'nowrap' }}>
+        {truncated && (
+          <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, flexShrink: 0, paddingRight: 1 }}>…</span>
+        )}
+        {showSteps.map((step, idx) => {
+          const globalIdx = showFrom + idx;
+          const isVeryFirst = globalIdx === 0 && !truncated;
+          return (
+            <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: idx === showSteps.length - 1 ? 0 : 1 }}>
+              {!isVeryFirst && (
+                <span style={{ fontSize: 14, fontWeight: 800, color: NAVY, padding: '0 3px', flexShrink: 0 }}>
+                  {step.op === '+' ? '+' : '−'}
+                </span>
+              )}
+              <StepValueNode step={step} size={13} />
+            </span>
+          );
+        })}
+        <span style={{ fontSize: 14, fontWeight: 800, color: NAVY, padding: '0 3px', flexShrink: 0 }}>=</span>
+        <span style={{ flexShrink: 0 }}>
+          <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={13} />
+        </span>
       </div>
-      {/* Result row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_D, textTransform: 'uppercase', letterSpacing: 0.5, flexShrink: 0 }}>{t('result')}:</span>
-        <StackedFraction {...rFIF} negative={item.result < 0} color={TEXT_P} size={13} />
-        <span style={{ fontSize: 11, fontWeight: 600, color: TEXT_S, fontFamily: 'monospace', flexShrink: 0 }}>
+      {/* Result row — dark navy bold, bullet separator */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 0.6, flexShrink: 0 }}>{t('result')}:</span>
+        <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={13} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, flexShrink: 0 }}>•</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: NAVY, fontFamily: 'monospace', flexShrink: 0 }}>
           {item.result < 0 ? '−' : ''}{Math.abs(item.result).toFixed(2)} ft
         </span>
         {opCount > 1 && (
@@ -187,7 +206,7 @@ function CompactCalcRow({ item }: { item: CalcHistItem }) {
   );
 }
 
-// ─── Calculation Details modal — step-by-step with running totals ─────────────
+// ─── Calculation Details modal — centered, step-by-step with running totals ───
 function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () => void }) {
   const { t } = useLang();
   // Compute running totals after each step
@@ -204,76 +223,108 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
     : '';
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end', zIndex: 400 }}>
-      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', maxHeight: '92vh', borderTopLeftRadius: 14, borderTopRightRadius: 14, overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'flex-end', zIndex: 400 }}>
+      <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', maxHeight: '92vh', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}`, flexShrink: 0 }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{t('calcDetailsTitle')}</div>
-            {dateStr && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 1 }}>{dateStr}</div>}
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: 0.3 }}>{t('calcDetailsTitle')}</div>
+            {dateStr && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{dateStr}</div>}
           </div>
-          <button style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
+          <button style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.18)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
         </div>
-        {/* Steps */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {/* Scrollable steps */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 24px' }}>
           {item.steps.map((step, i) => {
-            const rtFIF = engToFif(Math.abs(runningTotals[i]));
-            const rtNeg = runningTotals[i] < 0;
+            const isFinal = i === item.steps.length - 1;
+            const rtFIF   = engToFif(Math.abs(runningTotals[i]));
+            const rtNeg   = runningTotals[i] < 0;
+            const stepFIF = step.mode === 'fif'
+              ? { feet: parseInt(step.ft || '0', 10), inches: step.inches, fracLbl: step.frL }
+              : engToFif(Math.abs(step.val));
             return (
               <div key={i}>
-                {/* Op label for steps after the first */}
+                {/* Operation circle — centered, between steps */}
                 {i > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: step.op === '+' ? '#EDF7ED' : '#FEF2F2', border: `2px solid ${step.op === '+' ? '#4CAF50' : '#F44336'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 18,
+                      backgroundColor: step.op === '+' ? '#EDF7ED' : '#FEF2F2',
+                      border: `2.5px solid ${step.op === '+' ? '#43A047' : '#E53935'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
                       <span style={{ fontSize: 20, fontWeight: 900, color: step.op === '+' ? '#2E7D32' : '#C62828', lineHeight: 1, fontFamily: 'monospace' }}>
                         {step.op === '+' ? '+' : '−'}
                       </span>
                     </div>
                   </div>
                 )}
-                {/* Value card */}
-                <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: TEXT_D, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>
-                      {i === 0 ? 'Value 1' : `Value ${i + 1}`}
-                    </div>
-                    <StackedFraction
-                      feet={step.mode === 'fif' ? parseInt(step.ft || '0', 10) : engToFif(Math.abs(step.val)).feet}
-                      inches={step.mode === 'fif' ? step.inches : engToFif(Math.abs(step.val)).inches}
-                      fracLbl={step.mode === 'fif' ? step.frL : engToFif(Math.abs(step.val)).fracLbl}
-                      color={TEXT_P} size={15}
-                    />
-                    <div style={{ fontSize: 12, color: TEXT_S, fontFamily: 'monospace', marginTop: 2 }}>{Math.abs(step.val).toFixed(4)} ft</div>
+                {/* Value card — centered content */}
+                <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1.5px solid ${BORDER}`, padding: '12px 16px', textAlign: 'center' as const, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_D, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
+                    {`${t('values') || 'Value'} ${i + 1}`}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                    <StackedFraction {...stepFIF} color={NAVY} size={17} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_S, fontFamily: 'monospace' }}>
+                    {Math.abs(step.val).toFixed(4)} ft
                   </div>
                 </div>
-                {/* Running total after this step (show for all except the very first step alone) */}
+                {/* Intermediate / final result card — shown after each operation */}
                 {i > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: TEXT_S, paddingLeft: 6 }}>=</span>
-                    <div style={{ backgroundColor: i === item.steps.length - 1 ? DARK : SURFACE, borderRadius: 8, border: `1.5px solid ${i === item.steps.length - 1 ? GOLD : BORDER}`, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                      <StackedFraction {...rtFIF} negative={rtNeg} color={i === item.steps.length - 1 ? '#fff' : TEXT_P} size={14} />
-                      <span style={{ fontSize: 12, fontFamily: 'monospace', color: i === item.steps.length - 1 ? 'rgba(255,255,255,0.85)' : TEXT_S }}>
-                        {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(2)} ft
-                      </span>
+                  <>
+                    {/* Divider */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0' }}>
+                      <div style={{ flex: 1, height: 1, backgroundColor: BORDER }} />
                     </div>
-                  </div>
+                    {/* Result card */}
+                    {isFinal ? (
+                      /* Final result — navy bg, gold border, white text, large */
+                      <div style={{ backgroundColor: DARK, borderRadius: 12, border: `2px solid ${GOLD}`, padding: '14px 16px', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(16,45,78,0.18)' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('finalResult')}</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>
+                          <StackedFraction {...rtFIF} negative={rtNeg} color="#fff" size={20} />
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 3 }}>•</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
+                          {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(4)} ft
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 8 }}>
+                          {item.steps.length - 1} {t('operations')} · {item.steps.length} {t('values') || 'values'}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Intermediate result — light surface, navy text */
+                      <div style={{ backgroundColor: SURFACE, borderRadius: 10, border: `1.5px solid ${BORDER}`, padding: '10px 16px', textAlign: 'center' as const }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_D, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>{t('result')}</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 3 }}>
+                          <StackedFraction {...rtFIF} negative={rtNeg} color={NAVY} size={15} />
+                        </div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, marginBottom: 2 }}>•</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
+                          {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(2)} ft
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );
           })}
-          {/* Final result footer */}
-          <div style={{ marginTop: 12, backgroundColor: DARK, borderRadius: 10, border: `2px solid ${GOLD}`, padding: '12px 16px' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{t('finalResult')}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <StackedFraction {...engToFif(Math.abs(item.result))} negative={item.result < 0} color="#fff" size={18} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.85)', fontFamily: 'monospace' }}>
+          {/* If only 1 step (single value, no operation) — show summary */}
+          {item.steps.length === 1 && (
+            <div style={{ marginTop: 10, backgroundColor: DARK, borderRadius: 12, border: `2px solid ${GOLD}`, padding: '14px 16px', textAlign: 'center' as const }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('finalResult')}</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>
+                <StackedFraction {...engToFif(Math.abs(item.result))} negative={item.result < 0} color="#fff" size={20} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 3 }}>•</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
                 {item.result < 0 ? '−' : ''}{Math.abs(item.result).toFixed(4)} ft
-              </span>
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
-              {item.steps.length - 1} {t('operations')} · {item.steps.length} {t('values') || 'values'}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -294,35 +345,62 @@ function ConvHistRow({ item, compact = false }: { item: ConvItem; compact?: bool
   );
 }
 
-// ─── All-calcs modal ──────────────────────────────────────────────────────────
-function AllCalcsModal({ history, onClose, onDeleteAll }: {
-  history: CalcHistItem[]; onClose: () => void; onDeleteAll: () => void;
+// ─── All-calcs modal — with ⋮ menu on every card ─────────────────────────────
+function AllCalcsModal({ history, onClose, onDeleteAll, onViewFull, onEdit, onDeleteItem }: {
+  history: CalcHistItem[];
+  onClose: () => void;
+  onDeleteAll: () => void;
+  onViewFull: (item: CalcHistItem) => void;
+  onEdit: (item: CalcHistItem) => void;
+  onDeleteItem: (item: CalcHistItem) => void;
 }) {
   const { t } = useLang();
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-end', zIndex: 300 }}>
       <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}` }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>{t('allCalcsTitle')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}`, flexShrink: 0 }}>
+          <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: 0.3 }}>{t('allCalcsTitle')}</span>
           <button style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {history.length === 0 && <p style={{ textAlign: 'center', color: TEXT_D, padding: 32 }}>{t('noCalcsYet')}</p>}
           {history.map((item, i) => (
-            <div key={item.id} style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 7px', fontSize: 12, fontWeight: 800, color: BLUE_A, alignSelf: 'flex-start' }}>#{i + 1}</span>
+            <div key={item.id} style={{ backgroundColor: CARD, borderRadius: 10, border: `1px solid ${BORDER}`, padding: '10px 12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+              {/* Card header: number badge + ⋮ menu */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 800, color: BLUE_A }}>#{i + 1}</span>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: menuOpenId === item.id ? SURFACE : 'transparent', border: `1px solid ${menuOpenId === item.id ? BORDER : 'transparent'}`, fontSize: 16, fontWeight: 900, color: TEXT_S, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-1px', lineHeight: 1, padding: 0 }}
+                    onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === item.id ? null : item.id); }}
+                  >⋮</button>
+                  {menuOpenId === item.id && (
+                    <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 50, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', minWidth: 180, overflow: 'hidden' }}>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
+                        onClick={() => { setMenuOpenId(null); onViewFull(item); }}>🔍 {t('viewFullCalcBtn')}</button>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
+                        onClick={() => { setMenuOpenId(null); onEdit(item); }}>✏️ {t('editCalcBtn')}</button>
+                      <button style={{ width: '100%', padding: '10px 14px', border: 'none', backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: '#C0392B', cursor: 'pointer' }}
+                        onClick={() => { setMenuOpenId(null); onDeleteItem(item); }}>🗑️ {t('deleteCalcBtn')}</button>
+                    </div>
+                  )}
+                </div>
+              </div>
               <CompactCalcRow item={item} />
             </div>
           ))}
         </div>
         {history.length > 0 && (
-          <div style={{ padding: '10px 16px', borderTop: `1px solid ${BORDER}` }}>
+          <div style={{ padding: '10px 16px', borderTop: `1px solid ${BORDER}`, flexShrink: 0 }}>
             <button style={{ width: '100%', height: 48, backgroundColor: 'rgba(192,57,43,0.10)', border: '1.5px solid #C0392B', borderRadius: 8, color: '#C0392B', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.5 }} onClick={onDeleteAll}>
               {t('deleteAllCalcs')}
             </button>
           </div>
         )}
       </div>
+      {/* Close ⋮ when tapping outside */}
+      {menuOpenId && <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setMenuOpenId(null)} />}
     </div>
   );
 }
@@ -1027,8 +1105,9 @@ function CalculatorView() {
               <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
             </div>
-            {history.slice(0, 2).map((item, i) => (
-              <div key={item.id} style={{ padding: '8px 12px', borderBottom: i === 0 && history.length > 1 ? `1px solid ${BORDER}` : 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {/* Only the most recent session */}
+            {history.slice(0, 1).map(item => (
+              <div key={item.id} style={{ padding: '10px 12px', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <CompactCalcRow item={item} />
                 </div>
@@ -1058,7 +1137,14 @@ function CalculatorView() {
         <OpSelectionModal onSelect={handleOpSelect} onClose={() => setShowOpModal(false)} suggestedOp={op} />
       )}
       {showAllCalcs && (
-        <AllCalcsModal history={history} onClose={() => setShowAllCalcs(false)} onDeleteAll={handleDeleteAll} />
+        <AllCalcsModal
+          history={history}
+          onClose={() => setShowAllCalcs(false)}
+          onDeleteAll={handleDeleteAll}
+          onViewFull={item => { setViewFullItem(item); setShowAllCalcs(false); }}
+          onEdit={item => { handleEditItem(item); setShowAllCalcs(false); }}
+          onDeleteItem={handleDeleteItem}
+        />
       )}
       {viewFullItem && (
         <CalcDetailsModal item={viewFullItem} onClose={() => setViewFullItem(null)} />
