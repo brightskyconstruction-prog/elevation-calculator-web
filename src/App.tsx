@@ -14,7 +14,8 @@ import OfflineIndicator   from './components/OfflineIndicator';
 import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import ConfirmModal       from './components/ConfirmModal';
-import { isFirebaseConfigured, onAuthChanged, signOutFirebase } from './firebase';
+import { isFirebaseConfigured, onAuthChanged, signOutFirebase, getDb } from './firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import {
   loadUserData,
   saveUserData,
@@ -696,6 +697,262 @@ function AppInner() {
   );
 }
 
+// ─── Feedback form (sub-view within Settings sheet) ───────────────────────────
+type FbkType   = 'report' | 'general';
+type FbkStatus = 'idle' | 'submitting' | 'success' | 'error';
+
+interface FeedbackFormProps {
+  feedbackType: FbkType;
+  userEmail:    string;
+  onBack:       () => void;
+  onClose:      () => void;
+}
+
+function FeedbackForm({ feedbackType, userEmail, onBack, onClose }: FeedbackFormProps) {
+  const ISSUE_OPTS = [
+    { v: 'bug',     l: 'Bug Report'        },
+    { v: 'calc',    l: 'Calculation Issue' },
+    { v: 'ui',      l: 'UI/UX Issue'       },
+    { v: 'perf',    l: 'Performance Issue' },
+    { v: 'feature', l: 'Feature Request'   },
+    { v: 'general', l: 'General Feedback'  },
+    { v: 'other',   l: 'Other'             },
+  ];
+
+  const [issueType, setIssueType] = useState(feedbackType === 'report' ? 'bug' : 'feature');
+  const [subject,   setSubject]   = useState('');
+  const [desc,      setDesc]      = useState('');
+  const [email,     setEmail]     = useState(userEmail);
+  const [imgB64,    setImgB64]    = useState<string | null>(null);
+  const [imgErr,    setImgErr]    = useState('');
+  const [status,    setStatus]    = useState<FbkStatus>('idle');
+  const [errs,      setErrs]      = useState<Record<string, string>>({});
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { setImgErr('Please select an image file.'); return; }
+    if (f.size > 1024 * 1024) { setImgErr('Image must be under 1 MB.'); return; }
+    setImgErr('');
+    const r = new FileReader();
+    r.onload = ev => setImgB64(ev.target?.result as string);
+    r.readAsDataURL(f);
+  };
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!subject.trim()) e.subject = 'Subject is required.';
+    if (desc.trim().length < 10) e.desc = 'Please provide at least 10 characters.';
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = 'Enter a valid email address.';
+    setErrs(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setStatus('submitting');
+    try {
+      const payload: Record<string, unknown> = {
+        feedbackType, issueType,
+        subject:       subject.trim(),
+        description:   desc.trim(),
+        email:         email.trim(),
+        appVersion:    'v1.0',
+        deviceInfo:    `${navigator.platform} · ${window.screen.width}×${window.screen.height}`,
+        browserInfo:   navigator.userAgent,
+        screenshotB64: imgB64 ?? null,
+        status:        'new',
+        submittedAt:   serverTimestamp(),
+      };
+      if (isFirebaseConfigured()) {
+        await addDoc(collection(getDb(), 'feedback'), payload);
+      } else {
+        // offline fallback
+        const list = JSON.parse(localStorage.getItem('feedback:q') ?? '[]') as unknown[];
+        list.push({ ...payload, submittedAt: new Date().toISOString() });
+        localStorage.setItem('feedback:q', JSON.stringify(list));
+      }
+      setStatus('success');
+    } catch (err) {
+      console.error('Feedback error:', err);
+      setStatus('error');
+    }
+  };
+
+  // shared micro-styles
+  const inp: React.CSSProperties = {
+    width: '100%', boxSizing: 'border-box', height: 44, padding: '0 12px',
+    borderRadius: 10, border: `1px solid ${BDR}`, backgroundColor: '#F9FAFB',
+    fontSize: 14, fontWeight: 500, color: '#111827', fontFamily: 'inherit', outline: 'none',
+  };
+  const lbl: React.CSSProperties = {
+    fontSize: 11, fontWeight: 800, color: '#374151',
+    letterSpacing: 0.5, textTransform: 'uppercase' as const,
+  };
+  const errTxt: React.CSSProperties  = { fontSize: 11, color: '#EF4444', fontWeight: 600, marginTop: 2 };
+  const fld: React.CSSProperties     = { display: 'flex', flexDirection: 'column' as const, gap: 5 };
+  const titleH = feedbackType === 'report' ? 'Report an Issue' : 'Share Feedback';
+
+  /* ── success screen ─────────────────────────────────────────────────────── */
+  if (status === 'success') {
+    return (
+      <>
+        <div style={{ ...spS.titleRow, gap: 8 }}>
+          <span style={{ ...spS.title, flex: 1 }}>{titleH}</span>
+          <button style={spS.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 28px', textAlign: 'center', gap: 16 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#DCFCE7', border: '2px solid #86EFAC', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <p style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#111827' }}>Thank you!</p>
+          <p style={{ margin: 0, fontSize: 14, color: '#6B7280', lineHeight: 1.6 }}>
+            {feedbackType === 'report'
+              ? 'Your report has been submitted. Our team will investigate and work on a fix.'
+              : 'Your feedback has been received. We appreciate your suggestions and ideas!'}
+          </p>
+          <button
+            style={{ marginTop: 6, height: 46, minWidth: 160, borderRadius: 10, backgroundColor: NAVY2, color: '#fff', border: 'none', fontSize: 15, fontWeight: 800, cursor: 'pointer', letterSpacing: 0.3 }}
+            onClick={onClose}
+          >Done</button>
+        </div>
+      </>
+    );
+  }
+
+  /* ── form screen ────────────────────────────────────────────────────────── */
+  return (
+    <>
+      {/* header */}
+      <div style={{ ...spS.titleRow, gap: 4 }}>
+        <button style={{ ...spS.closeBtn, marginRight: 4, fontSize: 22, opacity: 0.9 }} onClick={onBack} aria-label="Back">‹</button>
+        <span style={{ ...spS.title, flex: 1 }}>{titleH}</span>
+        <button style={spS.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+      </div>
+
+      {/* scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 4px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Issue type */}
+        <div style={fld}>
+          <label style={lbl}>Issue Type</label>
+          <select
+            value={issueType}
+            onChange={e => setIssueType(e.target.value)}
+            style={{ ...inp, paddingLeft: 10, cursor: 'pointer' }}
+          >
+            {ISSUE_OPTS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+          </select>
+        </div>
+
+        {/* Subject */}
+        <div style={fld}>
+          <label style={lbl}>Subject <span style={{ color: '#EF4444' }}>*</span></label>
+          <input
+            type="text"
+            value={subject}
+            placeholder="Brief summary"
+            onChange={e => { setSubject(e.target.value); if (errs.subject) setErrs(p => ({ ...p, subject: '' })); }}
+            style={{ ...inp, borderColor: errs.subject ? '#EF4444' : BDR }}
+          />
+          {errs.subject && <span style={errTxt}>{errs.subject}</span>}
+        </div>
+
+        {/* Description */}
+        <div style={fld}>
+          <label style={lbl}>Description <span style={{ color: '#EF4444' }}>*</span></label>
+          <textarea
+            value={desc}
+            placeholder={feedbackType === 'report'
+              ? 'Describe what happened, what you expected, and steps to reproduce…'
+              : 'Share your ideas, suggestions, or overall experience…'}
+            onChange={e => { setDesc(e.target.value); if (errs.desc) setErrs(p => ({ ...p, desc: '' })); }}
+            style={{ ...inp, height: 'auto', minHeight: 96, padding: '10px 12px', resize: 'vertical', lineHeight: 1.55, borderColor: errs.desc ? '#EF4444' : BDR } as React.CSSProperties}
+          />
+          {errs.desc && <span style={errTxt}>{errs.desc}</span>}
+        </div>
+
+        {/* Email */}
+        <div style={fld}>
+          <label style={lbl}>Email Address</label>
+          <input
+            type="email"
+            value={email}
+            placeholder="your@email.com"
+            onChange={e => { setEmail(e.target.value); if (errs.email) setErrs(p => ({ ...p, email: '' })); }}
+            style={{ ...inp, borderColor: errs.email ? '#EF4444' : BDR }}
+          />
+          {errs.email && <span style={errTxt}>{errs.email}</span>}
+        </div>
+
+        {/* Screenshot */}
+        <div style={fld}>
+          <label style={lbl}>
+            Screenshot&nbsp;
+            <span style={{ fontSize: 10, fontWeight: 500, color: '#9CA3AF', textTransform: 'none' as const, letterSpacing: 0 }}>— optional</span>
+          </label>
+          {imgB64 ? (
+            <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: `1px solid ${BDR}` }}>
+              <img src={imgB64} alt="Preview" style={{ width: '100%', maxHeight: 150, objectFit: 'cover', display: 'block' }} />
+              <button
+                style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.55)', border: 'none', color: '#fff', borderRadius: 20, width: 26, height: 26, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onClick={() => { setImgB64(null); if (fileRef.current) fileRef.current.value = ''; }}
+              >✕</button>
+            </div>
+          ) : (
+            <button
+              style={{ ...inp, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', border: `1.5px dashed ${BDR}`, backgroundColor: '#FAFAFA', color: '#6B7280', fontSize: 13, fontWeight: 600, padding: '0 14px' }}
+              onClick={() => fileRef.current?.click()}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              Attach a screenshot
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+          {imgErr && <span style={errTxt}>{imgErr}</span>}
+        </div>
+
+        {/* Auto-collected info */}
+        <div style={{ backgroundColor: '#F3F4F6', borderRadius: 10, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase' as const }}>Auto-collected with submission</span>
+          <span style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 500 }}>
+            App v1.0 · {navigator.platform} · {window.screen.width}×{window.screen.height}
+          </span>
+          <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+            {navigator.userAgent}
+          </span>
+        </div>
+
+        {status === 'error' && (
+          <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#DC2626', fontWeight: 600 }}>
+            Submission failed. Please check your connection and try again.
+          </div>
+        )}
+
+        <div style={{ height: 4 }} />
+      </div>
+
+      {/* sticky submit */}
+      <div style={{ padding: '12px 20px 16px', borderTop: `1px solid ${BDR}`, flexShrink: 0 }}>
+        <button
+          style={{ width: '100%', height: 48, borderRadius: 10, backgroundColor: NAVY2, color: '#fff', border: 'none', fontSize: 15, fontWeight: 800, letterSpacing: 0.3, cursor: status === 'submitting' ? 'wait' : 'pointer', opacity: status === 'submitting' ? 0.7 : 1, transition: 'opacity 0.15s' }}
+          onClick={handleSubmit}
+          disabled={status === 'submitting'}
+        >
+          {status === 'submitting' ? 'Submitting…' : 'Submit'}
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ─── Settings panel (bottom-sheet) ───────────────────────────────────────────
 interface SettingsPanelProps {
   email:          string;
@@ -709,77 +966,127 @@ interface SettingsPanelProps {
 }
 
 function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivacy, onOpenTerms, t }: SettingsPanelProps) {
+  const [view,         setView]         = useState<'settings' | 'feedback'>('settings');
+  const [feedbackType, setFeedbackType] = useState<FbkType>('report');
+
   return (
     <div style={spS.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="anp-modal-in" style={spS.sheet}>
+      <div className="anp-modal-in" style={{ ...spS.sheet, maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Title row */}
-        <div style={spS.titleRow}>
-          <span style={spS.title}>{t('settingsTitle')}</span>
-          <button style={spS.closeBtn} onClick={onClose} aria-label="Close settings">✕</button>
-        </div>
-
-        {/* ── Account section ─────────────────────────────────── */}
-        <div style={spS.section}>
-          <span style={spS.sectionLabel}>{t('settingsAccount')}</span>
-          <div style={spS.emailRow}>
-            <div style={spS.emailIcon}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6" />
-              </svg>
+        {view === 'feedback' ? (
+          <FeedbackForm
+            feedbackType={feedbackType}
+            userEmail={email}
+            onBack={() => setView('settings')}
+            onClose={onClose}
+          />
+        ) : (
+          <>
+            {/* Title row */}
+            <div style={spS.titleRow}>
+              <span style={spS.title}>{t('settingsTitle')}</span>
+              <button style={spS.closeBtn} onClick={onClose} aria-label="Close settings">✕</button>
             </div>
-            <div style={spS.emailBlock}>
-              <span style={spS.emailMeta}>{email ? t('loggedInAs') : t('settingsSession')}</span>
-              <span style={spS.emailVal}>{email || t('settingsGuestLabel')}</span>
-            </div>
-          </div>
-          <button style={spS.logoutBtn} onClick={onLogout}>
-            {email ? t('logout') : t('guestSignInBtn')}
-          </button>
-        </div>
 
-        {/* ── Language section ─────────────────────────────────── */}
-        <div style={spS.section}>
-          <span style={spS.sectionLabel}>{t('settingsAppearance')}</span>
-          <div style={spS.langRow}>
-            <span style={spS.langLabel}>{t('language')}</span>
-            <div style={spS.langToggleWrap}>
-              {(['en', 'es'] as const).map(l => (
-                <button
-                  key={l}
-                  style={{
-                    ...spS.langOpt,
-                    ...(lang === l ? spS.langOptActive : {}),
-                  }}
-                  onClick={() => onSetLang(l)}
-                  aria-pressed={lang === l}
-                >
-                  {l === 'en' ? t('english') : t('spanish')}
+            {/* Scrollable settings content */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+
+              {/* ── Account section ─────────────────────────────────── */}
+              <div style={spS.section}>
+                <span style={spS.sectionLabel}>{t('settingsAccount')}</span>
+                <div style={spS.emailRow}>
+                  <div style={spS.emailIcon}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-3.5 3.6-6 8-6s8 2.5 8 6" />
+                    </svg>
+                  </div>
+                  <div style={spS.emailBlock}>
+                    <span style={spS.emailMeta}>{email ? t('loggedInAs') : t('settingsSession')}</span>
+                    <span style={spS.emailVal}>{email || t('settingsGuestLabel')}</span>
+                  </div>
+                </div>
+                <button style={spS.logoutBtn} onClick={onLogout}>
+                  {email ? t('logout') : t('guestSignInBtn')}
                 </button>
-              ))}
+              </div>
+
+              {/* ── Language section ─────────────────────────────────── */}
+              <div style={spS.section}>
+                <span style={spS.sectionLabel}>{t('settingsAppearance')}</span>
+                <div style={spS.langRow}>
+                  <span style={spS.langLabel}>{t('language')}</span>
+                  <div style={spS.langToggleWrap}>
+                    {(['en', 'es'] as const).map(l => (
+                      <button
+                        key={l}
+                        style={{
+                          ...spS.langOpt,
+                          ...(lang === l ? spS.langOptActive : {}),
+                        }}
+                        onClick={() => onSetLang(l)}
+                        aria-pressed={lang === l}
+                      >
+                        {l === 'en' ? t('english') : t('spanish')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Legal section ────────────────────────────────────── */}
+              <div style={spS.section}>
+                <span style={spS.sectionLabel}>{t('settingsLegal')}</span>
+                <button style={spS.legalBtn} onClick={onOpenPrivacy}>
+                  <span>{t('settingsPrivacy')}</span>
+                  <span style={spS.legalArrow}>›</span>
+                </button>
+                <button style={spS.legalBtn} onClick={onOpenTerms}>
+                  <span>{t('settingsTerms')}</span>
+                  <span style={spS.legalArrow}>›</span>
+                </button>
+              </div>
+
+              {/* ── Feedback & Support section ──────────────────────── */}
+              <div style={{ ...spS.section, borderBottom: 'none' }}>
+                <span style={spS.sectionLabel}>Feedback &amp; Support</span>
+                <button
+                  style={spS.legalBtn}
+                  onClick={() => { setFeedbackType('report'); setView('feedback'); }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Report an Issue
+                  </span>
+                  <span style={spS.legalArrow}>›</span>
+                </button>
+                <button
+                  style={spS.legalBtn}
+                  onClick={() => { setFeedbackType('general'); setView('feedback'); }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Share Feedback
+                  </span>
+                  <span style={spS.legalArrow}>›</span>
+                </button>
+              </div>
+
+              {/* ── App version ──────────────────────────────────────── */}
+              <div style={spS.versionRow}>
+                <span style={spS.versionText}>Grade and Elevation Calculator · v1.0</span>
+              </div>
+
             </div>
-          </div>
-        </div>
-
-        {/* ── Legal section ────────────────────────────────────── */}
-        <div style={{ ...spS.section, borderBottom: 'none' }}>
-          <span style={spS.sectionLabel}>{t('settingsLegal')}</span>
-          <button style={spS.legalBtn} onClick={onOpenPrivacy}>
-            <span>{t('settingsPrivacy')}</span>
-            <span style={spS.legalArrow}>›</span>
-          </button>
-          <button style={spS.legalBtn} onClick={onOpenTerms}>
-            <span>{t('settingsTerms')}</span>
-            <span style={spS.legalArrow}>›</span>
-          </button>
-        </div>
-
-        {/* ── App version ──────────────────────────────────────── */}
-        <div style={spS.versionRow}>
-          <span style={spS.versionText}>Grade and Elevation Calculator · v1.0</span>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
