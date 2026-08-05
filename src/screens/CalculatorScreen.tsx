@@ -152,7 +152,7 @@ function StepValueNode({ step, size = 13 }: { step: SessionStep; size?: number }
   );
 }
 
-// ─── Compact calc row — expression (last ≤3 ops) + result summary ─────────────
+// ─── Compact calc row — expression (last ≤3 ops, no = result) + result row ────
 function CompactCalcRow({ item }: { item: CalcHistItem }) {
   const { t } = useLang();
   const rFIF    = engToFif(Math.abs(item.result));
@@ -163,11 +163,11 @@ function CompactCalcRow({ item }: { item: CalcHistItem }) {
   const truncated  = showFrom > 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      {/* Expression row — flex, clips at end if still too wide */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* Expression row — operations only, no = or result */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden', flexWrap: 'nowrap' }}>
         {truncated && (
-          <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, flexShrink: 0, paddingRight: 1 }}>…</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: TEXT_S, flexShrink: 0, paddingRight: 1 }}>…</span>
         )}
         {showSteps.map((step, idx) => {
           const globalIdx = showFrom + idx;
@@ -175,29 +175,25 @@ function CompactCalcRow({ item }: { item: CalcHistItem }) {
           return (
             <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: idx === showSteps.length - 1 ? 0 : 1 }}>
               {!isVeryFirst && (
-                <span style={{ fontSize: 14, fontWeight: 800, color: NAVY, padding: '0 3px', flexShrink: 0 }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: NAVY, padding: '0 3px', flexShrink: 0 }}>
                   {step.op === '+' ? '+' : '−'}
                 </span>
               )}
-              <StepValueNode step={step} size={13} />
+              <StepValueNode step={step} size={14} />
             </span>
           );
         })}
-        <span style={{ fontSize: 14, fontWeight: 800, color: NAVY, padding: '0 3px', flexShrink: 0 }}>=</span>
-        <span style={{ flexShrink: 0 }}>
-          <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={13} />
-        </span>
       </div>
-      {/* Result row — dark navy bold, bullet separator */}
+      {/* Result row — RESULT label, FIF • decimal, ops badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 0.6, flexShrink: 0 }}>{t('result')}:</span>
-        <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={13} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, flexShrink: 0 }}>•</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: NAVY, fontFamily: 'monospace', flexShrink: 0 }}>
+        <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 0.6, flexShrink: 0 }}>{t('result')}:</span>
+        <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={14} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_S, flexShrink: 0 }}>•</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: NAVY, fontFamily: 'monospace', flexShrink: 0 }}>
           {item.result < 0 ? '−' : ''}{Math.abs(item.result).toFixed(2)} ft
         </span>
         {opCount > 1 && (
-          <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, color: NAVY, backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 6px', flexShrink: 0 }}>
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: NAVY, backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 7px', flexShrink: 0 }}>
             {opCount} {t('operations')}
           </span>
         )}
