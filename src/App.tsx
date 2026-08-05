@@ -1038,9 +1038,12 @@ function CalcIcon() {
 // Right bubble (front): cx=14.5 cy=9   r=8    — tail lower-right, fill=white masks left
 // Inner circle:         cx=14.5 cy=9   r=5.5
 //
-// Tail arcs are 20° wide; Z closes the triangle back to the start point.
+// Tail arcs are ~17° wide; Z closes the triangle back to the arc start point.
 // Left  tail: θ=120°→140° on r=7.5 → (5.25,22.5)→(3.1,20.6), tip (0.5,23.8)
 // Right tail: θ= 55°→ 72° on r=8   → (19.1,15.5)→(17.0,16.6), tip (22.5,21)
+//
+// ? arc: 282° CCW arc (large-arc=1, sweep=0) from (12.5,9.5) to (16.5,9.5) over the top.
+// SVG resolves this to center≈(14.5,7.1), r=3.1 — a proper circular hook, not a bezier approx.
 function HelpIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -1048,15 +1051,15 @@ function HelpIcon() {
          aria-hidden="true">
       {/* Left bubble — back layer */}
       <path d="M 5.25 22.5 A 7.5 7.5 0 1 0 3.1 20.6 L 0.5 23.8 Z" />
-      {/* Two message lines — upper runs partly behind the right bubble */}
-      <line x1="2"   y1="16.5" x2="14"   y2="16.5" />
-      <line x1="2"   y1="19.5" x2="12.5" y2="19.5" />
+      {/* Two equal-span lines (= sign) — upper is partially masked by the right bubble */}
+      <line x1="2"   y1="16"   x2="13.5" y2="16"   />
+      <line x1="2"   y1="18.5" x2="13.5" y2="18.5"  />
       {/* Right bubble — front layer, white fill masks left bubble */}
       <path d="M 19.1 15.5 A 8 8 0 1 0 17.0 16.6 L 22.5 21 Z" fill="white" />
       {/* Inner circle */}
       <circle cx="14.5" cy="9" r="5.5" />
-      {/* ? hook: three-quadrant bezier — left entry → over top → right arc → stem */}
-      <path d="M 12 8 Q 12 5 14.5 5 Q 17 5 17 8 Q 17 11 14.5 11.5" />
+      {/* ? hook — 282° CCW arc from lower-left over top to lower-right, then stem curves down */}
+      <path d="M 12.5 9.5 A 3.1 3.1 0 1 0 16.5 9.5 Q 16.5 11 14.5 11" />
       {/* ? dot */}
       <circle cx="14.5" cy="13" r="0.72" fill="currentColor" stroke="none" />
     </svg>
