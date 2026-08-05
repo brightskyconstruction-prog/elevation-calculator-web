@@ -1033,25 +1033,27 @@ function CalcIcon() {
   );
 }
 
-// ─── Help tab icon — two overlapping speech bubbles (left: text lines, right: ? in circle) ──
+// ─── Help tab icon — two overlapping speech bubbles (left: lines, right: ? in circle) ──
+// Reference: left bubble (back, tail lower-left) + right bubble (front, white fill, tail lower-right)
 function HelpIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+         stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"
          aria-hidden="true">
-      {/* Left bubble — two text lines — tail at bottom-left */}
-      <path d="M 3 5 H 14 Q 16.5 5 16.5 7.5 V 15.5 Q 16.5 18 14 18 H 6 L 2 22 L 4.5 18 H 3 Q 0.5 18 0.5 15.5 V 7.5 Q 0.5 5 3 5 Z" />
-      <line x1="3.5" y1="10.5" x2="13.5" y2="10.5" />
-      <line x1="3.5" y1="13.5" x2="10"   y2="13.5" />
-      {/* Right bubble — ? in circle — tail at bottom-right — white fill layers over left bubble */}
-      <path d="M 10 0.5 H 21 Q 23.5 0.5 23.5 3 V 11 Q 23.5 13.5 21 13.5 L 22 16.5 L 20 13.5 H 10 Q 7.5 13.5 7.5 11 V 3 Q 7.5 0.5 10 0.5 Z"
+      {/* Left bubble — back layer — very rounded, tail at lower-left */}
+      <path d="M 4.5 6 H 11 Q 15 6 15 10 V 17 Q 15 21 11 21 H 6 L 1.5 23.5 L 5 21 Q 0.5 21 0.5 17 V 10 Q 0.5 6 4.5 6 Z" />
+      {/* Two text lines — in the visible lower portion of left bubble */}
+      <line x1="2.5" y1="15"  x2="12"  y2="15"  />
+      <line x1="2.5" y1="18"  x2="9.5" y2="18"  />
+      {/* Right bubble — front layer — white fill masks left bubble in overlap zone — tail at lower-right */}
+      <path d="M 11.5 0.5 H 19 Q 23.5 0.5 23.5 5 V 9.5 Q 23.5 14 19 14 L 22 19 L 20.5 14 H 11.5 Q 7 14 7 9.5 V 5 Q 7 0.5 11.5 0.5 Z"
             fill="white" />
-      {/* Circle outline */}
-      <circle cx="15.5" cy="7" r="4" />
-      {/* ? arc — hook curves from left up over top then down */}
-      <path d="M 14 5.6 Q 14 3.8 15.5 3.8 Q 17 3.8 17 5.6 Q 17 7.2 15.5 7.9" strokeLinecap="round" />
+      {/* Inner circle — nearly fills the right bubble */}
+      <circle cx="15.25" cy="7.25" r="5.2" />
+      {/* ? mark — hook arc (left entry → top → right side → stem) */}
+      <path d="M 13.2 6.5 Q 13.2 3 15.25 3 Q 17.3 3 17.3 6.5 Q 17.3 9.5 15.25 10" />
       {/* ? dot */}
-      <circle cx="15.5" cy="9.4" r="0.45" fill="currentColor" stroke="none" />
+      <circle cx="15.25" cy="11.8" r="0.65" fill="currentColor" stroke="none" />
     </svg>
   );
 }
