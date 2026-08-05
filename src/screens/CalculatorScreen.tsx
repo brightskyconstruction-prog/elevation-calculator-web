@@ -234,7 +234,7 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
           <button style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.18)', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={onClose}>✕</button>
         </div>
         {/* Scrollable steps */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 20px' }}>
           {item.steps.map((step, i) => {
             const isFinal = i === item.steps.length - 1;
             const rtFIF   = engToFif(Math.abs(runningTotals[i]));
@@ -244,65 +244,63 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
               : engToFif(Math.abs(step.val));
             return (
               <div key={i}>
-                {/* Operation circle — centered, between steps */}
+                {/* Operation circle — centered, compact spacing */}
                 {i > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '5px 0' }}>
                     <div style={{
-                      width: 36, height: 36, borderRadius: 18,
+                      width: 32, height: 32, borderRadius: 16,
                       backgroundColor: step.op === '+' ? '#EDF7ED' : '#FEF2F2',
-                      border: `2.5px solid ${step.op === '+' ? '#43A047' : '#E53935'}`,
+                      border: `2px solid ${step.op === '+' ? '#43A047' : '#E53935'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <span style={{ fontSize: 20, fontWeight: 900, color: step.op === '+' ? '#2E7D32' : '#C62828', lineHeight: 1, fontFamily: 'monospace' }}>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: step.op === '+' ? '#2E7D32' : '#C62828', lineHeight: 1, fontFamily: 'monospace' }}>
                         {step.op === '+' ? '+' : '−'}
                       </span>
                     </div>
                   </div>
                 )}
-                {/* Value card — centered content */}
-                <div style={{ backgroundColor: CARD, borderRadius: 10, border: `1.5px solid ${BORDER}`, padding: '12px 16px', textAlign: 'center' as const, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: TEXT_D, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>
-                    {`${t('values') || 'Value'} ${i + 1}`}
+                {/* Value card — centered content, compact padding */}
+                <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: '8px 12px', textAlign: 'center' as const, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>
+                    {`VALUE ${i + 1}`}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                    <StackedFraction {...stepFIF} color={NAVY} size={17} />
+                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 3 }}>
+                    <StackedFraction {...stepFIF} color={NAVY} size={16} />
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: TEXT_S, fontFamily: 'monospace' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: NAVY, fontFamily: 'monospace' }}>
                     {Math.abs(step.val).toFixed(4)} ft
                   </div>
                 </div>
-                {/* Intermediate / final result card — shown after each operation */}
+                {/* Result after each operation (intermediate or final) */}
                 {i > 0 && (
                   <>
                     {/* Divider */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0' }}>
-                      <div style={{ flex: 1, height: 1, backgroundColor: BORDER }} />
-                    </div>
+                    <div style={{ height: 1, backgroundColor: BORDER, margin: '5px 0' }} />
                     {/* Result card */}
                     {isFinal ? (
-                      /* Final result — navy bg, gold border, white text, large */
-                      <div style={{ backgroundColor: DARK, borderRadius: 12, border: `2px solid ${GOLD}`, padding: '14px 16px', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(16,45,78,0.18)' }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('finalResult')}</div>
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>
-                          <StackedFraction {...rtFIF} negative={rtNeg} color="#fff" size={20} />
+                      /* Final result — navy bg, gold border, white text */
+                      <div style={{ backgroundColor: DARK, borderRadius: 10, border: `2px solid ${GOLD}`, padding: '10px 12px', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(16,45,78,0.18)' }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{t('finalResult')}</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                          <StackedFraction {...rtFIF} negative={rtNeg} color="#fff" size={18} />
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 3 }}>•</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 2 }}>•</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
                           {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(4)} ft
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 8 }}>
-                          {item.steps.length - 1} {t('operations')} · {item.steps.length} {t('values') || 'values'}
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
+                          {item.steps.length - 1} {t('operations')} · {item.steps.length} values
                         </div>
                       </div>
                     ) : (
-                      /* Intermediate result — light surface, navy text */
-                      <div style={{ backgroundColor: SURFACE, borderRadius: 10, border: `1.5px solid ${BORDER}`, padding: '10px 16px', textAlign: 'center' as const }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: TEXT_D, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>{t('result')}</div>
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 3 }}>
-                          <StackedFraction {...rtFIF} negative={rtNeg} color={NAVY} size={15} />
+                      /* Intermediate result — light surface, navy text, compact */
+                      <div style={{ backgroundColor: SURFACE, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: '7px 12px', textAlign: 'center' as const }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{t('result')}</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+                          <StackedFraction {...rtFIF} negative={rtNeg} color={NAVY} size={14} />
                         </div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, marginBottom: 2 }}>•</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
                           {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(2)} ft
                         </div>
                       </div>
@@ -312,15 +310,15 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
               </div>
             );
           })}
-          {/* If only 1 step (single value, no operation) — show summary */}
+          {/* If only 1 step (single value) — show result summary */}
           {item.steps.length === 1 && (
-            <div style={{ marginTop: 10, backgroundColor: DARK, borderRadius: 12, border: `2px solid ${GOLD}`, padding: '14px 16px', textAlign: 'center' as const }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{t('finalResult')}</div>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>
-                <StackedFraction {...engToFif(Math.abs(item.result))} negative={item.result < 0} color="#fff" size={20} />
+            <div style={{ marginTop: 8, backgroundColor: DARK, borderRadius: 10, border: `2px solid ${GOLD}`, padding: '10px 12px', textAlign: 'center' as const }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{t('finalResult')}</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                <StackedFraction {...engToFif(Math.abs(item.result))} negative={item.result < 0} color="#fff" size={18} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 3 }}>•</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 2 }}>•</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
                 {item.result < 0 ? '−' : ''}{Math.abs(item.result).toFixed(4)} ft
               </div>
             </div>
@@ -1099,8 +1097,8 @@ function CalculatorView() {
 
         {/* Recent Calculations */}
         {history.length > 0 && (
-          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}` }}>
+          <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}`, borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
               <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
@@ -1117,7 +1115,7 @@ function CalculatorView() {
                     onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === item.id ? null : item.id); }}
                   >⋮</button>
                   {menuOpenId === item.id && (
-                    <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 50, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 6px 20px rgba(0,0,0,0.14)', minWidth: 180, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', right: 0, top: 32, zIndex: 200, backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}`, boxShadow: '0 8px 24px rgba(0,0,0,0.18)', minWidth: 190, overflow: 'hidden' }}>
                       <button style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
                         onClick={() => { setViewFullItem(item); setMenuOpenId(null); }}>🔍 {t('viewFullCalcBtn')}</button>
                       <button style={{ width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${BORDER}`, backgroundColor: 'transparent', textAlign: 'left' as const, fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}
