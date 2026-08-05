@@ -1033,27 +1033,33 @@ function CalcIcon() {
   );
 }
 
-// ─── Help tab icon — two overlapping speech bubbles (left: lines, right: ? in circle) ──
-// Reference: left bubble (back, tail lower-left) + right bubble (front, white fill, tail lower-right)
+// ─── Help tab icon — two overlapping CIRCULAR speech bubbles ──────────────────
+// Built with SVG arc commands so both bubbles are genuinely round (not rounded-rect).
+// Left bubble (back):  circle cx=8  cy=15.5 r=6.5 — tail exits at θ≈120°–140°, tip lower-left.
+// Right bubble (front): circle cx=15 cy=8.5  r=7   — tail exits at θ≈55°–75°,  tip lower-right.
+// fill="white" on right bubble masks the left bubble in the overlap zone.
 function HelpIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"
          aria-hidden="true">
-      {/* Left bubble — back layer — very rounded, tail at lower-left */}
-      <path d="M 4.5 6 H 11 Q 15 6 15 10 V 17 Q 15 21 11 21 H 6 L 1.5 23.5 L 5 21 Q 0.5 21 0.5 17 V 10 Q 0.5 6 4.5 6 Z" />
-      {/* Two text lines — in the visible lower portion of left bubble */}
-      <line x1="2.5" y1="15"  x2="12"  y2="15"  />
-      <line x1="2.5" y1="18"  x2="9.5" y2="18"  />
-      {/* Right bubble — front layer — white fill masks left bubble in overlap zone — tail at lower-right */}
-      <path d="M 11.5 0.5 H 19 Q 23.5 0.5 23.5 5 V 9.5 Q 23.5 14 19 14 L 22 19 L 20.5 14 H 11.5 Q 7 14 7 9.5 V 5 Q 7 0.5 11.5 0.5 Z"
-            fill="white" />
-      {/* Inner circle — nearly fills the right bubble */}
-      <circle cx="15.25" cy="7.25" r="5.2" />
-      {/* ? mark — hook arc (left entry → top → right side → stem) */}
-      <path d="M 13.2 6.5 Q 13.2 3 15.25 3 Q 17.3 3 17.3 6.5 Q 17.3 9.5 15.25 10" />
+      {/* ── Left bubble — back layer ──
+          Arc: 340° CCW from θ=120° (4.75,21.1) to θ=140° (3.0,19.7), tail tip (0.5,23.5).
+          A <rx> <ry> <x-rot> <large-arc> <sweep> <x> <y>
+          sweep=0 → CCW; large-arc=1 → 340° arc */}
+      <path d="M 4.75 21.1 A 6.5 6.5 0 1 0 3.0 19.7 L 0.5 23.5 Z" />
+      {/* Upper line partially behind right bubble; lower line fully visible */}
+      <line x1="3"  y1="14"   x2="13"  y2="14"   />
+      <line x1="3"  y1="16.5" x2="11"  y2="16.5"  />
+      {/* ── Right bubble — front layer, white fill ──
+          Arc: 340° CCW from θ=55° (19.0,14.2) to θ=75° (16.8,15.3), tail tip (22.5,20.5). */}
+      <path d="M 19.0 14.2 A 7 7 0 1 0 16.8 15.3 L 22.5 20.5 Z" fill="white" />
+      {/* Inner circle — fills most of right bubble interior */}
+      <circle cx="15" cy="8.5" r="5" />
+      {/* ? hook: left entry → top arc → right arc → descends to stem */}
+      <path d="M 13.2 7.5 Q 13.2 4.5 15 4.5 Q 16.8 4.5 16.8 7.5 Q 16.8 10 15 10.5" />
       {/* ? dot */}
-      <circle cx="15.25" cy="11.8" r="0.65" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12.2" r="0.65" fill="currentColor" stroke="none" />
     </svg>
   );
 }
