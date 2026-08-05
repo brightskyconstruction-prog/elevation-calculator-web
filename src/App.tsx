@@ -489,7 +489,7 @@ function AppInner() {
       flex: 20, ariaLabel: t('tabSets') },
     { id: 'calc',     icon: <CalcIcon />,
       flex: 12, ariaLabel: t('tabCalc') },
-    { id: 'tutorial', label: '?',
+    { id: 'tutorial', icon: <HelpIcon />,
       flex: 12, ariaLabel: 'Help' },
   ];
 
@@ -559,7 +559,6 @@ function AppInner() {
         {MAIN_TABS.map(tab => {
           const isActive = activeTab === tab.id;
           const isIcon   = !!tab.icon;
-          const isHelp   = tab.id === 'tutorial';
           return (
             <button
               key={tab.id}
@@ -582,8 +581,6 @@ function AppInner() {
                   <span>{tab.lines[0]}</span>
                   <span>{tab.lines[1]}</span>
                 </span>
-              ) : isHelp ? (
-                <span style={{ fontSize: '19px', fontWeight: 800, lineHeight: 1, letterSpacing: 0 }}>?</span>
               ) : (
                 tab.label
               )}
@@ -1032,6 +1029,29 @@ function CalcIcon() {
       <line x1="15.25" y1="13"   x2="21.25" y2="13"   />
       {/* − symbol, center (5.5, 17.75) */}
       <line x1="3.3"  y1="17.75" x2="7.7"  y2="17.75" />
+    </svg>
+  );
+}
+
+// ─── Help tab icon — two overlapping speech bubbles (left: text lines, right: ? in circle) ──
+function HelpIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+         aria-hidden="true">
+      {/* Left bubble — two text lines — tail at bottom-left */}
+      <path d="M 3 5 H 14 Q 16.5 5 16.5 7.5 V 15.5 Q 16.5 18 14 18 H 6 L 2 22 L 4.5 18 H 3 Q 0.5 18 0.5 15.5 V 7.5 Q 0.5 5 3 5 Z" />
+      <line x1="3.5" y1="10.5" x2="13.5" y2="10.5" />
+      <line x1="3.5" y1="13.5" x2="10"   y2="13.5" />
+      {/* Right bubble — ? in circle — tail at bottom-right — white fill layers over left bubble */}
+      <path d="M 10 0.5 H 21 Q 23.5 0.5 23.5 3 V 11 Q 23.5 13.5 21 13.5 L 22 16.5 L 20 13.5 H 10 Q 7.5 13.5 7.5 11 V 3 Q 7.5 0.5 10 0.5 Z"
+            fill="white" />
+      {/* Circle outline */}
+      <circle cx="15.5" cy="7" r="4" />
+      {/* ? arc — hook curves from left up over top then down */}
+      <path d="M 14 5.6 Q 14 3.8 15.5 3.8 Q 17 3.8 17 5.6 Q 17 7.2 15.5 7.9" strokeLinecap="round" />
+      {/* ? dot */}
+      <circle cx="15.5" cy="9.4" r="0.45" fill="currentColor" stroke="none" />
     </svg>
   );
 }
