@@ -24,6 +24,7 @@ import {
   clearLocalData,
   patchLocalStorage,
   migrateUserData,
+  _origSetItem,
 } from './services/cloudSync';
 import { ensureUserProfile } from './services/userProfile';
 import { useProfileStore } from './stores/profileStore';
@@ -275,18 +276,19 @@ function AppInner() {
     }
 
     // ── Restore-point fallback ─────────────────────────────────────────────
-    // logoutUser saves a uid-tagged snapshot of local data before clearing.
+    // logoutUser saves a uid-SPECIFIC snapshot of local data before clearing.
+    // Key format: 'elevCalc:restore:<uid>' — each account has its own slot so
+    // one user's login never clobbers another user's fallback snapshot.
     // If Firestore is unavailable or has no record, we restore from this so
     // sign-out → sign-in on the same device never results in a blank screen.
+    const restoreKey = `elevCalc:restore:${uid}`;
+
     const applyRestorePoint = () => {
       try {
-        const raw = localStorage.getItem('elevCalc:restore');
+        const raw = localStorage.getItem(restoreKey);
         if (!raw) return;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const parsed = JSON.parse(raw) as any;
-        // Only restore if this snapshot belongs to the current user.
-        if (parsed?.uid !== uid) return;
-        const snapshot = parsed.data as Record<string, string>;
+        const snapshot = JSON.parse(raw) as Record<string, string>;
         applyLocalData(snapshot);
         const surveyRaw = snapshot['elevation-calculator-v1'];
         if (surveyRaw) {
@@ -302,7 +304,7 @@ function AppInner() {
             });
           }
         }
-        console.info('[CloudSync] Restored from local restore-point.');
+        console.info('[CloudSync] Restored from local restore-point for', uid);
       } catch (restoreErr) {
         console.warn('[CloudSync] Restore-point recovery failed:', restoreErr);
       }
@@ -315,7 +317,7 @@ function AppInner() {
       const cloudData = await loadUserData(uid);
       if (!cloudData) {
         // No Firestore record yet (new user, or flush failed on last logout).
-        // Try the restore-point saved during the last logout.
+        // Try THIS USER'S uid-specific restore-point.
         applyRestorePoint();
         // Enable sync now so any changes the user makes are saved.
         syncEmailRef.current = uid;
@@ -323,8 +325,9 @@ function AppInner() {
         return;
       }
 
-      // Successful cloud load — discard the restore-point (no longer needed).
-      try { localStorage.removeItem('elevCalc:restore'); } catch {}
+      // Successful cloud load — discard THIS USER'S restore-point (no longer needed).
+      // NOTE: only removes the key for the current uid; other users' snapshots are untouched.
+      try { localStorage.removeItem(restoreKey); } catch {}
 
       // Write cloud data directly to localStorage (bypasses the patched
       // setItem so this write does NOT trigger a premature scheduleSync).
@@ -400,13 +403,18 @@ function AppInner() {
     // Sign out from Firebase so auth state is cleared
     await signOutFirebase();
 
-    // Save a local restore-point BEFORE wiping device data.
+    // Save a per-user restore-point BEFORE wiping device data.
+    // Key format: 'elevCalc:restore:<uid>' — each account has its own dedicated
+    // slot so one user logging in never removes another user's fallback snapshot.
     // loginUser reads this back if Firestore is unavailable on the next sign-in,
     // preventing a blank screen after sign-out → sign-in on the same device.
-    // The uid tag ensures it is only restored for the same account.
-    if (uid && localSnapshot && Object.keys(localSnapshot).length > 0) {
+    if (uid && localSnapshot && localSnapshot['elevation-calculator-v1']) {
       try {
-        localStorage.setItem('elevCalc:restore', JSON.stringify({ uid, data: localSnapshot }));
+        // _origSetItem bypasses the patched setItem so this write never
+        // triggers a scheduleSync (syncEmailRef is already null at this point).
+        _origSetItem(`elevCalc:restore:${uid}`, JSON.stringify(localSnapshot));
+        // Remove the legacy shared key if it exists (one-time cleanup).
+        localStorage.removeItem('elevCalc:restore');
       } catch {}
     }
 
