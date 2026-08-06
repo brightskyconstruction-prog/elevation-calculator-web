@@ -15,7 +15,7 @@ import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import ConfirmModal       from './components/ConfirmModal';
 import { isFirebaseConfigured, onAuthChanged, signOutFirebase, getDb } from './firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, updateDoc, doc as fsDoc } from 'firebase/firestore';
 import {
   loadUserData,
   saveUserData,
@@ -139,6 +139,7 @@ function AppInner() {
   const [editPoint,     setEditPoint]     = useState<SurveyPoint | undefined>(undefined);
   const [showSettings,  setShowSettings]  = useState(false);
   const [showLauncher,  setShowLauncher]  = useState(false);
+  const [showAdmin,     setShowAdmin]     = useState(false);
   useEffect(() => { showSettingsRef.current = showSettings; }, [showSettings]);
   const [compareFromId, setCompareFromId] = useState<string | null>(null);
   const [compareToId,   setCompareToId]   = useState<string | null>(null);
@@ -647,6 +648,7 @@ function AppInner() {
           onClose={() => setShowSettings(false)}
           onOpenPrivacy={() => { setPrivacyInitTab('privacy'); setShowPrivacy(true); }}
           onOpenTerms={() => { setPrivacyInitTab('terms'); setShowPrivacy(true); }}
+          onOpenAdmin={() => { setShowSettings(false); setShowAdmin(true); }}
           t={t}
         />
       )}
@@ -674,6 +676,11 @@ function AppInner() {
       {/* ── Bright Sky Services launcher modal ───────────────────── */}
       {showLauncher && (
         <BrightSkyLauncherModal onClose={() => setShowLauncher(false)} />
+      )}
+
+      {/* ── Admin feedback dashboard ─────────────────────────────── */}
+      {showAdmin && (
+        <AdminPanel onClose={() => setShowAdmin(false)} />
       )}
 
       {/* ── First-run onboarding ─────────────────────────────────── */}
@@ -953,6 +960,276 @@ function FeedbackForm({ feedbackType, userEmail, onBack, onClose }: FeedbackForm
   );
 }
 
+// ─── Admin dashboard — feedback & report review ───────────────────────────────
+const ADMIN_EMAIL = 'sahilswarajjena456@gmail.com';
+
+type AdminView = 'list' | 'detail';
+type FbStatus  = 'new' | 'in-progress' | 'resolved';
+
+interface FbDoc {
+  id:            string;
+  feedbackType:  string;
+  issueType:     string;
+  subject:       string;
+  description:   string;
+  email:         string;
+  appVersion:    string;
+  deviceInfo:    string;
+  browserInfo:   string;
+  screenshotB64: string | null;
+  status:        FbStatus;
+  submittedAt:   any; // Firestore Timestamp
+}
+
+const FB_STATUS_STYLE: Record<string, { bg: string; text: string; border: string }> = {
+  'new':         { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
+  'in-progress': { bg: '#FEF3C7', text: '#92400E', border: '#FCD34D' },
+  'resolved':    { bg: '#DCFCE7', text: '#166534', border: '#86EFAC' },
+};
+
+const ISSUE_LABEL: Record<string, string> = {
+  bug: 'Bug', calc: 'Calc Issue', ui: 'UI/UX', perf: 'Performance',
+  feature: 'Feature Req.', general: 'Feedback', other: 'Other',
+};
+
+function relTime(ts: any): string {
+  if (!ts?.toDate) return '';
+  const diff = Date.now() - ts.toDate().getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return days < 7 ? `${days}d ago` : ts.toDate().toLocaleDateString();
+}
+
+function AdminPanel({ onClose }: { onClose: () => void }) {
+  const [fbDocs,    setFbDocs]    = useState<FbDoc[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [loadErr,   setLoadErr]   = useState('');
+  const [statusFlt, setStatusFlt] = useState<FbStatus | 'all'>('all');
+  const [typeFlt,   setTypeFlt]   = useState('all');
+  const [adminView, setAdminView] = useState<AdminView>('list');
+  const [selected,  setSelected]  = useState<FbDoc | null>(null);
+  const [updating,  setUpdating]  = useState(false);
+
+  useEffect(() => { loadAll(); }, []);
+
+  const loadAll = async () => {
+    setLoading(true); setLoadErr('');
+    try {
+      const q    = query(collection(getDb(), 'feedback'), orderBy('submittedAt', 'desc'));
+      const snap = await getDocs(q);
+      setFbDocs(snap.docs.map(d => ({ id: d.id, ...d.data() } as FbDoc)));
+    } catch (err) {
+      console.error(err);
+      setLoadErr('Failed to load submissions. Check your Firestore security rules allow admin reads.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeStatus = async (id: string, next: FbStatus) => {
+    setUpdating(true);
+    try {
+      await updateDoc(fsDoc(getDb(), 'feedback', id), { status: next });
+      setFbDocs(prev => prev.map(d => d.id === id ? { ...d, status: next } : d));
+      if (selected?.id === id) setSelected(s => s ? { ...s, status: next } : s);
+    } catch (err) { console.error(err); }
+    finally { setUpdating(false); }
+  };
+
+  const filtered = fbDocs.filter(d =>
+    (statusFlt === 'all' || d.status === statusFlt) &&
+    (typeFlt   === 'all' || d.issueType === typeFlt)
+  );
+  const newCount = fbDocs.filter(d => d.status === 'new').length;
+
+  const PANEL: React.CSSProperties = {
+    position: 'fixed', inset: 0, backgroundColor: '#F8FAFC',
+    display: 'flex', flexDirection: 'column', zIndex: 550, fontFamily: 'inherit',
+  };
+  const HDR: React.CSSProperties = {
+    backgroundColor: NAVY2, padding: '14px 18px',
+    display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
+  };
+  const HDR_BTN: React.CSSProperties = {
+    background: 'none', border: 'none', color: 'rgba(255,255,255,0.82)',
+    fontSize: 22, cursor: 'pointer', padding: '2px 6px', lineHeight: 1,
+  };
+
+  /* ── Detail view ──────────────────────────────────────────────── */
+  if (adminView === 'detail' && selected) {
+    const sc = FB_STATUS_STYLE[selected.status] ?? FB_STATUS_STYLE['new'];
+    return (
+      <div style={PANEL}>
+        {/* header */}
+        <div style={HDR}>
+          <button style={{ ...HDR_BTN, fontSize: 24, marginRight: 2 }} onClick={() => setAdminView('list')}>‹</button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.subject}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{relTime(selected.submittedAt)}</div>
+          </div>
+          <button style={HDR_BTN} onClick={onClose}>✕</button>
+        </div>
+
+        {/* body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 16px 32px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* status controls */}
+          <div style={{ backgroundColor: '#fff', borderRadius: 14, padding: '14px 16px', border: `1px solid ${BDR}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase' }}>Status</span>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {(['new', 'in-progress', 'resolved'] as FbStatus[]).map(s => {
+                const c = FB_STATUS_STYLE[s];
+                const active = selected.status === s;
+                return (
+                  <button key={s} disabled={updating}
+                    onClick={() => changeStatus(selected.id, s)}
+                    style={{ height: 32, padding: '0 14px', borderRadius: 20, border: `1.5px solid ${active ? c.border : BDR}`, backgroundColor: active ? c.bg : '#F9FAFB', color: active ? c.text : '#6B7280', fontSize: 12, fontWeight: 700, cursor: updating ? 'wait' : 'pointer', letterSpacing: 0.2, transition: 'all 0.15s' }}>
+                    {s === 'in-progress' ? 'In Progress' : s[0].toUpperCase() + s.slice(1)}{active ? ' ✓' : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* badges */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: '#F3F4F6', color: '#374151', borderRadius: 20, padding: '3px 10px' }}>{ISSUE_LABEL[selected.issueType] ?? selected.issueType}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 20, padding: '3px 10px' }}>{selected.feedbackType === 'report' ? 'Bug Report' : 'Feedback'}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: '#F3F4F6', color: '#374151', borderRadius: 20, padding: '3px 10px' }}>{selected.appVersion}</span>
+          </div>
+
+          {/* description */}
+          <div style={{ backgroundColor: '#fff', borderRadius: 14, padding: '14px 16px', border: `1px solid ${BDR}` }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8 }}>Description</div>
+            <p style={{ margin: 0, fontSize: 14, color: '#111827', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{selected.description}</p>
+          </div>
+
+          {/* contact */}
+          <div style={{ backgroundColor: '#fff', borderRadius: 14, padding: '14px 16px', border: `1px solid ${BDR}` }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8 }}>Contact</div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#2563EB' }}>{selected.email || '—'}</span>
+          </div>
+
+          {/* device */}
+          <div style={{ backgroundColor: '#fff', borderRadius: 14, padding: '14px 16px', border: `1px solid ${BDR}` }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8 }}>Device &amp; Browser</div>
+            <p style={{ margin: '0 0 5px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{selected.deviceInfo || '—'}</p>
+            <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF', fontWeight: 400, wordBreak: 'break-all' }}>{selected.browserInfo || '—'}</p>
+          </div>
+
+          {/* screenshot */}
+          {selected.screenshotB64 && (
+            <div style={{ backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', border: `1px solid ${BDR}` }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase', padding: '12px 16px 8px' }}>Screenshot</div>
+              <img src={selected.screenshotB64} alt="Screenshot" style={{ width: '100%', display: 'block' }} />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── List view ────────────────────────────────────────────────── */
+  return (
+    <div style={PANEL}>
+      {/* header */}
+      <div style={HDR}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>Feedback &amp; Reports</div>
+          {newCount > 0 && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{newCount} new submission{newCount !== 1 ? 's' : ''}</div>}
+        </div>
+        <button
+          style={{ background: 'rgba(255,255,255,0.18)', border: 'none', color: '#fff', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', marginRight: 4 }}
+          onClick={loadAll}
+        >↻ Refresh</button>
+        <button style={HDR_BTN} onClick={onClose}>✕</button>
+      </div>
+
+      {/* filter bar */}
+      <div style={{ padding: '12px 14px 10px', borderBottom: `1px solid ${BDR}`, backgroundColor: '#fff', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {/* status chips */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(['all', 'new', 'in-progress', 'resolved'] as const).map(s => {
+            const active = statusFlt === s;
+            const c = s !== 'all' ? FB_STATUS_STYLE[s] : null;
+            return (
+              <button key={s} onClick={() => setStatusFlt(s)}
+                style={{ height: 28, padding: '0 12px', borderRadius: 20, border: `1.5px solid ${active && c ? c.border : active ? NAVY2 : BDR}`, backgroundColor: active && c ? c.bg : active ? NAVY2 : '#F3F4F6', color: active && c ? c.text : active ? '#fff' : '#6B7280', fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.2, transition: 'all 0.15s' }}>
+                {s === 'all' ? 'All' : s === 'in-progress' ? 'In Progress' : s[0].toUpperCase() + s.slice(1)}
+                {s !== 'all' && <span style={{ marginLeft: 5, opacity: 0.75 }}>{fbDocs.filter(d => d.status === s).length}</span>}
+              </button>
+            );
+          })}
+        </div>
+        {/* type filter */}
+        <select value={typeFlt} onChange={e => setTypeFlt(e.target.value)}
+          style={{ height: 32, borderRadius: 8, border: `1px solid ${BDR}`, backgroundColor: '#F9FAFB', fontSize: 12, fontWeight: 600, color: '#374151', padding: '0 8px', outline: 'none', cursor: 'pointer' }}>
+          <option value="all">All issue types</option>
+          <option value="bug">Bug Report</option>
+          <option value="calc">Calculation Issue</option>
+          <option value="ui">UI/UX Issue</option>
+          <option value="perf">Performance Issue</option>
+          <option value="feature">Feature Request</option>
+          <option value="general">General Feedback</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      {/* submission list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF', fontSize: 14 }}>Loading submissions…</div>
+        )}
+        {loadErr && (
+          <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: '14px 16px', fontSize: 13, color: '#DC2626', fontWeight: 600 }}>{loadErr}</div>
+        )}
+        {!loading && !loadErr && filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF', fontSize: 14 }}>
+            No submissions{statusFlt !== 'all' ? ` with status "${statusFlt}"` : ''}.
+          </div>
+        )}
+        {!loading && !loadErr && filtered.map(d => {
+          const sc = FB_STATUS_STYLE[d.status] ?? FB_STATUS_STYLE['new'];
+          return (
+            <button key={d.id}
+              style={{ display: 'flex', flexDirection: 'column', gap: 6, backgroundColor: '#fff', border: `1px solid ${BDR}`, borderRadius: 14, padding: '13px 14px', cursor: 'pointer', textAlign: 'left', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', width: '100%' }}
+              onClick={() => { setSelected(d); setAdminView('detail'); }}
+            >
+              {/* top row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, backgroundColor: '#F3F4F6', color: '#374151', borderRadius: 20, padding: '2px 8px' }}>{ISSUE_LABEL[d.issueType] ?? d.issueType}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 20, padding: '2px 8px' }}>
+                  {d.status === 'in-progress' ? 'In Progress' : d.status === 'new' ? 'New' : 'Resolved'}
+                </span>
+                <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 'auto', flexShrink: 0 }}>{relTime(d.submittedAt)}</span>
+              </div>
+              {/* subject */}
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.subject}</div>
+              {/* preview */}
+              <div style={{ fontSize: 12, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.description}</div>
+              {/* user email */}
+              {d.email && <div style={{ fontSize: 11, color: '#9CA3AF' }}>{d.email}</div>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* footer count */}
+      {!loading && !loadErr && (
+        <div style={{ padding: '8px 14px 14px', borderTop: `1px solid ${BDR}`, textAlign: 'center', flexShrink: 0, backgroundColor: '#fff' }}>
+          <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
+            {filtered.length} of {fbDocs.length} submission{fbDocs.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Settings panel (bottom-sheet) ───────────────────────────────────────────
 interface SettingsPanelProps {
   email:          string;
@@ -962,10 +1239,11 @@ interface SettingsPanelProps {
   onClose:        () => void;
   onOpenPrivacy:  () => void;
   onOpenTerms:    () => void;
+  onOpenAdmin:    () => void;
   t:              (key: string) => string;
 }
 
-function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivacy, onOpenTerms, t }: SettingsPanelProps) {
+function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivacy, onOpenTerms, onOpenAdmin, t }: SettingsPanelProps) {
   const [view,         setView]         = useState<'settings' | 'feedback'>('settings');
   const [feedbackType, setFeedbackType] = useState<FbkType>('report');
 
@@ -1049,7 +1327,7 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
               </div>
 
               {/* ── Feedback & Support section ──────────────────────── */}
-              <div style={{ ...spS.section, borderBottom: 'none' }}>
+              <div style={spS.section}>
                 <span style={spS.sectionLabel}>Feedback &amp; Support</span>
                 <button
                   style={spS.legalBtn}
@@ -1078,6 +1356,23 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
                   <span style={spS.legalArrow}>›</span>
                 </button>
               </div>
+
+              {/* ── Admin section (admin email only) ─────────────── */}
+              {email.toLowerCase() === ADMIN_EMAIL && (
+                <div style={{ ...spS.section, borderBottom: 'none' }}>
+                  <span style={spS.sectionLabel}>Admin</span>
+                  <button style={spS.legalBtn} onClick={onOpenAdmin}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={NAVY2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      Feedback Dashboard
+                    </span>
+                    <span style={spS.legalArrow}>›</span>
+                  </button>
+                </div>
+              )}
 
               {/* ── App version ──────────────────────────────────────── */}
               <div style={spS.versionRow}>
