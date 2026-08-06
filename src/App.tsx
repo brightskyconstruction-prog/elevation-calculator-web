@@ -162,6 +162,10 @@ function AppInner() {
   // Tracks the Firebase UID of the currently-authenticated user.
   // Set in loginUser and cleared in logoutUser.
   const syncEmailRef  = useRef<string | null>(null); // kept as "syncRef" for compat; now stores UID
+  // Tracks the UID currently being loaded so concurrent loginUser calls for the
+  // same UID (e.g. from handleLogin + onAuthChanged firing simultaneously) are
+  // deduplicated rather than racing.
+  const loginUidRef   = useRef<string | null>(null);
   // Debounce timer for writes.
   const syncTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Stable ref to scheduleSync so the patched setItem can always call latest.
@@ -245,17 +249,35 @@ function AppInner() {
   /**
    * Load a user's cloud data and hydrate the app.
    * Called on login and on mount when already authenticated.
+   *
+   * CRITICAL — syncEmailRef ordering:
+   *   syncEmailRef is set to `uid` only AFTER data is fully applied to
+   *   localStorage and the Zustand store.  Setting it at the top of this
+   *   function (as it was before) created a dangerous race: any write between
+   *   "sync enabled" and "data applied" (Zustand persist flush, an
+   *   ensureDefaultProject call from a mounting screen, etc.) could trigger
+   *   scheduleSync, which would collect the empty post-logout localStorage and
+   *   overwrite the user's real Firestore data with an empty document.
    */
   const loginUser = useCallback(async (userEmail: string, uid: string) => {
-    // uid is the Firebase Auth UID — used as the Firestore document key.
-    // When Firebase is not configured, uid is '' and cloud sync is skipped.
-    syncEmailRef.current = uid || null;
-    if (!isFirebaseConfigured() || !uid) return;
+    // ── Deduplicate concurrent calls for the same UID ──────────────────────
+    // handleLogin (from LoginScreen) and onAuthChanged both call loginUser
+    // within milliseconds of each other when the user signs in.  Skip the
+    // second call so they don't race.
+    if (loginUidRef.current === uid || syncEmailRef.current === uid) return;
+    loginUidRef.current = uid;
 
-    // ── Restore-point fallback ───────────────────────────────────────────────
+    // ── No Firebase / no UID — local-only mode ─────────────────────────────
+    if (!isFirebaseConfigured() || !uid) {
+      loginUidRef.current  = null;
+      syncEmailRef.current = uid || null;
+      return;
+    }
+
+    // ── Restore-point fallback ─────────────────────────────────────────────
     // logoutUser saves a uid-tagged snapshot of local data before clearing.
     // If Firestore is unavailable or has no record, we restore from this so
-    // sign-out → sign-in never results in a blank screen.
+    // sign-out → sign-in on the same device never results in a blank screen.
     const applyRestorePoint = () => {
       try {
         const raw = localStorage.getItem('elevCalc:restore');
@@ -295,12 +317,17 @@ function AppInner() {
         // No Firestore record yet (new user, or flush failed on last logout).
         // Try the restore-point saved during the last logout.
         applyRestorePoint();
+        // Enable sync now so any changes the user makes are saved.
+        syncEmailRef.current = uid;
+        loginUidRef.current  = null;
         return;
       }
 
       // Successful cloud load — discard the restore-point (no longer needed).
       try { localStorage.removeItem('elevCalc:restore'); } catch {}
 
+      // Write cloud data directly to localStorage (bypasses the patched
+      // setItem so this write does NOT trigger a premature scheduleSync).
       applyLocalData(cloudData);
 
       const surveyRaw = cloudData['elevation-calculator-v1'];
@@ -327,6 +354,12 @@ function AppInner() {
       console.warn('[CloudSync] load failed, trying restore-point:', err);
       applyRestorePoint();
     }
+
+    // ── Enable sync LAST — data is now in place ────────────────────────────
+    // From this point on, any Zustand state change or localStorage write will
+    // correctly trigger a debounced save of the user's real data.
+    syncEmailRef.current = uid;
+    loginUidRef.current  = null;
 
     // Load / create the user's profile (non-blocking)
     ensureUserProfile(userEmail, uid).then(profile => {
@@ -362,6 +395,7 @@ function AppInner() {
     }
 
     syncEmailRef.current = null;
+    loginUidRef.current  = null; // allow this UID to be logged in again later
 
     // Sign out from Firebase so auth state is cleared
     await signOutFirebase();
@@ -387,19 +421,25 @@ function AppInner() {
   // Firebase fires onAuthStateChanged immediately with the restored user.
   // This wires up cloud sync without requiring a new sign-in link.
   useEffect(() => {
-    const storedEmail = readEmail();
-
     if (!isFirebaseConfigured()) {
       // No Firebase — use local data only (no UID needed)
+      const storedEmail = readEmail();
       if (storedEmail) loginUser(storedEmail, '');
       return;
     }
 
-    // Subscribe to Firebase auth state
+    // Subscribe to Firebase auth state.
+    // IMPORTANT: read auth:email dynamically inside the callback (not from a
+    // closure captured at mount).  When the user switches accounts during a
+    // single session, the mount-time email would be wrong — e.g. Account A's
+    // email would be sent to loginUser with Account B's UID, causing
+    // migrateUserData to run with a mismatched email/uid pair.
     const unsub = onAuthChanged((user) => {
-      if (user && !user.isAnonymous && storedEmail) {
-        // Persisted real auth — restore cloud sync with their UID
-        loginUser(storedEmail, user.uid);
+      if (user && !user.isAnonymous) {
+        const currentEmail = readEmail(); // always read fresh from localStorage
+        if (currentEmail) {
+          loginUser(currentEmail, user.uid);
+        }
       }
     });
 

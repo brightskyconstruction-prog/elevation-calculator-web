@@ -100,13 +100,25 @@ export async function loadUserData(
 
 /**
  * Persist the current localStorage snapshot to Firestore under the given UID.
+ *
+ * Uses { merge: true } so that a premature save with empty / partial data never
+ * deletes existing fields.  The full-state JSON string stored under each key
+ * (e.g. 'elevation-calculator-v1') is always replaced in its entirety, so
+ * explicit user deletions (removing a point, clearing history, etc.) are still
+ * persisted correctly — the entire serialised state is written as one atomic
+ * field update.
  */
 export async function saveUserData(
   uid: string,
   data: Record<string, string>,
 ): Promise<void> {
   if (!isFirebaseConfigured()) return;
-  await setDoc(userDocRef(uid), { ...data, _updatedAt: Date.now() });
+  // Skip saves where the survey store is absent — this means localStorage was
+  // cleared by a logout and has not yet been repopulated by loginUser.
+  // Writing an empty document (even with merge) would be useless; wait for the
+  // first real save triggered after hydrateStore completes.
+  if (!data['elevation-calculator-v1']) return;
+  await setDoc(userDocRef(uid), { ...data, _updatedAt: Date.now() }, { merge: true });
 }
 
 // ─── Data migration (v1.1 btoa-email path → v1.2 Firebase UID path) ──────────
