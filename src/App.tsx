@@ -778,22 +778,8 @@ function FeedbackForm({ feedbackType, userEmail, onBack, onClose }: FeedbackForm
   const [subject,   setSubject]   = useState('');
   const [desc,      setDesc]      = useState('');
   const [email,     setEmail]     = useState(userEmail);
-  const [imgB64,    setImgB64]    = useState<string | null>(null);
-  const [imgErr,    setImgErr]    = useState('');
   const [status,    setStatus]    = useState<FbkStatus>('idle');
   const [errs,      setErrs]      = useState<Record<string, string>>({});
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (!f.type.startsWith('image/')) { setImgErr('Please select an image file.'); return; }
-    if (f.size > 1024 * 1024) { setImgErr('Image must be under 1 MB.'); return; }
-    setImgErr('');
-    const r = new FileReader();
-    r.onload = ev => setImgB64(ev.target?.result as string);
-    r.readAsDataURL(f);
-  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -810,15 +796,14 @@ function FeedbackForm({ feedbackType, userEmail, onBack, onClose }: FeedbackForm
     try {
       const payload: Record<string, unknown> = {
         feedbackType, issueType,
-        subject:       subject.trim(),
-        description:   desc.trim(),
-        email:         email.trim(),
-        appVersion:    'v1.0',
-        deviceInfo:    `${navigator.platform} · ${window.screen.width}×${window.screen.height}`,
-        browserInfo:   navigator.userAgent,
-        screenshotB64: imgB64 ?? null,
-        status:        'new',
-        submittedAt:   serverTimestamp(),
+        subject:     subject.trim(),
+        description: desc.trim(),
+        email:       email.trim(),
+        appVersion:  'v1.0',
+        deviceInfo:  `${navigator.platform} · ${window.screen.width}×${window.screen.height}`,
+        browserInfo: navigator.userAgent,
+        status:      'new',
+        submittedAt: serverTimestamp(),
       };
       if (isFirebaseConfigured()) {
         await addDoc(collection(getDb(), 'feedback'), payload);
@@ -943,37 +928,6 @@ function FeedbackForm({ feedbackType, userEmail, onBack, onClose }: FeedbackForm
           {errs.email && <span style={errTxt}>{errs.email}</span>}
         </div>
 
-        {/* Screenshot */}
-        <div style={fld}>
-          <label style={lbl}>
-            Screenshot&nbsp;
-            <span style={{ fontSize: 10, fontWeight: 500, color: '#9CA3AF', textTransform: 'none' as const, letterSpacing: 0 }}>— optional</span>
-          </label>
-          {imgB64 ? (
-            <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: `1px solid ${BDR}` }}>
-              <img src={imgB64} alt="Preview" style={{ width: '100%', maxHeight: 150, objectFit: 'cover', display: 'block' }} />
-              <button
-                style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.55)', border: 'none', color: '#fff', borderRadius: 20, width: 26, height: 26, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={() => { setImgB64(null); if (fileRef.current) fileRef.current.value = ''; }}
-              >✕</button>
-            </div>
-          ) : (
-            <button
-              style={{ ...inp, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', border: `1.5px dashed ${BDR}`, backgroundColor: '#FAFAFA', color: '#6B7280', fontSize: 13, fontWeight: 600, padding: '0 14px' }}
-              onClick={() => fileRef.current?.click()}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
-              Attach a screenshot
-            </button>
-          )}
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-          {imgErr && <span style={errTxt}>{imgErr}</span>}
-        </div>
-
         {/* Auto-collected info */}
         <div style={{ backgroundColor: '#F3F4F6', borderRadius: 10, padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase' as const }}>Auto-collected with submission</span>
@@ -1015,18 +969,17 @@ type AdminView = 'list' | 'detail';
 type FbStatus  = 'new' | 'in-progress' | 'resolved';
 
 interface FbDoc {
-  id:            string;
-  feedbackType:  string;
-  issueType:     string;
-  subject:       string;
-  description:   string;
-  email:         string;
-  appVersion:    string;
-  deviceInfo:    string;
-  browserInfo:   string;
-  screenshotB64: string | null;
-  status:        FbStatus;
-  submittedAt:   any; // Firestore Timestamp
+  id:           string;
+  feedbackType: string;
+  issueType:    string;
+  subject:      string;
+  description:  string;
+  email:        string;
+  appVersion:   string;
+  deviceInfo:   string;
+  browserInfo:  string;
+  status:       FbStatus;
+  submittedAt:  any; // Firestore Timestamp
 }
 
 const FB_STATUS_STYLE: Record<string, { bg: string; text: string; border: string }> = {
@@ -1169,13 +1122,6 @@ function AdminPanel({ onClose }: { onClose: () => void }) {
             <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF', fontWeight: 400, wordBreak: 'break-all' }}>{selected.browserInfo || '—'}</p>
           </div>
 
-          {/* screenshot */}
-          {selected.screenshotB64 && (
-            <div style={{ backgroundColor: '#fff', borderRadius: 14, overflow: 'hidden', border: `1px solid ${BDR}` }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#9CA3AF', letterSpacing: 0.6, textTransform: 'uppercase', padding: '12px 16px 8px' }}>Screenshot</div>
-              <img src={selected.screenshotB64} alt="Screenshot" style={{ width: '100%', display: 'block' }} />
-            </div>
-          )}
         </div>
       </div>
     );
