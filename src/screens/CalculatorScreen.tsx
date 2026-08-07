@@ -100,7 +100,7 @@ function fracLblToDecimal(fracLbl: string): number {
   return 0;
 }
 
-function uid(): string { return `${Date.now()}-${Math.random().toString(36).slice(2,7)}`; }
+function genId(): string { return `${Date.now()}-${Math.random().toString(36).slice(2,7)}`; }
 
 function loadJson<T>(key: string, fallback: T): T {
   try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
@@ -582,7 +582,7 @@ function ConverterView({ uid }: { uid: string }) {
       setCEng(engStr);
       const ftNum = parseInt(cFt, 10) || 0;
       setConvHistory(prev => [{
-        id: uid(), mode: 'fif_to_eng' as ConvMode,
+        id: genId(), mode: 'fif_to_eng' as ConvMode,
         fifFeet: ftNum, fifInches: cIn, fifFracLbl: cFrL, engVal: engNum,
       }, ...prev].slice(0, MAX_HIST));
     } else {
@@ -599,7 +599,7 @@ function ConverterView({ uid }: { uid: string }) {
       setCEng(engNum.toFixed(2));
       const ftNum = fif.feet;
       setConvHistory(prev => [{
-        id: uid(), mode: 'fif_to_eng' as ConvMode,
+        id: genId(), mode: 'fif_to_eng' as ConvMode,
         fifFeet: ftNum, fifInches: fif.inches, fifFracLbl: fif.fracLbl, engVal: engNum,
       }, ...prev].slice(0, MAX_HIST));
     }
@@ -900,7 +900,7 @@ function CalculatorView({ uid }: { uid: string }) {
         { op: '+', mode: modeA, ft: aFt, inches: aIn, frac: aFr, frL: aFrL, eng: aEng, val: valA },
         { op: selectedOp, mode: modeB, ft: bFt, inches: bIn, frac: bFr, frL: bFrL, eng: bEng, val: valB },
       ];
-      curId = uid();
+      curId = genId();
       setSessionId(curId);
     } else {
       // Continuing session — append new B step
