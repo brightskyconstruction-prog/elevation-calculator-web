@@ -15,7 +15,7 @@ import OnboardingOverlay  from './components/OnboardingOverlay';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import ConfirmModal       from './components/ConfirmModal';
 import { isFirebaseConfigured, onAuthChanged, signOutFirebase, getDb } from './firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, updateDoc, doc as fsDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, getDoc, query, orderBy, updateDoc, doc as fsDoc } from 'firebase/firestore';
 import {
   loadUserData,
   saveUserData,
@@ -962,8 +962,18 @@ function FeedbackForm({ feedbackType, userEmail, onBack, onClose }: FeedbackForm
   );
 }
 
+// ─── Admin check — looks up current user's email in Firestore `admins` collection
+async function checkIsAdmin(email: string): Promise<boolean> {
+  if (!email || !isFirebaseConfigured()) return false;
+  try {
+    const snap = await getDoc(fsDoc(getDb(), 'admins', email.toLowerCase().trim()));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
+
 // ─── Admin dashboard — feedback & report review ───────────────────────────────
-const ADMIN_EMAIL = 'sahilswarajjena456@gmail.com';
 
 type AdminView = 'list' | 'detail';
 type FbStatus  = 'new' | 'in-progress' | 'resolved';
@@ -1240,6 +1250,14 @@ interface SettingsPanelProps {
 function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivacy, onOpenTerms, onOpenAdmin, t }: SettingsPanelProps) {
   const [view,         setView]         = useState<'settings' | 'feedback'>('settings');
   const [feedbackType, setFeedbackType] = useState<FbkType>('report');
+  const [isAdmin,      setIsAdmin]      = useState(false);
+
+  // Check Firestore `admins` collection whenever the logged-in email changes
+  useEffect(() => {
+    setIsAdmin(false);
+    if (!email) return;
+    checkIsAdmin(email).then(setIsAdmin);
+  }, [email]);
 
   return (
     <div style={spS.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -1351,8 +1369,8 @@ function SettingsPanel({ email, lang, onSetLang, onLogout, onClose, onOpenPrivac
                 </button>
               </div>
 
-              {/* ── Admin section (admin email only) ─────────────── */}
-              {email.toLowerCase() === ADMIN_EMAIL && (
+              {/* ── Admin section (Firestore `admins` collection) ─── */}
+              {isAdmin && (
                 <div style={{ ...spS.section, borderBottom: 'none' }}>
                   <span style={spS.sectionLabel}>Admin</span>
                   <button style={spS.legalBtn} onClick={onOpenAdmin}>
