@@ -24,11 +24,13 @@ import { getDb, isFirebaseConfigured } from '../firebase';
 // ─── All localStorage keys used by the app ───────────────────────────────────
 export const STATIC_LS_KEYS = [
   'elevation-calculator-v1',   // Zustand survey store (projects, points, sets, history)
-  'elevCalc:history',          // Calculator sub-tab history
-  'elevCalc:convHistory',      // Converter sub-tab history
 ] as const;
 
-const SLOPE_KEY_PREFIX = 'slope:calcs:';
+// Prefix-based keys — scanned dynamically so uid-scoped entries are captured
+const SLOPE_KEY_PREFIX    = 'slope:calcs:';
+const CALC_HIST_PREFIX    = 'elevCalc:calcHistV3:';   // per-user: elevCalc:calcHistV3:{uid}
+const CONV_HIST_PREFIX    = 'elevCalc:convHistory:';  // per-user: elevCalc:convHistory:{uid}
+const DYNAMIC_PREFIXES    = [SLOPE_KEY_PREFIX, CALC_HIST_PREFIX, CONV_HIST_PREFIX] as const;
 
 // ─── Firestore document reference ────────────────────────────────────────────
 // Documents are keyed by the Firebase Auth UID, which is a stable, random
@@ -43,14 +45,16 @@ function userDocRef(uid: string): DocumentReference {
 export function collectLocalData(): Record<string, string> {
   const data: Record<string, string> = {};
 
+  // Fixed keys
   for (const key of STATIC_LS_KEYS) {
     const val = localStorage.getItem(key);
     if (val !== null) data[key] = val;
   }
 
+  // Prefix-scanned keys (slope calcs + uid-scoped calc/conv history)
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && k.startsWith(SLOPE_KEY_PREFIX)) {
+    if (k && DYNAMIC_PREFIXES.some(p => k.startsWith(p))) {
       const val = localStorage.getItem(k);
       if (val !== null) data[k] = val;
     }
@@ -75,12 +79,13 @@ export function clearLocalData(): void {
     localStorage.removeItem(key);
   }
 
-  const slopeKeys: string[] = [];
+  // Collect all prefix-matched keys first (avoid mutating while iterating)
+  const dynamicKeys: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && k.startsWith(SLOPE_KEY_PREFIX)) slopeKeys.push(k);
+    if (k && DYNAMIC_PREFIXES.some(p => k.startsWith(p))) dynamicKeys.push(k);
   }
-  slopeKeys.forEach(k => localStorage.removeItem(k));
+  dynamicKeys.forEach(k => localStorage.removeItem(k));
 }
 
 // ─── Firestore operations ─────────────────────────────────────────────────────

@@ -73,6 +73,7 @@ function AppInner() {
   });
 
   const [email,           setEmail]           = useState<string>(() => readEmail() ?? '');
+  const [currentUid,      setCurrentUid]      = useState<string>('');
   const [activeTab,       setActiveTab]       = useState<MainTab>('add');
   const [showPrivacy,     setShowPrivacy]     = useState(false);
   const [privacyInitTab,  setPrivacyInitTab]  = useState<'privacy' | 'terms'>('privacy');
@@ -363,6 +364,7 @@ function AppInner() {
     // correctly trigger a debounced save of the user's real data.
     syncEmailRef.current = uid;
     loginUidRef.current  = null;
+    setCurrentUid(uid);
 
     // Load / create the user's profile (non-blocking)
     ensureUserProfile(userEmail, uid).then(profile => {
@@ -399,6 +401,7 @@ function AppInner() {
 
     syncEmailRef.current = null;
     loginUidRef.current  = null; // allow this UID to be logged in again later
+    setCurrentUid('');
 
     // Sign out from Firebase so auth state is cleared
     await signOutFirebase();
@@ -666,7 +669,7 @@ function AppInner() {
           <ViewSetsScreen projectId={projectId} onEditPoint={handleEditPoint} />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'calc'   ? 'flex' : 'none' }}>
-          <CalculatorScreen />
+          <CalculatorScreen uid={currentUid} />
         </div>
         <div style={{ ...styles.screen, display: activeTab === 'tutorial' ? 'flex' : 'none' }}>
           <TutorialScreen />

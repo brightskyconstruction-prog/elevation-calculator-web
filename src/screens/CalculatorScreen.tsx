@@ -29,10 +29,13 @@ const BLUE   = '#1E5799';
 const BLUE_A = '#3B82F6';
 const BLUE_D = 'rgba(30,87,153,0.12)';
 
-// ─── Storage keys ─────────────────────────────────────────────────────────────
-const KEY_CALC = 'elevCalc:calcHistV3';
-const KEY_CONV = 'elevCalc:convHistory';
+// ─── Storage keys — scoped per user so history is never shared across accounts ─
+const KEY_CALC_BASE = 'elevCalc:calcHistV3';
+const KEY_CONV_BASE = 'elevCalc:convHistory';
 const MAX_HIST = 20;
+// Returns uid-specific key; falls back to base key for guests/no-uid
+function calcKey(uid: string) { return uid ? `${KEY_CALC_BASE}:${uid}` : KEY_CALC_BASE; }
+function convKey(uid: string) { return uid ? `${KEY_CONV_BASE}:${uid}` : KEY_CONV_BASE; }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Mode     = 'eng' | 'fif';
@@ -501,7 +504,7 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONVERTER VIEW — bidirectional, both cards always active
 // ═══════════════════════════════════════════════════════════════════════════════
-function ConverterView() {
+function ConverterView({ uid }: { uid: string }) {
   const { t } = useLang();
 
   // ── Input state (each side is independent — no auto-sync) ──────────────────
@@ -521,13 +524,19 @@ function ConverterView() {
   const [cFtFocused,  setCFtFocused]  = useState(false);
   const [cEngFocused, setCEngFocused] = useState(false);
 
-  const [convHistory, setConvHistory] = useState<ConvItem[]>(() => loadJson(KEY_CONV, []));
+  const [convHistory, setConvHistory] = useState<ConvItem[]>(() => loadJson(convKey(uid), []));
   const [showAllConvs,setShowAllConvs]= useState(false);
   const [convConfirm, setConvConfirm] = useState<null | { onConfirm: () => void }>(null);
 
+  // Reload history when the active user changes (account switch)
   useEffect(() => {
-    try { localStorage.setItem(KEY_CONV, JSON.stringify(convHistory)); } catch {}
-  }, [convHistory]);
+    setConvHistory(loadJson(convKey(uid), []));
+  }, [uid]);
+
+  // Persist history under the uid-scoped key
+  useEffect(() => {
+    try { localStorage.setItem(convKey(uid), JSON.stringify(convHistory)); } catch {}
+  }, [convHistory, uid]);
 
   // ── Input handlers — NO cross-side updates, just track lastEdited ──────────
   const resetConv = () => setConvDone(false);
@@ -792,7 +801,7 @@ function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
 // ═══════════════════════════════════════════════════════════════════════════════
 // CALCULATOR VIEW — with sequential "Add More" chaining
 // ═══════════════════════════════════════════════════════════════════════════════
-function CalculatorView() {
+function CalculatorView({ uid }: { uid: string }) {
   const { t } = useLang();
   const [modeA, setModeA] = useState<Mode>('fif');
   const [modeB, setModeB] = useState<Mode>('fif');
@@ -816,7 +825,7 @@ function CalculatorView() {
   const [calcDone,     setCalcDone]     = useState(false);
   const [aEngFocused,  setAEngFocused]  = useState(false);
   const [bEngFocused,  setBEngFocused]  = useState(false);
-  const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(KEY_CALC, []));
+  const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(calcKey(uid), []));
   const [showAllCalcs, setShowAllCalcs] = useState(false);
   const [showOpModal,  setShowOpModal]  = useState(false);
   const [menuOpenId,   setMenuOpenId]   = useState<string | null>(null);
@@ -829,9 +838,17 @@ function CalculatorView() {
   const [addMoreEnabled, setAddMoreEnabled] = useState(false);  // result ready for chaining
   const [viewFullItem,   setViewFullItem]   = useState<CalcHistItem | null>(null);
 
+  // Reload history when the active user changes (account switch)
   useEffect(() => {
-    try { localStorage.setItem(KEY_CALC, JSON.stringify(history)); } catch {}
-  }, [history]);
+    setHistory(loadJson(calcKey(uid), []));
+    setShowAllCalcs(false);
+    setViewFullItem(null);
+  }, [uid]);
+
+  // Persist history under the uid-scoped key
+  useEffect(() => {
+    try { localStorage.setItem(calcKey(uid), JSON.stringify(history)); } catch {}
+  }, [history, uid]);
 
   const resetCalc = () => { setResult(null); setCalcDone(false); };
 
@@ -1163,7 +1180,7 @@ function CalculatorView() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN SCREEN — gold sub-tab shell
 // ═══════════════════════════════════════════════════════════════════════════════
-export default function CalculatorScreen() {
+export default function CalculatorScreen({ uid = '' }: { uid?: string }) {
   const { t } = useLang();
   const [subTab, setSubTab] = useState<SubTab>('calculator');
 
@@ -1203,10 +1220,10 @@ export default function CalculatorScreen() {
 
       {/* Sub-tab content — both permanently mounted */}
       <div style={{ flex: 1, overflow: 'hidden', display: subTab === 'calculator' ? 'flex' : 'none', flexDirection: 'column' }}>
-        <CalculatorView />
+        <CalculatorView uid={uid} />
       </div>
       <div style={{ flex: 1, overflow: 'hidden', display: subTab === 'converter' ? 'flex' : 'none', flexDirection: 'column' }}>
-        <ConverterView />
+        <ConverterView uid={uid} />
       </div>
     </div>
   );
