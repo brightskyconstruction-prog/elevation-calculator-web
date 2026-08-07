@@ -208,6 +208,48 @@ function AppInner() {
     });
   }, []);
 
+  // ── Flush sync before the tab is hidden or closed ──────────────────────────
+  // The 1.5s debounce timer is abandoned when the user closes or switches
+  // away from the tab.  Without this flush, unsaved points are lost: on the
+  // next login the stale Firestore data overwrites the newer local data.
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+
+    const flushNow = () => {
+      const uid = syncEmailRef.current;
+      if (!uid) return;
+      // Cancel the debounce timer — we're saving immediately.
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+      const data = collectLocalData();
+      // fire-and-forget: browser may not wait for async, but the Firestore
+      // SDK queues the write and usually completes before the page is torn down.
+      saveUserData(uid, data).catch(err => {
+        console.warn('[CloudSync] flush failed:', err);
+      });
+    };
+
+    // visibilitychange fires reliably on tab-switch AND on tab/window close
+    // in all modern browsers — much more reliable than beforeunload alone.
+    const handleVisibilityChange = () => {
+      if (document.hidden) flushNow();
+    };
+
+    // beforeunload as belt-and-suspenders for browsers that skip
+    // visibilitychange on direct close (rare, but worth adding).
+    const handleBeforeUnload = () => flushNow();
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // ── Global back-navigation: wire React logic into the index.html guard ───────
   //
   // The popstate listener and initial history pushes live in index.html and run
@@ -323,6 +365,7 @@ function AppInner() {
         // Enable sync now so any changes the user makes are saved.
         syncEmailRef.current = uid;
         loginUidRef.current  = null;
+        setCurrentUid(uid);  // ensure CalculatorScreen gets the correct uid
         return;
       }
 
