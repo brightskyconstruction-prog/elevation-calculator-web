@@ -24,7 +24,7 @@ import {
   clearLocalData,
   patchLocalStorage,
   migrateUserData,
-  _origSetItem,
+  saveLocalRestorePoint,
 } from './services/cloudSync';
 import { ensureUserProfile } from './services/userProfile';
 import { useProfileStore } from './stores/profileStore';
@@ -181,6 +181,11 @@ function AppInner() {
       if (!uid) return;
       try {
         const data = collectLocalData();
+        // Write a local restore-point SYNCHRONOUSLY before the async Firestore
+        // write.  If the Firestore write is abandoned mid-flight (page kill, network
+        // drop), this ensures loginUser can recover from the local copy instead of
+        // loading stale cloud data and overwriting the user's unsaved changes.
+        saveLocalRestorePoint(uid, data);
         await saveUserData(uid, data);
       } catch (err) {
         console.warn('[CloudSync] write failed:', err);
@@ -224,8 +229,13 @@ function AppInner() {
         syncTimerRef.current = null;
       }
       const data = collectLocalData();
-      // fire-and-forget: browser may not wait for async, but the Firestore
-      // SDK queues the write and usually completes before the page is torn down.
+      // Write the restore-point SYNCHRONOUSLY first — this is the critical part.
+      // The Firestore write below is async and may not complete before the page is
+      // torn down (common on mobile PWAs and when the browser kills background tabs).
+      // The restore-point in localStorage survives the kill and loginUser will
+      // detect that it is newer than the stale Firestore data and use it instead.
+      saveLocalRestorePoint(uid, data);
+      // fire-and-forget: best-effort Firestore write
       saveUserData(uid, data).catch(err => {
         console.warn('[CloudSync] flush failed:', err);
       });
@@ -319,21 +329,35 @@ function AppInner() {
     }
 
     // ── Restore-point fallback ─────────────────────────────────────────────
-    // logoutUser saves a uid-SPECIFIC snapshot of local data before clearing.
-    // Key format: 'elevCalc:restore:<uid>' — each account has its own slot so
-    // one user's login never clobbers another user's fallback snapshot.
-    // If Firestore is unavailable or has no record, we restore from this so
-    // sign-out → sign-in on the same device never results in a blank screen.
+    // saveLocalRestorePoint() writes a uid-SPECIFIC timestamped snapshot to
+    // localStorage on every debounced sync AND on every visibilitychange/
+    // beforeunload flush.  This guards against the common case where the async
+    // Firestore write is abandoned mid-flight when the browser kills the page
+    // (mobile PWAs, background tab eviction) — on the NEXT login we compare the
+    // restore-point's _savedAt timestamp against Firestore's _updatedAt and use
+    // whichever copy is NEWER, so no unsaved changes are lost.
+    // Key format: 'elevCalc:restore:<uid>' — each account has its own slot.
     const restoreKey = `elevCalc:restore:${uid}`;
 
+    // Read the restore-point once (may be null if this is a brand-new device/user).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let restoreSnapshot: Record<string, any> | null = null;
+    let restoreSavedAt = 0;
+    try {
+      const raw = localStorage.getItem(restoreKey);
+      if (raw) {
+        restoreSnapshot = JSON.parse(raw) as Record<string, string>;
+        restoreSavedAt  = typeof restoreSnapshot._savedAt === 'number'
+          ? (restoreSnapshot._savedAt as number)
+          : 0;
+      }
+    } catch { /* ignore parse errors */ }
+
     const applyRestorePoint = () => {
+      if (!restoreSnapshot) return;
       try {
-        const raw = localStorage.getItem(restoreKey);
-        if (!raw) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const snapshot = JSON.parse(raw) as Record<string, string>;
-        applyLocalData(snapshot);
-        const surveyRaw = snapshot['elevation-calculator-v1'];
+        applyLocalData(restoreSnapshot as Record<string, string>);
+        const surveyRaw = (restoreSnapshot as Record<string, string>)['elevation-calculator-v1'];
         if (surveyRaw) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const s = (JSON.parse(surveyRaw) as any)?.state;
@@ -369,30 +393,60 @@ function AppInner() {
         return;
       }
 
-      // Successful cloud load — discard THIS USER'S restore-point (no longer needed).
-      // NOTE: only removes the key for the current uid; other users' snapshots are untouched.
-      try { localStorage.removeItem(restoreKey); } catch {}
+      // ── Timestamp comparison: prefer local data when it is NEWER ──────────
+      // Firestore data may be stale when the previous session's async write was
+      // abandoned before completion (page kill on mobile, network drop, etc.).
+      // If our local restore-point was saved MORE RECENTLY than the Firestore
+      // document, it must contain changes that were never persisted to the cloud,
+      // so we load from it instead of overwriting with the older cloud copy.
+      const cloudUpdatedAt: number =
+        typeof (cloudData as Record<string, unknown>)._updatedAt === 'number'
+          ? (cloudData as Record<string, unknown>)._updatedAt as number
+          : 0;
 
-      // Write cloud data directly to localStorage (bypasses the patched
-      // setItem so this write does NOT trigger a premature scheduleSync).
-      applyLocalData(cloudData);
-
-      const surveyRaw = cloudData['elevation-calculator-v1'];
-      if (surveyRaw) {
+      if (restoreSnapshot && restoreSavedAt > cloudUpdatedAt) {
+        // Local restore-point is newer than Firestore — apply it and save it
+        // back to Firestore immediately so the cloud catches up.
+        console.info(
+          `[CloudSync] Local restore-point (${restoreSavedAt}) is newer than cloud (${cloudUpdatedAt}). Using local data.`,
+        );
+        applyRestorePoint();
+        // Keep restore-point so flushNow can re-save it if the upload below fails
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const s = (JSON.parse(surveyRaw) as any)?.state;
-          if (s) {
-            hydrateStore({
-              projects:        s.projects        ?? [],
-              points:          s.points          ?? [],
-              sets:            s.sets            ?? [],
-              history:         s.history         ?? [],
-              activeProjectId: s.activeProjectId ?? 'default-project',
-            });
+          await saveUserData(uid, restoreSnapshot as Record<string, string>);
+          // Upload succeeded — clear the restore-point; scheduleSync will
+          // write a fresh one the next time the user makes a change.
+          try { localStorage.removeItem(restoreKey); } catch {}
+        } catch (uploadErr) {
+          // Upload failed — leave restore-point in place for next session
+          console.warn('[CloudSync] restore-point upload failed:', uploadErr);
+        }
+      } else {
+        // Firestore is up-to-date (or we have no local restore-point).
+        // Discard the restore-point and load from cloud.
+        try { localStorage.removeItem(restoreKey); } catch {}
+
+        // Write cloud data directly to localStorage (bypasses the patched
+        // setItem so this write does NOT trigger a premature scheduleSync).
+        applyLocalData(cloudData);
+
+        const surveyRaw = cloudData['elevation-calculator-v1'];
+        if (surveyRaw) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const s = (JSON.parse(surveyRaw) as any)?.state;
+            if (s) {
+              hydrateStore({
+                projects:        s.projects        ?? [],
+                points:          s.points          ?? [],
+                sets:            s.sets            ?? [],
+                history:         s.history         ?? [],
+                activeProjectId: s.activeProjectId ?? 'default-project',
+              });
+            }
+          } catch (parseErr) {
+            console.warn('[CloudSync] failed to parse survey store:', parseErr);
           }
-        } catch (parseErr) {
-          console.warn('[CloudSync] failed to parse survey store:', parseErr);
         }
       }
     } catch (err) {
@@ -452,16 +506,14 @@ function AppInner() {
     // Save a per-user restore-point BEFORE wiping device data.
     // Key format: 'elevCalc:restore:<uid>' — each account has its own dedicated
     // slot so one user logging in never removes another user's fallback snapshot.
-    // loginUser reads this back if Firestore is unavailable on the next sign-in,
-    // preventing a blank screen after sign-out → sign-in on the same device.
-    if (uid && localSnapshot && localSnapshot['elevation-calculator-v1']) {
-      try {
-        // _origSetItem bypasses the patched setItem so this write never
-        // triggers a scheduleSync (syncEmailRef is already null at this point).
-        _origSetItem(`elevCalc:restore:${uid}`, JSON.stringify(localSnapshot));
-        // Remove the legacy shared key if it exists (one-time cleanup).
-        localStorage.removeItem('elevCalc:restore');
-      } catch {}
+    // loginUser reads this back if Firestore is unavailable on the next sign-in
+    // (or if the local copy is newer than the cloud copy), preventing data loss.
+    if (uid && localSnapshot) {
+      // saveLocalRestorePoint uses _origSetItem internally, bypassing the patched
+      // setItem so this write never triggers a scheduleSync (syncEmailRef is null).
+      saveLocalRestorePoint(uid, localSnapshot);
+      // Remove the legacy shared key if it exists (one-time cleanup).
+      try { localStorage.removeItem('elevCalc:restore'); } catch {}
     }
 
     // Clear device-local cache so next user on this device starts fresh

@@ -169,6 +169,29 @@ export async function migrateUserData(
   }
 }
 
+// ─── Local restore-point ──────────────────────────────────────────────────────
+
+/**
+ * Save a timestamped local restore-point to localStorage.
+ *
+ * Called on every debounced cloud sync AND on every visibilitychange/beforeunload
+ * flush so that data is recoverable even when the async Firestore write doesn't
+ * complete before the page is torn down.
+ *
+ * On next login, loginUser compares this timestamp against Firestore's _updatedAt
+ * and uses whichever copy is NEWER, preventing stale cloud data from overwriting
+ * unsaved local changes.
+ */
+export function saveLocalRestorePoint(uid: string, data: Record<string, string>): void {
+  if (!uid || !data['elevation-calculator-v1']) return;
+  try {
+    _origSetItem(
+      `elevCalc:restore:${uid}`,
+      JSON.stringify({ ...data, _savedAt: Date.now() }),
+    );
+  } catch { /* storage quota: ignore */ }
+}
+
 // ─── localStorage.setItem proxy ───────────────────────────────────────────────
 // We capture the original setItem once so applyLocalData can bypass the patch
 // (prevents infinite sync loops when writing cloud data back to localStorage).
