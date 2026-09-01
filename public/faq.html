@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elevation Calculator FAQ — Grade, Slope &amp; Survey Questions Answered</title>
+  <meta name="description" content="Answers to common questions about elevation calculators, grade calculation, slope percentage, rod readings, and benchmark elevations for construction and surveying." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://elevation-calculator-web.vercel.app/faq" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an elevation calculator?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An elevation calculator is a tool used in construction and surveying to record, compare, and calculate differences in ground or structure elevation between survey points. It helps construction crews verify grades for drainage, foundations, roads, and pipe laying without manual arithmetic."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I calculate elevation grade?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Elevation grade (slope percentage) = (Rise ÷ Run) × 100. Rise is the vertical difference in elevation between two points; Run is the horizontal distance between them. For example, if Point A is at 101.25 ft and Point B is at 99.00 ft over a 45 ft horizontal distance, the grade is (2.25 ÷ 45) × 100 = 5%. The Slope tab in this calculator does this automatically once you have both points saved."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I read survey elevations?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Survey elevations are read using a level instrument and a leveling rod (also called a staff). The surveyor sights the rod from a known benchmark elevation. The Height of Instrument (HI) = Benchmark Elevation + Backsight Reading. Each point's derived elevation = HI − Foresight Rod Reading. This process is called differential leveling."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is a benchmark elevation in construction?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "A benchmark is a point of known elevation used as a reference for all other elevation measurements on a job site. It is typically a permanent marker (a nail in a concrete curb, a brass disk, etc.) whose elevation above sea level or a local datum has been established by a licensed surveyor. All rod readings and derived elevations are calculated relative to the benchmark."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between slope and grade?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Slope and grade describe the same thing — the steepness of a surface — but are expressed differently. Grade is expressed as a percentage (rise/run × 100), while slope can also be expressed as a ratio (1:20), a fraction (0.05), or an angle in degrees. In construction, grade percentage is the most common format."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I calculate rod reading from a benchmark?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Step 1: Set up your level instrument and take a backsight reading on the benchmark. Step 2: Add the backsight reading to the benchmark elevation to get the Height of Instrument (HI). Step 3: Take a foresight rod reading at the unknown point. Step 4: Derived Elevation = HI − Foresight Reading. Example: Benchmark = 100.00 ft, Backsight = 4.52 ft, HI = 104.52 ft. Foresight at Point A = 6.15 ft. Point A Elevation = 104.52 − 6.15 = 98.37 ft."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is differential leveling?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Differential leveling is the surveying process of determining the elevation difference between two points using a level instrument and a leveling rod. The instrument is set up between the points, a backsight is taken on the known point, and a foresight is taken on the unknown point. The elevation difference equals backsight minus foresight. Multiple setups are chained together when the distance is too large for a single shot."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this elevation calculator free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, the Elevation &amp; Grade Calculator is completely free to use. There is no login required, no subscription, and no hidden fees. It works directly in your mobile browser and can be installed as a Progressive Web App (PWA) for offline use."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the elevation calculator work offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The app can be installed as a PWA (Progressive Web App) on Android or iOS by tapping 'Add to Home Screen' in your browser. Once installed, it works without an internet connection. Survey points and calculation history are stored locally on your device and sync to the cloud when you are back online."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What units does the elevation calculator support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The calculator supports both feet-inches-fractions (the US customary format common on construction sites) and engineering decimal feet (e.g., 98.375 ft). You can enter measurements in either format and the tool converts between them automatically."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f8fafc; color: #1e293b; line-height: 1.7; }
+    nav { background: #143A63; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }
+    nav a { color: #fff; text-decoration: none; font-size: 0.95rem; }
+    nav a:hover { text-decoration: underline; }
+    nav .brand { font-weight: 700; font-size: 1.05rem; }
+    .hero { background: #143A63; color: #fff; padding: 2.5rem 1.5rem 3rem; text-align: center; }
+    .hero h1 { margin: 0 0 0.75rem; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+    .hero p { margin: 0; opacity: 0.85; font-size: 1.05rem; }
+    main { max-width: 800px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    .faq-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 1rem; overflow: hidden; }
+    .faq-item summary { padding: 1.1rem 1.25rem; font-weight: 600; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after { content: '+'; font-size: 1.4rem; color: #143A63; flex-shrink: 0; }
+    .faq-item[open] summary::after { content: '−'; }
+    .faq-item[open] summary { border-bottom: 1px solid #e2e8f0; }
+    .faq-body { padding: 1.1rem 1.25rem; }
+    .faq-body p { margin: 0 0 0.75rem; }
+    .faq-body p:last-child { margin-bottom: 0; }
+    .faq-body code { background: #f1f5f9; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.92em; }
+    .cta-bar { text-align: center; margin: 2.5rem 0 0; }
+    .cta-bar a { display: inline-block; background: #143A63; color: #fff; padding: 0.85rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 1.05rem; }
+    .cta-bar a:hover { background: #1a4e8a; }
+    footer { text-align: center; padding: 1.5rem; font-size: 0.85rem; color: #64748b; border-top: 1px solid #e2e8f0; }
+    footer a { color: #143A63; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/">Elevation Calculator</a>
+  <a href="/about">About</a>
+  <a href="/faq">FAQ</a>
+</nav>
+
+<div class="hero">
+  <h1>Elevation &amp; Grade Calculator — FAQ</h1>
+  <p>Common questions about elevation calculation, slope, grade, and surveying for construction</p>
+</div>
+
+<main>
+
+  <details class="faq-item" open>
+    <summary>What is an elevation calculator?</summary>
+    <div class="faq-body">
+      <p>An elevation calculator is a tool used in construction and surveying to record, compare, and calculate differences in ground or structure elevation between survey points. It helps construction crews verify grades for drainage, foundations, roads, and pipe laying without manual arithmetic.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>How do I calculate elevation grade?</summary>
+    <div class="faq-body">
+      <p>Elevation grade (slope percentage) = <strong>(Rise ÷ Run) × 100</strong>. Rise is the vertical elevation difference; Run is the horizontal distance between the two points.</p>
+      <p><strong>Example:</strong> Point A at 101.25 ft, Point B at 99.00 ft, 45 ft apart horizontally → grade = (2.25 ÷ 45) × 100 = <strong>5%</strong>.</p>
+      <p>The Slope tab in this calculator does this automatically once you have both points saved.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>How do I read survey elevations?</summary>
+    <div class="faq-body">
+      <p>Survey elevations are read using a level instrument and a leveling rod (staff). The process:</p>
+      <p><strong>Height of Instrument (HI)</strong> = Benchmark Elevation + Backsight Reading<br>
+      <strong>Derived Elevation</strong> = HI − Foresight Rod Reading</p>
+      <p>This process is repeated at each setup point and is called differential leveling.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>What is a benchmark elevation in construction?</summary>
+    <div class="faq-body">
+      <p>A benchmark is a point of known elevation used as a reference for all measurements on a job site. It is typically a permanent marker — a nail in a curb, a brass disk, or a hub — whose elevation has been established by a licensed surveyor. All derived elevations are calculated relative to this benchmark.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>What is the difference between slope and grade?</summary>
+    <div class="faq-body">
+      <p>Slope and grade describe the same thing — the steepness of a surface — but are expressed differently:</p>
+      <p><strong>Grade</strong>: percentage (e.g., 5%) — most common in construction<br>
+      <strong>Slope</strong>: ratio (1:20), fraction (0.05), or angle in degrees</p>
+      <p>A 5% grade means the ground rises 5 feet for every 100 feet of horizontal distance.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>How do I calculate rod reading from a benchmark?</summary>
+    <div class="faq-body">
+      <p><strong>Step 1:</strong> Take a backsight reading on the benchmark.<br>
+      <strong>Step 2:</strong> HI = Benchmark Elevation + Backsight Reading<br>
+      <strong>Step 3:</strong> Take a foresight rod reading at the unknown point.<br>
+      <strong>Step 4:</strong> Derived Elevation = HI − Foresight Reading</p>
+      <p><strong>Example:</strong> Benchmark = 100.00 ft, Backsight = 4.52 ft → HI = 104.52 ft. Foresight at Point A = 6.15 ft → Point A Elevation = 104.52 − 6.15 = <strong>98.37 ft</strong>.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>What is differential leveling?</summary>
+    <div class="faq-body">
+      <p>Differential leveling is the process of determining the elevation difference between two points using a level instrument and a leveling rod. The instrument is set up between the points; a backsight is taken on the known point and a foresight on the unknown point. The elevation difference = backsight − foresight. Multiple setups are chained together when the distance is too large for one shot.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>Is this elevation calculator free?</summary>
+    <div class="faq-body">
+      <p>Yes — 100% free. No login required, no subscription, no hidden fees. It works in any mobile browser and can be installed as a Progressive Web App (PWA) for offline use.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>Does the elevation calculator work offline?</summary>
+    <div class="faq-body">
+      <p>Yes. Tap <strong>Add to Home Screen</strong> in your browser to install it as a PWA on Android or iOS. Once installed, the full app runs without an internet connection. Survey points and history are stored locally and sync to the cloud when you reconnect.</p>
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>What units does the calculator support?</summary>
+    <div class="faq-body">
+      <p>The calculator supports both <strong>feet-inches-fractions</strong> (US customary, common on construction sites) and <strong>engineering decimal feet</strong> (e.g., 98.375 ft). You can enter measurements in either format and the tool converts between them automatically.</p>
+    </div>
+  </details>
+
+  <div class="cta-bar">
+    <a href="/">Open the Calculator &rarr;</a>
+  </div>
+
+</main>
+
+<footer>
+  <p>Built by <a href="/">Elevation Calculator</a> &mdash; <a href="/about">About</a> &mdash; Free construction survey tool</p>
+</footer>
+
+</body>
+</html>

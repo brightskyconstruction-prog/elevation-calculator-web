@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/faq",   "destination": "/faq.html" },
+    { "source": "/about", "destination": "/about.html" },
     {
       "source": "/((?!sitemap\\.xml|robots\\.txt|.*\\..*).*)",
       "destination": "/index.html"

@@ -78,6 +78,52 @@
   <body>
     <div id="root"></div>
 
+    <!-- SEO content visible to crawlers that do not execute JavaScript.
+         Also provides a readable fallback if JS fails to load.
+         Styled to be invisible when the React app mounts successfully. -->
+    <noscript>
+      <style>
+        .noscript-landing { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem 1rem; color: #1a1a2e; }
+        .noscript-landing h1 { color: #143A63; font-size: 2rem; margin-bottom: 0.5rem; }
+        .noscript-landing h2 { color: #143A63; font-size: 1.3rem; margin-top: 2rem; }
+        .noscript-landing ul { line-height: 2; }
+        .noscript-landing a.cta { display: inline-block; background: #143A63; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; text-decoration: none; margin-top: 1rem; }
+        .noscript-landing p { line-height: 1.7; }
+      </style>
+      <div class="noscript-landing">
+        <h1>Free Elevation &amp; Grade Calculator for Construction</h1>
+        <p>A free, mobile-friendly elevation calculator built for construction workers, civil engineers, and surveyors. Calculate rod readings, compare heights between survey points, compute slope and grade percentages — all from your phone or tablet. No app download, no login, 100% free.</p>
+
+        <h2>Key Features</h2>
+        <ul>
+          <li>Add and save survey elevation points</li>
+          <li>Compare height between any two points</li>
+          <li>Calculate slope percentage and grade</li>
+          <li>Rod reading and benchmark elevation calculator</li>
+          <li>Retrieve full calculation history</li>
+          <li>Works offline — install as a PWA</li>
+          <li>Supports feet/inches and engineering decimal formats</li>
+        </ul>
+
+        <h2>Who Uses This Tool</h2>
+        <p>Construction crews use this elevation calculator on job sites to verify grades for drainage, pipe laying, road construction, and foundation work. Surveyors use it to record and compare benchmark elevations quickly without carrying paper. Civil engineering students use it to check differential leveling calculations.</p>
+
+        <h2>How to Calculate Elevation Grade</h2>
+        <p>To calculate elevation grade (slope percentage), divide the rise (difference in elevation between two points) by the run (horizontal distance), then multiply by 100. For example, if Point A is at elevation 100.50 ft and Point B is at 98.25 ft over a 50 ft horizontal distance, the grade is (100.50 − 98.25) / 50 × 100 = 4.5%. The Slope tab in this calculator does this automatically once you select your two survey points.</p>
+
+        <h2>How to Read Survey Elevations</h2>
+        <p>Survey elevations are measured in feet or meters above a datum (usually sea level or a local benchmark). A rod reading (also called a staff reading) is the value read on a leveling rod at a survey point. The derived elevation of a point is calculated as: HI (Height of Instrument) − Rod Reading = Derived Elevation, where HI = Benchmark Elevation + Backsight Rod Reading.</p>
+
+        <a class="cta" href="/">Open the Calculator</a>
+        &nbsp;
+        <a class="cta" href="/faq">View FAQ</a>
+        &nbsp;
+        <a class="cta" href="/about">About This Tool</a>
+
+        <p style="margin-top:2rem; font-size:0.85rem; color:#666;">Enable JavaScript to use the full interactive calculator. &mdash; Built by Bright Sky Construction.</p>
+      </div>
+    </noscript>
+
     <!--
       Back-button guard — SYNCHRONOUS, runs before React loads.
 
