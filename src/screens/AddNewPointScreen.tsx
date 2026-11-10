@@ -1493,7 +1493,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
                   {/* Meters */}
                   <div style={s.rodPart}>
-                    <span style={{ ...s.rodPartLbl, fontSize: 14 }}>m</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>M</span>
                     <input
                       style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 19 }}
                       type="text" inputMode="numeric" pattern="[0-9]*"
@@ -1510,7 +1510,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodDiv} />
                   {/* Centimeters */}
                   <div style={s.rodPart}>
-                    <span style={{ ...s.rodPartLbl, fontSize: 14 }}>cm</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>CM</span>
                     <select
                       style={{ ...s.rodSelect, fontSize: 18 }} value={String(rodCm)}
                       onChange={e => updateFromMCM(rodMeters, parseInt(e.target.value, 10), rodMm)}
@@ -1522,7 +1522,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   <div style={s.rodDiv} />
                   {/* Millimeters */}
                   <div style={s.rodPart}>
-                    <span style={{ ...s.rodPartLbl, fontSize: 14 }}>mm</span>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>MM</span>
                     <select
                       style={{ ...s.rodSelect, fontSize: 18 }} value={String(rodMm)}
                       onChange={e => updateFromMCM(rodMeters, rodCm, parseInt(e.target.value, 10))}
