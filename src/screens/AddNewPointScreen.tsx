@@ -7,7 +7,7 @@ import {
 } from '../constants';
 import { useLang } from '../LangContext';
 import { strings } from '../i18n';
-import { useUnit, FT_TO_M } from '../UnitContext';
+import { useUnit, FT_TO_M, CM_OPTIONS, MM_OPTIONS } from '../UnitContext';
 import { SinglePointTab } from './ViewPointsScreen';
 
 // ─── Color constants ───────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ interface Props {
   imperativeRef?:   React.MutableRefObject<AddNewPointScreenAPI | null>;
 }
 
-type RodFormat = 'fif' | 'eng';
+type RodFormat = 'fif' | 'eng' | 'mcm';
 
 // ─── Sub-modals ───────────────────────────────────────────────────────────────
 
@@ -793,6 +793,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [rodInches,   setRodInches]   = useState(0);
   const [rodFracDec,  setRodFracDec]  = useState(0);
   const [rodFracLbl,  setRodFracLbl]  = useState('0/0');
+  const [rodMeters,   setRodMeters]   = useState('0');
+  const [rodCm,       setRodCm]       = useState(0);
+  const [rodMm,       setRodMm]       = useState(0);
   const [engFtStr,    setEngFtStr]    = useState('');
   const [bmElevStr,   setBmElevStr]   = useState('');
   const [bmExpanded,  setBmExpanded]  = useState(false);
@@ -887,6 +890,15 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const fifDisplay      = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
   const engDisplay      = !isNaN(engFtFeet) && engFtFeet > 0 ? fmtDist(engFtFeet) : '';
   const hasRodReading   = !isNaN(engFtFeet) && engFtFeet > 0;
+  // Metric structured display: "X m YY cm Z mm"
+  const mcmDisplay = isMetric && engFtFeet > 0 ? (() => {
+    const totalM = engFtFeet * FT_TO_M;
+    const wholeM = Math.floor(totalM);
+    const remM   = totalM - wholeM;
+    const cm     = Math.floor(remM * 100);
+    const mm     = Math.round((remM * 100 - cm) * 10);
+    return `${wholeM} m ${String(cm).padStart(2,'0')} cm${mm > 0 ? ` ${mm} mm` : ''}`;
+  })() : '';
 
   // ── Dirty detection (unsaved data in edit mode) ───────────────────────────
   const isDirty = isEditMode && (rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '');
@@ -972,6 +984,18 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodFracDec(pt.rodFractionDec ?? 0);
     setRodFracLbl(pt.rodFractionLabel ?? '0/0');
     setEngFtStr(pt.engineeringFeet > 0 ? (isMetric ? (pt.engineeringFeet * FT_TO_M).toFixed(3) : String(pt.engineeringFeet)) : '');
+    if (isMetric && pt.engineeringFeet > 0) {
+      const totalM = pt.engineeringFeet * FT_TO_M;
+      const wholeM = Math.floor(totalM);
+      const remM   = totalM - wholeM;
+      const cm     = Math.floor(remM * 100);
+      const mm     = Math.round((remM * 100 - cm) * 10);
+      setRodMeters(String(wholeM));
+      setRodCm(cm);
+      setRodMm(mm);
+    } else {
+      setRodMeters('0'); setRodCm(0); setRodMm(0);
+    }
     setBmElevStr(pt.bmElevation > 0 ? (isMetric ? (pt.bmElevation * FT_TO_M).toFixed(3) : String(pt.bmElevation)) : '');
     setBmExpanded(pt.bmElevation > 0);
     setPointName(pt.pointName ?? '');
@@ -987,6 +1011,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   const clearForm = () => {
     setRodFeet(''); setRodInches(0); setRodFracDec(0); setRodFracLbl('0/0');
+    setRodMeters('0'); setRodCm(0); setRodMm(0);
     setEngFtStr(''); setBmElevStr('');
     setPointName(''); setTakenBy(''); setSavedAt(null);
     setAssignedSet(null); setLocationTxt(null); setSavedLat(null); setSavedLon(null);
@@ -1009,15 +1034,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     clearForm();
     setCurrentIdx(-1);
     setIsEditMode(true);
-    setRodFormat(isMetric ? 'eng' : 'fif');
+    setRodFormat(isMetric ? 'mcm' : 'fif');
     setCameFromNewPoint(false);
     setEditingFromManage(false);
     savedNewPointRef.current = null;
   }, [isVisible]);
 
-  // Force decimal mode when metric is active (FIF is imperial-only)
+  // Switch format modes when unit system changes
   useEffect(() => {
-    if (isMetric && rodFormat === 'fif') setRodFormat('eng');
+    if (isMetric  && rodFormat === 'fif') setRodFormat('mcm');
+    if (!isMetric && rodFormat === 'mcm') setRodFormat('fif');
   }, [isMetric]);
 
   // ── Expose imperative API to App.tsx for global back-navigation ──────────────
@@ -1041,7 +1067,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   };
 
   const openNewPoint = () => {
-    clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat('fif');
+    clearForm(); setCurrentIdx(-1); setIsEditMode(true); setRodFormat(isMetric ? 'mcm' : 'fif');
     setCameFromNewPoint(false); setCameFromEditMode(false); setEditingFromManage(false); savedNewPointRef.current = null;
   };
 
@@ -1060,6 +1086,25 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     lockRef.current = false;
   };
 
+  // Called when M-CM-MM fields change
+  const updateFromMCM = (meters: string, cm: number, mm: number) => {
+    if (lockRef.current) return;
+    lockRef.current = true;
+    setRodMeters(meters); setRodCm(cm); setRodMm(mm);
+    const m = (parseFloat(meters || '0') || 0) + cm / 100 + mm / 1000;
+    setEngFtStr(m > 0 ? m.toFixed(3) : '');
+    if (m > 0) {
+      const feetVal = m / FT_TO_M;
+      const { feet, inches, fraction, frLabel } = fromEngFt(feetVal);
+      setRodFeet(feet); setRodInches(inches); setRodFracDec(fraction); setRodFracLbl(frLabel);
+    } else {
+      setRodFeet(''); setRodInches(0); setRodFracDec(0); setRodFracLbl('0/0');
+    }
+    lockRef.current = false;
+    setRodReadingWarn(false);
+    setRodSaveWarn(false);
+  };
+
   const updateFromEng = (val: string) => {
     setEngFtStr(val);
     if (lockRef.current) return;
@@ -1070,6 +1115,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       const engFeet = isMetric ? displayVal / FT_TO_M : displayVal;
       const { feet, inches, fraction, frLabel } = fromEngFt(engFeet);
       setRodFeet(feet); setRodInches(inches); setRodFracDec(fraction); setRodFracLbl(frLabel);
+      // Also sync M-CM-MM fields when in metric mode
+      if (isMetric) {
+        const wholeM = Math.floor(displayVal);
+        const remM   = displayVal - wholeM;
+        const cm     = Math.floor(remM * 100);
+        const mm     = Math.round((remM * 100 - cm) * 10);
+        setRodMeters(String(wholeM));
+        setRodCm(cm);
+        setRodMm(mm);
+      }
       lockRef.current = false;
     }
     setRodReadingWarn(false);
@@ -1360,19 +1415,29 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 <span style={s.secLbl}>{t('rodReading')}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {fifDisplay ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
-                    <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('feetInchesBtn')}</span>
-                    <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={22} />
-                  </div>
-                ) : null}
+                {/* Structured display: FIF in imperial, M-CM-MM in metric */}
+                {isMetric ? (
+                  mcmDisplay ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
+                      <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>M-CM</span>
+                      <span style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRI, letterSpacing: '-0.5px' }}>{mcmDisplay}</span>
+                    </div>
+                  ) : null
+                ) : (
+                  fifDisplay ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
+                      <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('feetInchesBtn')}</span>
+                      <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={22} />
+                    </div>
+                  ) : null
+                )}
                 {engDisplay ? (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
-                    <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('engineeringFtBtn')}</span>
+                    <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{isMetric ? 'Decimal m' : t('engineeringFtBtn')}</span>
                     <span style={{ fontSize: 22, fontWeight: 800, color: BLUE, letterSpacing: '-0.5px' }}>{engDisplay}</span>
                   </div>
                 ) : null}
-                {!fifDisplay && !engDisplay && (
+                {!mcmDisplay && !fifDisplay && !engDisplay && (
                   <span style={{ fontSize: 14, color: TEXT_DIS, fontStyle: 'italic', padding: '2px 0' }}>—</span>
                 )}
                 {/* ── Elevation rows (read-only only) ── */}
@@ -1405,27 +1470,82 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {/* 2-column layout: format toggle | entry fields */}
           <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'stretch', minHeight: 54 }}>
 
-            {/* Left: vertically stacked format toggle — in metric, only decimal mode is available */}
+            {/* Left: format toggle — metric: M-CM / Decimal m; imperial: Ft-Inches / Decimal Ft */}
             <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
-              {!isMetric && (
-                <button
-                  style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
-                  onClick={() => setRodFormat('fif')}
-                >
-                  {t('feetInchesBtn')}
-                </button>
-              )}
+              <button
+                style={{ ...s.fmtBtn, ...(isMetric ? (rodFormat === 'mcm' ? s.fmtBtnOn : {}) : (rodFormat === 'fif' ? s.fmtBtnOn : {})), flex: 1, padding: '2px 8px' }}
+                onClick={() => setRodFormat(isMetric ? 'mcm' : 'fif')}
+              >
+                {isMetric ? 'M-CM' : t('feetInchesBtn')}
+              </button>
               <button
                 style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
                 onClick={() => setRodFormat('eng')}
               >
-                {isMetric ? 'Decimal (m)' : t('engineeringFtBtn')}
+                {isMetric ? 'Decimal m' : t('engineeringFtBtn')}
               </button>
             </div>
 
             {/* Right: entry fields — expanded to use full available width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              {rodFormat === 'fif' ? (
+              {rodFormat === 'mcm' ? (
+                /* Metric M-CM-MM structured input */
+                <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
+                  {/* Meters */}
+                  <div style={s.rodPart}>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>m</span>
+                    <input
+                      style={{ ...s.rodFeetInput, opacity: isEditMode ? 1 : 0.7, fontSize: 19 }}
+                      type="text" inputMode="numeric" pattern="[0-9]*"
+                      value={rodMeters === '0' ? '' : rodMeters}
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === '' || /^\d+$/.test(v)) updateFromMCM(v || '0', rodCm, rodMm);
+                      }}
+                      onFocus={e => { if (rodMeters === '0') e.target.value = ''; }}
+                      onBlur={e => { if (!e.target.value) setRodMeters('0'); }}
+                      placeholder="" readOnly={!isEditMode}
+                    />
+                  </div>
+                  <div style={s.rodDiv} />
+                  {/* Centimeters */}
+                  <div style={s.rodPart}>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>cm</span>
+                    <select
+                      style={{ ...s.rodSelect, fontSize: 18 }} value={String(rodCm)}
+                      onChange={e => updateFromMCM(rodMeters, parseInt(e.target.value, 10), rodMm)}
+                      disabled={!isEditMode}
+                    >
+                      {CM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  <div style={s.rodDiv} />
+                  {/* Millimeters */}
+                  <div style={s.rodPart}>
+                    <span style={{ ...s.rodPartLbl, fontSize: 12 }}>mm</span>
+                    <select
+                      style={{ ...s.rodSelect, fontSize: 18 }} value={String(rodMm)}
+                      onChange={e => updateFromMCM(rodMeters, rodCm, parseInt(e.target.value, 10))}
+                      disabled={!isEditMode}
+                    >
+                      {MM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                  {/* Red ✕ clear button */}
+                  {isEditMode && (
+                    <>
+                      <div style={s.rodDiv} />
+                      <button
+                        style={{ ...s.clearAllBtn, minWidth: 28, width: 28, padding: 0, backgroundColor: '#FEF2F2', borderRadius: 0 }}
+                        onClick={() => updateFromMCM('0', 0, 0)}
+                        title={t('clearBtn')}
+                      >
+                        <span style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', lineHeight: 1 }}>✕</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : rodFormat === 'fif' ? (
                 <div style={{ ...s.rodBox, backgroundColor: '#E6E6E6' }}>
                   {/* Feet */}
                   <div style={s.rodPart}>
@@ -1495,7 +1615,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                   )}
                 </div>
               ) : (
-                /* Decimal Feet — same rodBox container style so heights match exactly */
+                /* Decimal — same rodBox container style so heights match exactly */
                 <div style={{ ...s.rodBox, backgroundColor: '#FFFFFF', border: `1.5px solid ${isEditMode ? BLUE_ACC : BORDER}` }}>
                   <input
                     className="eng-decimal-input"
@@ -1532,7 +1652,19 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
             </div>
           </div>
 
-          {/* Auto-generated value row — below the 3-column layout */}
+          {/* Auto-generated value rows */}
+          {rodFormat === 'mcm' && engDisplay && (
+            <div style={s.autoGenRow}>
+              <span style={s.autoGenLbl}>Decimal m:</span>
+              <span style={s.autoGenVal}>{engFtStr} m</span>
+            </div>
+          )}
+          {rodFormat === 'eng' && isMetric && mcmDisplay && (
+            <div style={s.autoGenRow}>
+              <span style={s.autoGenLbl}>M-CM:</span>
+              <span style={s.autoGenVal}>{mcmDisplay}</span>
+            </div>
+          )}
           {rodFormat === 'fif' && engDisplay && (
             <div style={s.autoGenRow}>
               <span style={s.autoGenLbl}>{t('autoGenEngFt')}:</span>

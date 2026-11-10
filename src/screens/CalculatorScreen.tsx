@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { INCHES_OPTIONS, FRACTION_OPTIONS } from '../constants';
 import { useLang } from '../LangContext';
-import { useUnit } from '../UnitContext';
+import { useUnit, CM_OPTIONS, MM_OPTIONS, FT_TO_M } from '../UnitContext';
 import ConfirmModal from '../components/ConfirmModal';
 
 // ─── Modal animation (idempotent injection) ───────────────────────────────────
@@ -145,6 +145,19 @@ function StepValueNode({ step, size = 13 }: { step: SessionStep; size?: number }
     return (
       <span style={{ fontSize: size, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
         {dispVal.toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
+      </span>
+    );
+  }
+  // FIF mode — in metric, display as M-CM-MM using step.val (always in feet)
+  if (isMetric) {
+    const totalM = Math.abs(step.val) * FT_TO_M;
+    const wholeM = Math.floor(totalM);
+    const remM   = totalM - wholeM;
+    const cm     = Math.floor(remM * 100);
+    const mm     = Math.round((remM * 100 - cm) * 10);
+    return (
+      <span style={{ fontSize: size, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
+        {wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}
       </span>
     );
   }
@@ -337,7 +350,16 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
 function ConvHistRow({ item, compact = false }: { item: ConvItem; compact?: boolean }) {
   const { isMetric, ftToDisplay } = useUnit();
   const sz = compact ? 14 : 16;
-  const FIFNode = <StackedFraction feet={item.fifFeet} inches={item.fifInches} fracLbl={item.fifFracLbl} color={TEXT_P} size={sz} />;
+  // In metric: show MCM for the structured side
+  const mcmNode = (() => {
+    const totalM = item.engVal * FT_TO_M;
+    const wholeM = Math.floor(totalM);
+    const remM   = totalM - wholeM;
+    const cm     = Math.floor(remM * 100);
+    const mm     = Math.round((remM * 100 - cm) * 10);
+    return <span style={{ fontSize: sz, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' }}>{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+  })();
+  const FIFNode = isMetric ? mcmNode : <StackedFraction feet={item.fifFeet} inches={item.fifInches} fracLbl={item.fifFracLbl} color={TEXT_P} size={sz} />;
   const dispVal = ftToDisplay(item.engVal);
   const EngNode = <span style={{ fontSize: sz, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' }}>{dispVal.toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}</span>;
   return (
@@ -445,6 +467,7 @@ function AllConvsModal({ history, onClose, onDeleteAll }: {
 // ─── Mode Toggle (vertical: Decimal Feet / Ft-Inches) ────────────────────────
 function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   const { t } = useLang();
+  const { isMetric } = useUnit();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 4, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
       {(['eng', 'fif'] as Mode[]).map(m => (
@@ -454,7 +477,7 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
           backgroundColor: mode === m ? NAVY : SURFACE,
           transition: 'background-color 0.12s, color 0.12s',
         }} onClick={() => onChange(m)}>
-          {m === 'eng' ? t('decimalFeet') : t('ftInches')}
+          {m === 'eng' ? (isMetric ? 'Decimal m' : t('decimalFeet')) : (isMetric ? 'M-CM' : t('ftInches'))}
         </button>
       ))}
     </div>
@@ -508,11 +531,50 @@ function FIFInputs({ ft, setFt: _setFt, inches, setInches, frac, setFrac, frL, s
   );
 }
 
+// ─── M-CM-MM input group (metric equivalent of FIFInputs) ────────────────────
+function MCMInputs({ mt, onMtChange, cm, onCmChange, mm, onMmChange, onClear }: {
+  mt: string; onMtChange: (v: string) => void;
+  cm: number; onCmChange: (v: number) => void;
+  mm: number; onMmChange: (v: number) => void;
+  onClear: () => void;
+}) {
+  return (
+    <>
+      <div style={{ border: `1.5px solid ${GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <input
+          style={{ height: 36, border: 'none', backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', width: '100%', boxSizing: 'border-box' as const }}
+          value={mt === '0' ? '' : mt}
+          onChange={e => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) onMtChange(v || '0'); }}
+          inputMode="numeric"
+          placeholder="Meters"
+        />
+        <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
+        <select
+          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+          value={String(cm)} onChange={e => onCmChange(parseInt(e.target.value, 10))}
+        >
+          {CM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
+        <select
+          style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+          value={String(mm)} onChange={e => onMmChange(parseInt(e.target.value, 10))}
+        >
+          {MM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+      <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }}
+        onClick={onClear}>✕ Clear</button>
+    </>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONVERTER VIEW — bidirectional, both cards always active
 // ═══════════════════════════════════════════════════════════════════════════════
 function ConverterView({ uid }: { uid: string }) {
   const { t } = useLang();
+  const { isMetric } = useUnit();
 
   // ── Input state (each side is independent — no auto-sync) ──────────────────
   const [cFt,         setCFt]         = useState('');
@@ -521,6 +583,9 @@ function ConverterView({ uid }: { uid: string }) {
   const [cFrL,        setCFrL]        = useState('None');
   const [cFtErr,      setCFtErr]      = useState('');
   const [cEng,        setCEng]        = useState('');
+  // Metric M-CM-MM state (cFt repurposed as meters string in metric)
+  const [cCm,         setCCm]         = useState(0);
+  const [cMm,         setCMm]         = useState(0);
 
   // Which side the user last edited — determines conversion direction on CONVERT
   const [lastEdited,  setLastEdited]  = useState<'fif' | 'eng' | null>(null);
@@ -564,12 +629,15 @@ function ConverterView({ uid }: { uid: string }) {
   };
 
   // ── Clear buttons ─────────────────────────────────────────────────────────
-  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); if (lastEdited === 'fif') { setCEng(''); } setLastEdited(null); resetConv(); };
-  const clearEng = () => { setCEng(''); if (lastEdited === 'eng') { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); } setLastEdited(null); resetConv(); };
-  const handleAllClear = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); setLastEdited(null); resetConv(); };
+  const clearFIF = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCCm(0); setCMm(0); if (lastEdited === 'fif') { setCEng(''); } setLastEdited(null); resetConv(); };
+  const clearEng = () => { setCEng(''); if (lastEdited === 'eng') { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCCm(0); setCMm(0); } setLastEdited(null); resetConv(); };
+  const handleAllClear = () => { setCFt(''); setCIn(0); setCFr(0); setCFrL('None'); setCFtErr(''); setCEng(''); setCCm(0); setCMm(0); setLastEdited(null); resetConv(); };
 
   // ── Validity ──────────────────────────────────────────────────────────────
-  const fifValid = cFt !== '' && !isNaN(parseFloat(cFt));
+  // In metric mode: cFt holds meters string; cCm/cMm hold cm/mm
+  const fifValid = isMetric
+    ? (cFt !== '' && !isNaN(parseFloat(cFt))) || cCm > 0 || cMm > 0
+    : cFt !== '' && !isNaN(parseFloat(cFt));
   const engValid = cEng !== '' && !isNaN(parseFloat(cEng)) && parseFloat(cEng) >= 0;
   const canConv  = fifValid || engValid;
   const convEnabled = canConv && !convDone;
@@ -581,34 +649,66 @@ function ConverterView({ uid }: { uid: string }) {
     // Determine conversion direction: prefer the side user last edited
     const goFifToEng = lastEdited !== 'eng' ? fifValid : !engValid;
 
-    if (goFifToEng) {
-      // FIF → Decimal
-      const engNum = fifToEng(cFt, cIn, cFr);
-      if (isNaN(engNum)) return;
-      const engStr = engNum.toFixed(2);
-      setCEng(engStr);
-      const ftNum = parseInt(cFt, 10) || 0;
-      setConvHistory(prev => [{
-        id: genId(), mode: 'fif_to_eng' as ConvMode,
-        fifFeet: ftNum, fifInches: cIn, fifFracLbl: cFrL, engVal: engNum,
-      }, ...prev].slice(0, MAX_HIST));
+    if (isMetric) {
+      if (goFifToEng) {
+        // M-CM-MM → Decimal m
+        const meters = (parseFloat(cFt || '0') || 0) + cCm / 100 + cMm / 1000;
+        const engStr = meters.toFixed(3);
+        setCEng(engStr);
+        const engInFt = meters / FT_TO_M;
+        setConvHistory(prev => [{
+          id: genId(), mode: 'fif_to_eng' as ConvMode,
+          fifFeet: Math.floor(meters), fifInches: cCm, fifFracLbl: `${cMm}`, engVal: engInFt,
+        }, ...prev].slice(0, MAX_HIST));
+      } else {
+        // Decimal m → M-CM-MM
+        const decMeters = parseFloat(cEng);
+        if (isNaN(decMeters) || decMeters < 0) return;
+        const wholeM = Math.floor(decMeters);
+        const remM   = decMeters - wholeM;
+        const cm     = Math.floor(remM * 100);
+        const mm     = Math.round((remM * 100 - cm) * 10);
+        setCFt(String(wholeM));
+        setCCm(cm);
+        setCMm(mm);
+        setCFtErr('');
+        setCEng(decMeters.toFixed(3));
+        const engInFt = decMeters / FT_TO_M;
+        setConvHistory(prev => [{
+          id: genId(), mode: 'fif_to_eng' as ConvMode,
+          fifFeet: wholeM, fifInches: cm, fifFracLbl: `${mm}`, engVal: engInFt,
+        }, ...prev].slice(0, MAX_HIST));
+      }
     } else {
-      // Decimal → FIF
-      const engNum = parseFloat(cEng);
-      if (isNaN(engNum) || engNum < 0) return;
-      const fif = engToFif(engNum);
-      setCFt(String(fif.feet));
-      setCIn(fif.inches);
-      setCFrL(fif.fracLbl);
-      setCFr(fracLblToDecimal(fif.fracLbl));
-      setCFtErr('');
-      // Normalise the decimal display to 2dp
-      setCEng(engNum.toFixed(2));
-      const ftNum = fif.feet;
-      setConvHistory(prev => [{
-        id: genId(), mode: 'fif_to_eng' as ConvMode,
-        fifFeet: ftNum, fifInches: fif.inches, fifFracLbl: fif.fracLbl, engVal: engNum,
-      }, ...prev].slice(0, MAX_HIST));
+      if (goFifToEng) {
+        // FIF → Decimal
+        const engNum = fifToEng(cFt, cIn, cFr);
+        if (isNaN(engNum)) return;
+        const engStr = engNum.toFixed(2);
+        setCEng(engStr);
+        const ftNum = parseInt(cFt, 10) || 0;
+        setConvHistory(prev => [{
+          id: genId(), mode: 'fif_to_eng' as ConvMode,
+          fifFeet: ftNum, fifInches: cIn, fifFracLbl: cFrL, engVal: engNum,
+        }, ...prev].slice(0, MAX_HIST));
+      } else {
+        // Decimal → FIF
+        const engNum = parseFloat(cEng);
+        if (isNaN(engNum) || engNum < 0) return;
+        const fif = engToFif(engNum);
+        setCFt(String(fif.feet));
+        setCIn(fif.inches);
+        setCFrL(fif.fracLbl);
+        setCFr(fracLblToDecimal(fif.fracLbl));
+        setCFtErr('');
+        // Normalise the decimal display to 2dp
+        setCEng(engNum.toFixed(2));
+        const ftNum = fif.feet;
+        setConvHistory(prev => [{
+          id: genId(), mode: 'fif_to_eng' as ConvMode,
+          fifFeet: ftNum, fifInches: fif.inches, fifFracLbl: fif.fracLbl, engVal: engNum,
+        }, ...prev].slice(0, MAX_HIST));
+      }
     }
 
     setConvDone(true);
@@ -631,32 +731,58 @@ function ConverterView({ uid }: { uid: string }) {
         {/* ── Card row: FIF | = | Decimal ── */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'stretch', minWidth: 0 }}>
 
-          {/* FIF card — always active */}
+          {/* FIF / M-CM-MM card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('ftInches')}</span>
-            <div style={{ border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <input
-                style={{ width: '100%', height: 36, border: 'none', backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' }}
-                value={cFt} onChange={e => onCFtChange(e.target.value)}
-                inputMode="numeric"
-                placeholder={cFtFocused ? '' : 'Feet'}
-                onFocus={() => setCFtFocused(true)}
-                onBlur={() => setCFtFocused(false)}
-              />
-              <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
-              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
-                value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
-                {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
-              <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
-                value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
-                  const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
-                  if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
-                }}>
-                {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
+            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{isMetric ? 'M-CM' : t('ftInches')}</span>
+            {isMetric ? (
+              /* Metric: M-CM-MM fields */
+              <div style={{ border: `1.5px solid ${GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <input
+                  style={{ width: '100%', height: 36, border: 'none', backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' as const }}
+                  value={cFt === '' ? '' : (cFt === '0' ? '' : cFt)}
+                  onChange={e => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) { setCFt(v || '0'); setCFtErr(''); setLastEdited('fif'); resetConv(); } }}
+                  inputMode="numeric"
+                  placeholder={cFtFocused ? '' : 'Meters'}
+                  onFocus={() => setCFtFocused(true)}
+                  onBlur={() => setCFtFocused(false)}
+                />
+                <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
+                <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                  value={String(cCm)} onChange={e => { setCCm(parseInt(e.target.value, 10)); setLastEdited('fif'); resetConv(); }}>
+                  {CM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
+                <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 18, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                  value={String(cMm)} onChange={e => { setCMm(parseInt(e.target.value, 10)); setLastEdited('fif'); resetConv(); }}>
+                  {MM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            ) : (
+              /* Imperial: FIF fields */
+              <div style={{ border: `1.5px solid ${cFtErr ? '#C0392B' : GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <input
+                  style={{ width: '100%', height: 36, border: 'none', backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', padding: '0 4px', boxSizing: 'border-box' as const }}
+                  value={cFt} onChange={e => onCFtChange(e.target.value)}
+                  inputMode="numeric"
+                  placeholder={cFtFocused ? '' : 'Feet'}
+                  onFocus={() => setCFtFocused(true)}
+                  onBlur={() => setCFtFocused(false)}
+                />
+                <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
+                <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                  value={String(cIn)} onChange={e => onSelectInches(parseInt(e.target.value, 10))}>
+                  {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
+                <select style={{ width: '100%', height: 36, border: 'none', backgroundColor: SURFACE, fontSize: 20, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const }}
+                  value={cFrL === 'None' ? '0' : String(cFr)} onChange={e => {
+                    const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value);
+                    if (opt) onSelectFrac(parseFloat(opt.value), opt.label);
+                  }}>
+                  {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            )}
             {cFtErr && <span style={{ fontSize: 9, color: '#C0392B', fontWeight: 600, textAlign: 'center' }}>{cFtErr}</span>}
             <button style={{ height: 28, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={clearFIF}>✕ {t('clearBtn')}</button>
@@ -669,7 +795,7 @@ function ConverterView({ uid }: { uid: string }) {
 
           {/* Decimal card — always active */}
           <div style={{ flex: 5, minWidth: 0, overflow: 'hidden', backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${GOLD}`, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{t('decimalFeet')}</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_P, letterSpacing: 0.4 }}>{isMetric ? 'Decimal m' : t('decimalFeet')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, minWidth: 0 }}>
               <input
                 style={{ width: '100%', height: 52, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', boxSizing: 'border-box' as const }}
@@ -681,7 +807,7 @@ function ConverterView({ uid }: { uid: string }) {
                 onBlur={() => setCEngFocused(false)}
                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
-              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>ft</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_S, letterSpacing: 0.3 }}>{isMetric ? 'm' : 'ft'}</span>
             </div>
             <button style={{ height: 28, backgroundColor: 'rgba(192,57,43,0.08)', border: '1px solid rgba(192,57,43,0.35)', borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#C0392B', cursor: 'pointer', letterSpacing: 0.2 }}
               onClick={clearEng}>✕ {t('clearBtn')}</button>
@@ -829,6 +955,14 @@ function CalculatorView({ uid }: { uid: string }) {
   const [bEng,   setBEng]   = useState('');
   const [bFtErr, setBFtErr] = useState('');
 
+  // Metric M-CM-MM state for inputs A and B
+  const [aMt, setAMt] = useState('0');
+  const [aCm, setACm] = useState(0);
+  const [aMm, setAMm] = useState(0);
+  const [bMt, setBMt] = useState('0');
+  const [bCm, setBCm] = useState(0);
+  const [bMm, setBMm] = useState(0);
+
   const [result,       setResult]       = useState<number | null>(null);
   const [calcDone,     setCalcDone]     = useState(false);
   const [aEngFocused,  setAEngFocused]  = useState(false);
@@ -866,9 +1000,9 @@ function CalculatorView({ uid }: { uid: string }) {
   };
 
   // Clear A resets everything (breaks any active session)
-  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); resetCalc(); resetSession(); };
+  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); setAMt('0'); setACm(0); setAMm(0); resetCalc(); resetSession(); };
   // Clear B also resets session — user is starting over
-  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); resetCalc(); resetSession(); };
+  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); setBMt('0'); setBCm(0); setBMm(0); resetCalc(); resetSession(); };
 
   // A input handlers — modifying A while addMoreActive breaks the session
   const onFtChangeA = (v: string) => {
@@ -882,8 +1016,16 @@ function CalculatorView({ uid }: { uid: string }) {
     resetCalc();
   };
 
-  const valA    = modeA === 'eng' ? parseFloat(aEng) : fifToEng(aFt, aIn, aFr);
-  const valB    = modeB === 'eng' ? parseFloat(bEng) : fifToEng(bFt, bIn, bFr);
+  const valA = modeA === 'eng'
+    ? (isMetric ? parseFloat(aEng) / FT_TO_M : parseFloat(aEng))
+    : modeA === 'fif' && isMetric
+      ? ((parseFloat(aMt || '0') || 0) + aCm / 100 + aMm / 1000) / FT_TO_M
+      : fifToEng(aFt, aIn, aFr);
+  const valB = modeB === 'eng'
+    ? (isMetric ? parseFloat(bEng) / FT_TO_M : parseFloat(bEng))
+    : modeB === 'fif' && isMetric
+      ? ((parseFloat(bMt || '0') || 0) + bCm / 100 + bMm / 1000) / FT_TO_M
+      : fifToEng(bFt, bIn, bFr);
   const canCalc = !isNaN(valA) && !isNaN(valB);
   const calcEnabled = canCalc && !calcDone;
   const resultFif = result !== null ? engToFif(Math.abs(result)) : null;
@@ -936,27 +1078,41 @@ function CalculatorView({ uid }: { uid: string }) {
   const handleAddMore = () => {
     if (!addMoreEnabled || result === null) return;
     if (modeA === 'fif') {
-      // Preserve Feet-Inches-Fraction mode — convert result back to FIF components
-      const fif = engToFif(Math.abs(result));
-      const frOpt = FRACTION_OPTIONS.find(o => {
-        const noFrac = !fif.fracLbl || fif.fracLbl === 'None';
-        if (noFrac) return o.value === '0';
-        return Math.abs(parseFloat(o.value) - fracLblToDecimal(fif.fracLbl)) < 0.001;
-      });
-      setAFt(String(fif.feet));
-      setAIn(fif.inches);
-      setAFr(frOpt ? parseFloat(frOpt.value) : 0);
-      setAFrL(frOpt?.label ?? 'None');
-      setAEng('');
+      if (isMetric) {
+        // Preserve M-CM-MM mode — convert result back to MCM components
+        const totalM = Math.abs(result) * FT_TO_M;
+        const wholeM = Math.floor(totalM);
+        const remM   = totalM - wholeM;
+        const cm     = Math.floor(remM * 100);
+        const mm     = Math.round((remM * 100 - cm) * 10);
+        setAMt(String(wholeM)); setACm(cm); setAMm(mm);
+        setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng('');
+      } else {
+        // Preserve Feet-Inches-Fraction mode — convert result back to FIF components
+        const fif = engToFif(Math.abs(result));
+        const frOpt = FRACTION_OPTIONS.find(o => {
+          const noFrac = !fif.fracLbl || fif.fracLbl === 'None';
+          if (noFrac) return o.value === '0';
+          return Math.abs(parseFloat(o.value) - fracLblToDecimal(fif.fracLbl)) < 0.001;
+        });
+        setAFt(String(fif.feet));
+        setAIn(fif.inches);
+        setAFr(frOpt ? parseFloat(frOpt.value) : 0);
+        setAFrL(frOpt?.label ?? 'None');
+        setAEng('');
+      }
       // modeA stays 'fif'
     } else {
-      // Preserve Decimal Feet mode — keep full precision including sign
-      setAEng(String(result));
+      // Preserve Decimal mode — keep full precision including sign
+      // In metric: store decimal meters
+      setAEng(isMetric ? (Math.abs(result) * FT_TO_M).toFixed(3) : String(result));
       setAFt(''); setAIn(0); setAFr(0); setAFrL('None');
+      setAMt('0'); setACm(0); setAMm(0);
       // modeA stays 'eng'
     }
     setAFtErr('');
     setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr('');
+    setBMt('0'); setBCm(0); setBMm(0);
     setResult(null);
     setCalcDone(false);
     setAddMoreEnabled(false);
@@ -1002,13 +1158,20 @@ function CalculatorView({ uid }: { uid: string }) {
           <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${addMoreActive ? NAVY : BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
             <ModeToggle mode={modeA} onChange={m => { if (addMoreActive) resetSession(); setModeA(m); resetCalc(); }} />
             {modeA === 'fif' ? (
-              <FIFInputs
-                ft={aFt} setFt={setAFt}
-                inches={aIn} setInches={v => { if (addMoreActive) resetSession(); setAIn(v); resetCalc(); }}
-                frac={aFr}   setFrac={v => { if (addMoreActive) resetSession(); setAFr(v); resetCalc(); }}
-                frL={aFrL}   setFrL={v => { if (addMoreActive) resetSession(); setAFrL(v); resetCalc(); }}
-                ftErr={aFtErr} onFtChange={onFtChangeA}
-              />
+              isMetric ? (
+                <MCMInputs mt={aMt} onMtChange={v => { if (addMoreActive) resetSession(); setAMt(v); resetCalc(); }}
+                           cm={aCm} onCmChange={v => { if (addMoreActive) resetSession(); setACm(v); resetCalc(); }}
+                           mm={aMm} onMmChange={v => { if (addMoreActive) resetSession(); setAMm(v); resetCalc(); }}
+                           onClear={clearA} />
+              ) : (
+                <FIFInputs
+                  ft={aFt} setFt={setAFt}
+                  inches={aIn} setInches={v => { if (addMoreActive) resetSession(); setAIn(v); resetCalc(); }}
+                  frac={aFr}   setFrac={v => { if (addMoreActive) resetSession(); setAFr(v); resetCalc(); }}
+                  frL={aFrL}   setFrL={v => { if (addMoreActive) resetSession(); setAFrL(v); resetCalc(); }}
+                  ftErr={aFtErr} onFtChange={onFtChangeA}
+                />
+              )
             ) : (
               <input
                 style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: addMoreActive ? '#EEF4FF' : '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
@@ -1021,7 +1184,9 @@ function CalculatorView({ uid }: { uid: string }) {
                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
             )}
-            <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
+            {!(modeA === 'fif' && isMetric) && (
+              <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
+            )}
           </div>
 
           {/* Op selector column */}
@@ -1047,13 +1212,20 @@ function CalculatorView({ uid }: { uid: string }) {
           <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
             <ModeToggle mode={modeB} onChange={m => { setModeB(m); resetCalc(); }} />
             {modeB === 'fif' ? (
-              <FIFInputs
-                ft={bFt} setFt={setBFt}
-                inches={bIn} setInches={v => { setBIn(v); resetCalc(); }}
-                frac={bFr}   setFrac={v => { setBFr(v); resetCalc(); }}
-                frL={bFrL}   setFrL={v => { setBFrL(v); resetCalc(); }}
-                ftErr={bFtErr} onFtChange={onFtChangeB}
-              />
+              isMetric ? (
+                <MCMInputs mt={bMt} onMtChange={v => { setBMt(v); resetCalc(); }}
+                           cm={bCm} onCmChange={v => { setBCm(v); resetCalc(); }}
+                           mm={bMm} onMmChange={v => { setBMm(v); resetCalc(); }}
+                           onClear={clearB} />
+              ) : (
+                <FIFInputs
+                  ft={bFt} setFt={setBFt}
+                  inches={bIn} setInches={v => { setBIn(v); resetCalc(); }}
+                  frac={bFr}   setFrac={v => { setBFr(v); resetCalc(); }}
+                  frL={bFrL}   setFrL={v => { setBFrL(v); resetCalc(); }}
+                  ftErr={bFtErr} onFtChange={onFtChangeB}
+                />
+              )
             ) : (
               <input
                 style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
@@ -1066,7 +1238,9 @@ function CalculatorView({ uid }: { uid: string }) {
                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               />
             )}
-            <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
+            {!(modeB === 'fif' && isMetric) && (
+              <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
+            )}
           </div>
 
           {/* Result card — unchanged */}
