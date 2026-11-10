@@ -161,11 +161,13 @@ function StepValueNode({ step, size = 13 }: { step: SessionStep; size?: number }
       </span>
     );
   }
+  // Imperial FIF: always derive from step.val (feet) so metric-entered steps display correctly
+  const fif = engToFif(Math.abs(step.val));
   return (
     <StackedFraction
-      feet={parseInt(step.ft || '0', 10)}
-      inches={step.inches}
-      fracLbl={step.frL}
+      feet={fif.feet}
+      inches={fif.inches}
+      fracLbl={fif.fracLbl}
       color={NAVY} size={size}
     />
   );
@@ -204,10 +206,19 @@ function CompactCalcRow({ item }: { item: CalcHistItem }) {
           );
         })}
       </div>
-      {/* Result row — RESULT label, FIF • decimal, ops badge */}
+      {/* Result row — RESULT label, structured • decimal, ops badge */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
         <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 0.6, flexShrink: 0 }}>{t('result')}:</span>
-        <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={14} />
+        {isMetric ? (() => {
+          const totalM = Math.abs(item.result) * FT_TO_M;
+          const wholeM = Math.floor(totalM);
+          const remM   = totalM - wholeM;
+          const cm     = Math.floor(remM * 100);
+          const mm     = Math.round((remM * 100 - cm) * 10);
+          return <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, fontFamily: 'monospace', flexShrink: 0 }}>{item.result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+        })() : (
+          <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={14} />
+        )}
         <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_S, flexShrink: 0 }}>•</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: NAVY, fontFamily: 'monospace', flexShrink: 0 }}>
           {item.result < 0 ? '−' : ''}{ftToDisplay(Math.abs(item.result)).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
@@ -256,9 +267,8 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
             const isFinal = i === item.steps.length - 1;
             const rtFIF   = engToFif(Math.abs(runningTotals[i]));
             const rtNeg   = runningTotals[i] < 0;
-            const stepFIF = step.mode === 'fif'
-              ? { feet: parseInt(step.ft || '0', 10), inches: step.inches, fracLbl: step.frL }
-              : engToFif(Math.abs(step.val));
+            // Always derive from step.val (feet) so metric-entered steps display correctly in imperial
+            const stepFIF = engToFif(Math.abs(step.val));
             return (
               <div key={i}>
                 {/* Operation circle — centered, compact spacing */}
@@ -282,7 +292,14 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
                     {`VALUE ${i + 1}`}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 3 }}>
-                    <StackedFraction {...stepFIF} color={NAVY} size={16} />
+                    {isMetric ? (() => {
+                      const totalM = Math.abs(step.val) * FT_TO_M;
+                      const wholeM = Math.floor(totalM);
+                      const remM   = totalM - wholeM;
+                      const cm     = Math.floor(remM * 100);
+                      const mm     = Math.round((remM * 100 - cm) * 10);
+                      return <span style={{ fontSize: 16, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+                    })() : <StackedFraction {...stepFIF} color={NAVY} size={16} />}
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: NAVY, fontFamily: 'monospace' }}>
                     {ftToDisplay(Math.abs(step.val)).toFixed(4)} {isMetric ? 'm' : 'ft'}
@@ -299,7 +316,14 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
                       <div style={{ backgroundColor: DARK, borderRadius: 10, border: `2px solid ${GOLD}`, padding: '10px 12px', textAlign: 'center' as const, boxShadow: '0 4px 12px rgba(16,45,78,0.18)' }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{t('finalResult')}</div>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                          <StackedFraction {...rtFIF} negative={rtNeg} color="#fff" size={18} />
+                          {isMetric ? (() => {
+                            const totalM = Math.abs(runningTotals[i]) * FT_TO_M;
+                            const wholeM = Math.floor(totalM);
+                            const remM   = totalM - wholeM;
+                            const cm     = Math.floor(remM * 100);
+                            const mm     = Math.round((remM * 100 - cm) * 10);
+                            return <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{rtNeg ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+                          })() : <StackedFraction {...rtFIF} negative={rtNeg} color="#fff" size={18} />}
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 2 }}>•</div>
                         <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
@@ -314,7 +338,14 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
                       <div style={{ backgroundColor: SURFACE, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: '7px 12px', textAlign: 'center' as const }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: NAVY, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{t('result')}</div>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
-                          <StackedFraction {...rtFIF} negative={rtNeg} color={NAVY} size={14} />
+                          {isMetric ? (() => {
+                            const totalM = Math.abs(runningTotals[i]) * FT_TO_M;
+                            const wholeM = Math.floor(totalM);
+                            const remM   = totalM - wholeM;
+                            const cm     = Math.floor(remM * 100);
+                            const mm     = Math.round((remM * 100 - cm) * 10);
+                            return <span style={{ fontSize: 14, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>{rtNeg ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+                          })() : <StackedFraction {...rtFIF} negative={rtNeg} color={NAVY} size={14} />}
                         </div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, marginBottom: 2 }}>•</div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
@@ -332,7 +363,14 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
             <div style={{ marginTop: 8, backgroundColor: DARK, borderRadius: 10, border: `2px solid ${GOLD}`, padding: '10px 12px', textAlign: 'center' as const }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{t('finalResult')}</div>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                <StackedFraction {...engToFif(Math.abs(item.result))} negative={item.result < 0} color="#fff" size={18} />
+                {isMetric ? (() => {
+                  const totalM = Math.abs(item.result) * FT_TO_M;
+                  const wholeM = Math.floor(totalM);
+                  const remM   = totalM - wholeM;
+                  const cm     = Math.floor(remM * 100);
+                  const mm     = Math.round((remM * 100 - cm) * 10);
+                  return <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{item.result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+                })() : <StackedFraction {...engToFif(Math.abs(item.result))} negative={item.result < 0} color="#fff" size={18} />}
               </div>
               <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 2 }}>•</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
@@ -538,6 +576,7 @@ function MCMInputs({ mt, onMtChange, cm, onCmChange, mm, onMmChange, onClear }: 
   mm: number; onMmChange: (v: number) => void;
   onClear: () => void;
 }) {
+  const [mtFocused, setMtFocused] = useState(false);
   return (
     <>
       <div style={{ border: `1.5px solid ${GOLD}`, borderRadius: 6, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -546,7 +585,9 @@ function MCMInputs({ mt, onMtChange, cm, onCmChange, mm, onMmChange, onClear }: 
           value={mt === '0' ? '' : mt}
           onChange={e => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) onMtChange(v || '0'); }}
           inputMode="numeric"
-          placeholder="Meters"
+          placeholder={mtFocused ? '' : 'Meters'}
+          onFocus={() => setMtFocused(true)}
+          onBlur={() => setMtFocused(false)}
         />
         <div style={{ height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 }} />
         <select
@@ -1247,11 +1288,20 @@ function CalculatorView({ uid }: { uid: string }) {
           <div style={{ flex: 2.8, minWidth: 0, backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 2, overflow: 'hidden' }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase' }}>{t('result')}</span>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' }}>
-              {result !== null && resultFif ? (
+              {result !== null ? (
                 <>
                   <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{ftToDisplay(result).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}</span>
                   <div style={{ height: 1, width: '80%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={15} />
+                  {isMetric ? (() => {
+                    const totalM = Math.abs(ftToDisplay(result));
+                    const wholeM = Math.floor(totalM);
+                    const remM   = totalM - wholeM;
+                    const cm     = Math.floor(remM * 100);
+                    const mm     = Math.round((remM * 100 - cm) * 10);
+                    return <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.3 }}>{result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+                  })() : (
+                    resultFif && <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={15} />
+                  )}
                 </>
               ) : (
                 <span style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.25)' }}>—</span>
