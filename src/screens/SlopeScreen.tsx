@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { useSurveyStore } from '../stores/surveyStore';
 import { useLang } from '../LangContext';
+import { useUnit, FT_TO_M } from '../UnitContext';
 import { SurveyPoint, SurveySet } from '../types';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -136,6 +137,7 @@ function CenteredOverlay({ onClose, children }: { onClose: () => void; children:
 function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
   elevA: number; elevB: number; distN: number; labelA: string; labelB: string;
 }) {
+  const { isMetric, unitLabel, ftToDisplay, fmtDist } = useUnit();
   const result = calcSlope(elevA, elevB, distN);
   const dc = dirColor(result.dir);
   const W = 340, H = 232;
@@ -143,16 +145,20 @@ function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
   const PW = W - PL - PR;
   const PH = H - PT - PB;
 
-  const minE   = Math.min(elevA, elevB);
-  const maxE   = Math.max(elevA, elevB);
-  const rangeE = Math.max(maxE - minE, 0.5);
+  // Convert stored-ft elevations to display units for the chart axes
+  const dispA = ftToDisplay(elevA);
+  const dispB = ftToDisplay(elevB);
+
+  const minE   = Math.min(dispA, dispB);
+  const maxE   = Math.max(dispA, dispB);
+  const rangeE = Math.max(maxE - minE, isMetric ? 0.15 : 0.5);
   const padE   = rangeE * 0.32;
   const yMin   = minE - padE;
   const yMax   = maxE + padE;
 
   const yFor = (e: number) => PT + PH * (1 - (e - yMin) / (yMax - yMin));
   const xA = PL, xB = PL + PW;
-  const yA = yFor(elevA), yB = yFor(elevB);
+  const yA = yFor(dispA), yB = yFor(dispB);
 
   const ticks: number[] = [];
   for (let i = 0; i <= 4; i++) ticks.push(yMin + (yMax - yMin) * (i / 4));
@@ -167,12 +173,12 @@ function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
         return (
           <g key={i}>
             <line x1={PL} y1={ty} x2={PL + PW} y2={ty} stroke="#D1D8E4" strokeWidth="0.5" strokeDasharray="3,4" />
-            <text x={PL - 3} y={ty + 3.5} textAnchor="end" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(1)}</text>
+            <text x={PL - 3} y={ty + 3.5} textAnchor="end" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(isMetric ? 2 : 1)}</text>
           </g>
         );
       })}
       <text x={8} y={PT + PH / 2} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_DIS}
-        transform={`rotate(-90 8 ${PT + PH / 2})`}>ft</text>
+        transform={`rotate(-90 8 ${PT + PH / 2})`}>{unitLabel}</text>
       <polygon points={`${xA},${yA} ${xB},${yB} ${xB},${PT + PH} ${xA},${PT + PH}`} fill={`${dc}1A`} />
       {result.dir !== 'flat' && (
         <line x1={xB} y1={yA} x2={xB} y2={yB} stroke={dc} strokeWidth="1" strokeDasharray="4,3" opacity="0.35" />
@@ -181,13 +187,13 @@ function CalcProfileChart({ elevA, elevB, distN, labelA, labelB }: {
       <circle cx={xA} cy={yA} r={5} fill={BLUE} />
       <circle cx={xA} cy={yA} r={2.5} fill={BLUE_ACC} />
       <text x={xA} y={yA - 9} textAnchor="middle" fontSize="9.5" fontWeight="900" fill={NAVY}>{labelA}</text>
-      <text x={xA} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{elevA.toFixed(2)}</text>
+      <text x={xA} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{dispA.toFixed(isMetric ? 3 : 2)}</text>
       <circle cx={xB} cy={yB} r={5} fill={BLUE} />
       <circle cx={xB} cy={yB} r={2.5} fill={BLUE_ACC} />
       <text x={xB} y={yB - 9} textAnchor="middle" fontSize="9.5" fontWeight="900" fill={NAVY}>{labelB}</text>
-      <text x={xB} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{elevB.toFixed(2)}</text>
+      <text x={xB} y={PT + PH + 14} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_SEC}>{dispB.toFixed(isMetric ? 3 : 2)}</text>
       <text x={PL + PW / 2} y={PT + PH + 20} textAnchor="middle" fontSize="8" fontWeight="700" fill={TEXT_DIS}>
-        {distN.toFixed(1)} ft horizontal
+        {fmtDist(distN)} horizontal
       </text>
       <text x={PL + PW / 2} y={(yA + yB) / 2 - 8} textAnchor="middle" fontSize="11" fontWeight="900" fill={dc}>
         {sign(result.pct)}{result.pct.toFixed(2)}% {dirIcon(result.dir)}
@@ -204,6 +210,7 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
   onDelete: () => void;
 }) {
   const { t } = useLang();
+  const { fmtDist, fmtDiff } = useUnit();
   const dc = dirColor(calc.dir);
   const [detailConfirm, setDetailConfirm] = useState<null | { onConfirm: () => void }>(null);
 
@@ -252,13 +259,13 @@ function CalcDetailModal({ calc, onClose, onEdit, onDelete }: {
           {/* Horizontal Distance card */}
           <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('slopeDistanceLbl')}</span>
-            <span style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{calc.distance.toFixed(2)} ft</span>
+            <span style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{fmtDist(calc.distance)}</span>
           </div>
 
           {/* 4 metric cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
             {([
-              { lbl: t('slopeElevDiff'), val: `${sign(calc.diff)}${calc.diff.toFixed(3)}ft`, c: dc },
+              { lbl: t('slopeElevDiff'), val: fmtDiff(calc.diff), c: dc },
               { lbl: t('slopeSlopePct'), val: `${sign(calc.slopePct)}${calc.slopePct.toFixed(2)}%`, c: dc },
               { lbl: t('slopeRatioLbl'), val: calc.ratio != null ? `1:${calc.ratio.toFixed(1)}` : '—', c: TEXT_PRI },
               { lbl: t('slopeAngleLbl'), val: `${calc.angle.toFixed(2)}°`, c: TEXT_PRI },
@@ -545,6 +552,7 @@ interface FindSlopeProps {
 
 function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsumed, pendingFromId, pendingToId, onPendingFromToConsumed }: FindSlopeProps) {
   const { t, lang } = useLang();
+  const { isMetric, unitLabel, fmtElev, fmtDist, fmtDiff } = useUnit();
   const [fromId,       setFromId]       = useState<string | null>(null);
   const [toId,         setToId]         = useState<string | null>(null);
   const [dist,         setDist]         = useState('');
@@ -567,7 +575,9 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
     if (pendingEdit) {
       setFromId(pendingEdit.fromId);
       setToId(pendingEdit.toId);
-      setDist(pendingEdit.distance.toString());
+      // distance stored in ft; convert to display unit for the input field
+      const dispDist = isMetric ? (pendingEdit.distance * FT_TO_M) : pendingEdit.distance;
+      setDist(dispDist.toFixed(2));
       setShowResults(false);
       setCommitted(null);
       onPendingEditConsumed();
@@ -601,14 +611,16 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
 
   const handleCalculate = useCallback(() => {
     if (!canCalc || !fromPt || !toPt || !fromId || !toId) return;
-    const r = calcSlope(fromPt.bmElevation!, toPt.bmElevation!, distN);
-    setCommitted({ result: r, fromPt, toPt, distN });
+    // Always calculate in feet; distN is in display units so convert if metric
+    const distFt = isMetric ? distN / FT_TO_M : distN;
+    const r = calcSlope(fromPt.bmElevation!, toPt.bmElevation!, distFt);
+    setCommitted({ result: r, fromPt, toPt, distN: distFt });
     setShowResults(true);
     onSave({
       id:        Date.now().toString(),
       fromId,    fromLabel: fromPt.label,  fromName: fromPt.pointName ?? '',  fromElev: fromPt.bmElevation!,
       toId,      toLabel:   toPt.label,    toName:   toPt.pointName ?? '',    toElev:   toPt.bmElevation!,
-      distance:  distN,
+      distance:  distFt,   // always stored in ft
       slopePct:  r.pct,
       diff:      r.diff,
       ratio:     r.ratio,
@@ -616,7 +628,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
       dir:       r.dir,
       savedAt:   Date.now(),
     });
-  }, [canCalc, fromPt, toPt, fromId, toId, distN, onSave]);
+  }, [canCalc, fromPt, toPt, fromId, toId, distN, isMetric, onSave]);
 
   const handleCalcAnother = useCallback(() => {
     setShowResults(false);
@@ -694,7 +706,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeFromPoint')}</span>
               <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: NAVY }}>
                 <b>{cFromPt.label}{cFromPt.pointName ? ` (${cFromPt.pointName})` : ''}</b>{' '}
-                <span style={{ whiteSpace: 'nowrap' as const }}><b>• {(cFromPt.bmElevation ?? 0).toFixed(3)} ft Elevation</b></span>
+                <span style={{ whiteSpace: 'nowrap' as const }}><b>• {fmtElev(cFromPt.bmElevation ?? 0)} Elevation</b></span>
               </div>
             </div>
             {/* To Point */}
@@ -702,13 +714,13 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeToPoint')}</span>
               <div style={{ textAlign: 'right' as const, fontSize: 13, fontWeight: 700, color: NAVY }}>
                 <b>{cToPt.label}{cToPt.pointName ? ` (${cToPt.pointName})` : ''}</b>{' '}
-                <span style={{ whiteSpace: 'nowrap' as const }}><b>• {(cToPt.bmElevation ?? 0).toFixed(3)} ft Elevation</b></span>
+                <span style={{ whiteSpace: 'nowrap' as const }}><b>• {fmtElev(cToPt.bmElevation ?? 0)} Elevation</b></span>
               </div>
             </div>
             {/* Horizontal Distance */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_SEC, textTransform: 'uppercase' as const, letterSpacing: 0.5, flexShrink: 0 }}>{t('slopeHorizDist')}</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: '"Courier New", Courier, monospace' }}>{cDistN.toFixed(2)} ft</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: '"Courier New", Courier, monospace' }}>{fmtDist(cDistN)}</span>
             </div>
           </div>
           {/* Graph — lives inside the card, zero gap above */}
@@ -723,7 +735,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
         {/* 4 metric cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 5 }}>
           {([
-            { key: 'slopeElevDiff', value: `${sign(result.diff)}${result.diff.toFixed(3)}ft`, color: dc },
+            { key: 'slopeElevDiff', value: fmtDiff(result.diff), color: dc },
             { key: 'slopeSlopePct', value: `${sign(result.pct)}${result.pct.toFixed(2)}%`,    color: dc },
             { key: 'slopeRatioLbl', value: result.ratio != null ? `1:${result.ratio.toFixed(1)}` : '—', color: TEXT_PRI },
             { key: 'slopeAngleLbl', value: `${result.angle.toFixed(2)}°`, color: TEXT_PRI },
@@ -777,7 +789,7 @@ function FindSlopeTab({ points, setMap, onSave, pendingEdit, onPendingEditConsum
               onBlur={() => setDistFocused(false)}
               style={{ flex: 1, height: 36, borderRadius: 7, border: `1.5px solid ${validDist ? BLUE_ACC : BORDER}`, padding: '0 10px', fontSize: 16, fontWeight: 700, color: (!dist && !distFocused) ? TEXT_DIS : TEXT_PRI, backgroundColor: SURFACE, outline: 'none', boxSizing: 'border-box' as const }}
             />
-            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, minWidth: 22 }}>{t('slopeFtUnit')}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, minWidth: 22 }}>{unitLabel}</span>
           </div>
         </div>
         {samePoint && <div style={{ fontSize: 14, fontWeight: 700, color: RED_DARK }}>{t('slopeSamePointErr')}</div>}
@@ -838,6 +850,7 @@ interface HistoryTabProps {
 
 function HistoryTab({ savedCalcs, savedTargetCalcs, onDelete, onDeleteTarget, onEdit, onEditTarget }: HistoryTabProps) {
   const { t, lang } = useLang();
+  const { fmtDist, fmtDiff, fmtElev } = useUnit();
   const [activeHistTab,  setActiveHistTab]  = useState<'calcs' | 'targets'>('calcs');
   // 'list' = preview, 'all' = full-page scrollable
   const [view,           setView]           = useState<'list' | 'all'>('list');
@@ -883,7 +896,7 @@ function HistoryTab({ savedCalcs, savedTargetCalcs, onDelete, onDeleteTarget, on
               <span style={{ fontSize: 16, fontWeight: 700, color: dc }}>{sign(c.slopePct)}{c.slopePct.toFixed(2)}%</span>
             </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
-              {c.distance.toFixed(1)} ft · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : c.dir === 'downhill' ? '▼' : 'Δ'}</span> {sign(c.diff)}{c.diff.toFixed(3)} ft
+              {fmtDist(c.distance)} · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : c.dir === 'downhill' ? '▼' : 'Δ'}</span> {fmtDiff(c.diff)}
             </div>
           </div>
           <button
@@ -923,7 +936,7 @@ function HistoryTab({ savedCalcs, savedTargetCalcs, onDelete, onDeleteTarget, on
               <span style={{ fontSize: 16, fontWeight: 700, color: dc }}>{c.slopeN.toFixed(2)}%</span>
             </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: TEXT_SEC, marginTop: 2 }}>
-              {c.distN.toFixed(1)} ft · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : '▼'}</span> {c.dir === 'uphill' ? '+' : '−'}{c.elevChange.toFixed(3)} ft
+              {fmtDist(c.distN)} · <span style={{ color: dc }}>{c.dir === 'uphill' ? '▲' : '▼'}</span> {c.dir === 'uphill' ? '+' : '−'}{fmtElev(c.elevChange)}
             </div>
           </div>
           <button
@@ -1125,23 +1138,28 @@ function HistoryTab({ savedCalcs, savedTargetCalcs, onDelete, onDeleteTarget, on
 function TargetElevGraph({ startElev, reqElev, distN, dir }: {
   startElev: number; reqElev: number; distN: number; dir: 'uphill' | 'downhill';
 }) {
+  const { isMetric, unitLabel, ftToDisplay, fmtDist } = useUnit();
   const dc  = dir === 'uphill' ? GREEN_DARK : RED_DARK;
   const W = 340, H = 188;
   const PL = 56, PR = 18, PT = 18, PB = 24;
   const PW = W - PL - PR;
   const PH = H - PT - PB;
 
-  const minE   = Math.min(startElev, reqElev);
-  const maxE   = Math.max(startElev, reqElev);
-  const rangeE = Math.max(maxE - minE, 0.5);
+  // Convert stored-ft elevations to display units for the chart
+  const dispStart = ftToDisplay(startElev);
+  const dispReq   = ftToDisplay(reqElev);
+
+  const minE   = Math.min(dispStart, dispReq);
+  const maxE   = Math.max(dispStart, dispReq);
+  const rangeE = Math.max(maxE - minE, isMetric ? 0.15 : 0.5);
   const padE   = rangeE * 0.28;
   const yMin   = minE - padE;
   const yMax   = maxE + padE;
 
   const yFor = (e: number) => PT + PH * (1 - (e - yMin) / (yMax - yMin));
   const xA = PL, xB = PL + PW;
-  const yA = yFor(startElev);
-  const yB = yFor(reqElev);
+  const yA = yFor(dispStart);
+  const yB = yFor(dispReq);
 
   const elevChange = Math.abs(reqElev - startElev);
   const slopePct   = distN > 0 ? (elevChange / distN) * 100 : 0;
@@ -1174,14 +1192,14 @@ function TargetElevGraph({ startElev, reqElev, distN, dir }: {
             <line x1={PL} y1={ty} x2={PL + PW} y2={ty}
               stroke="#D1D8E4" strokeWidth="0.5" strokeDasharray="3,4" />
             <text x={PL - 4} y={ty + 3.5} textAnchor="end"
-              fontSize="7.5" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(1)}</text>
+              fontSize="7.5" fontWeight="700" fill={TEXT_SEC}>{tick.toFixed(isMetric ? 2 : 1)}</text>
           </g>
         );
       })}
 
       {/* Y axis unit label */}
       <text x={9} y={PT + PH / 2} textAnchor="middle" fontSize="7" fontWeight="700" fill={TEXT_DIS}
-        transform={`rotate(-90 9 ${PT + PH / 2})`}>Elev (ft)</text>
+        transform={`rotate(-90 9 ${PT + PH / 2})`}>Elev ({unitLabel})</text>
 
       {/* Fill */}
       <polygon
@@ -1209,13 +1227,13 @@ function TargetElevGraph({ startElev, reqElev, distN, dir }: {
       <circle cx={xA} cy={yA} r={5.5} fill={BLUE} />
       <circle cx={xA} cy={yA} r={2.8} fill={BLUE_ACC} />
       <text x={xA} y={Math.max(yA - 9, PT + 8)} textAnchor="middle" fontSize="9" fontWeight="900" fill={NAVY}>START</text>
-      <text x={xA} y={PT + PH + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_PRI}>{startElev.toFixed(2)} ft</text>
+      <text x={xA} y={PT + PH + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={TEXT_PRI}>{dispStart.toFixed(isMetric ? 3 : 2)} {unitLabel}</text>
 
       {/* TARGET marker */}
       <circle cx={xB} cy={yB} r={5.5} fill={dc} />
       <circle cx={xB} cy={yB} r={2.8} fill="#fff" />
       <text x={xB} y={Math.max(yB - 9, PT + 8)} textAnchor="middle" fontSize="9" fontWeight="900" fill={dc}>TARGET</text>
-      <text x={xB} y={PT + PH + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={dc}>{reqElev.toFixed(2)} ft</text>
+      <text x={xB} y={PT + PH + 12} textAnchor="middle" fontSize="7.5" fontWeight="700" fill={dc}>{dispReq.toFixed(isMetric ? 3 : 2)} {unitLabel}</text>
 
       {/* Grade label on the slope */}
       <text x={PL + PW / 2} y={(yA + yB) / 2 - 8} textAnchor="middle"
@@ -1226,7 +1244,7 @@ function TargetElevGraph({ startElev, reqElev, distN, dir }: {
       {/* Distance label */}
       <text x={PL + PW / 2} y={PT + PH + 21} textAnchor="middle"
         fontSize="7.5" fontWeight="700" fill={TEXT_DIS}>
-        {'← '}{distN.toFixed(1)} ft horizontal{' →'}
+        {'← '}{fmtDist(distN)} horizontal{' →'}
       </text>
     </svg>
   );
@@ -1240,6 +1258,7 @@ function TargetDetailModal({ calc, onClose, onEdit, onDelete }: {
   onDelete: () => void;
 }) {
   const { t } = useLang();
+  const { fmtDist, fmtElev } = useUnit();
   const dc = calc.dir === 'uphill' ? GREEN_DARK : RED_DARK;
   const [detailConfirm, setDetailConfirm] = useState<null | { onConfirm: () => void }>(null);
   const ratio = calc.elevChange > 0.0001 ? calc.distN / calc.elevChange : null;
@@ -1273,14 +1292,14 @@ function TargetDetailModal({ calc, onClose, onEdit, onDelete }: {
 
           <div style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '9px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.5, textTransform: 'uppercase' as const }}>{t('slopeDistanceLbl')}</span>
-            <span style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{calc.distN.toFixed(2)} ft</span>
+            <span style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace' }}>{fmtDist(calc.distN)}</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
             {([
-              { lbl: t('slopeStartElev'),  val: `${calc.startElev.toFixed(2)} ft`, c: TEXT_PRI },
-              { lbl: t('slopeReqElev'),    val: `${calc.reqElev.toFixed(2)} ft`,   c: dc },
-              { lbl: t('slopeElevChange'), val: `${calc.dir === 'uphill' ? '+' : '−'}${calc.elevChange.toFixed(3)} ft`, c: dc },
+              { lbl: t('slopeStartElev'),  val: fmtElev(calc.startElev), c: TEXT_PRI },
+              { lbl: t('slopeReqElev'),    val: fmtElev(calc.reqElev),   c: dc },
+              { lbl: t('slopeElevChange'), val: `${calc.dir === 'uphill' ? '+' : '−'}${fmtElev(calc.elevChange)}`, c: dc },
               { lbl: t('slopeSlopePct'),   val: `${calc.slopeN.toFixed(2)}%`,      c: dc },
             ]).map(({ lbl, val, c }) => (
               <div key={lbl} style={{ backgroundColor: SURFACE, borderRadius: 7, border: `1px solid ${BORDER}`, padding: '7px 9px' }}>
@@ -1332,6 +1351,7 @@ interface TargetSlopeTabProps {
 }
 function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpdateTarget, pendingTargetEdit, onPendingTargetEditConsumed }: TargetSlopeTabProps) {
   const { t, lang } = useLang();
+  const { isMetric, unitLabel, fmtElev, ftToDisplay, displayToFt } = useUnit();
 
   // Form state
   const [startId,       setStartId]       = useState<string | null>(null);
@@ -1373,7 +1393,9 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
     if (pendingTargetEdit) {
       setStartId(pendingTargetEdit.startId);
       setSlopePct(pendingTargetEdit.slopeN.toString());
-      setDistance(pendingTargetEdit.distN.toString());
+      // distN stored in ft; convert to display unit for the input field
+      const dispDist = ftToDisplay(pendingTargetEdit.distN);
+      setDistance(dispDist.toFixed(2));
       setDir(pendingTargetEdit.dir);
       setEditingId(pendingTargetEdit.id);
       setShowResults(false);
@@ -1395,7 +1417,9 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
 
   const handleCalculate = useCallback(() => {
     if (!canCalc || !startPt) return;
-    const elevChange = distN * (slopeN / 100);
+    // distN is in display units; convert to feet for all calculations/storage
+    const distNFt    = displayToFt(distN);
+    const elevChange = distNFt * (slopeN / 100);
     const reqElev    = dir === 'uphill' ? startElev + elevChange : startElev - elevChange;
 
     // Duplicate check — skip if we are already editing that record
@@ -1403,7 +1427,7 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
       c.id !== editingId &&
       c.startId === startId &&
       Math.abs(c.slopeN - slopeN) < 0.001 &&
-      Math.abs(c.distN  - distN)  < 0.001 &&
+      Math.abs(c.distN  - distNFt) < 0.001 &&
       c.dir === dir
     );
     if (duplicate) {
@@ -1418,7 +1442,7 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
       startLabel: startPt.label,
       startElev,
       slopeN,
-      distN,
+      distN:      distNFt,   // always stored in ft
       dir,
       elevChange,
       reqElev,
@@ -1430,7 +1454,7 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
       onSaveTarget(newCalc);
     }
     setEditingId(null);
-    setCommitted({ startElev, distN, slopeN });
+    setCommitted({ startElev, distN: distNFt, slopeN });
     setShowResults(true);
     setResultsKey(k => k + 1);
   }, [canCalc, startId, startPt, startElev, slopeN, distN, dir, editingId, savedTargetCalcs, onSaveTarget, onUpdateTarget]);
@@ -1502,7 +1526,7 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
                 <>
                   <div style={{ fontSize: 15, fontWeight: 900, color: BLUE_ACC }}>{startPt.label}{startPt.pointName ? ` · ${startPt.pointName}` : ''}</div>
                   {startElev > 0
-                    ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{t('slopeCurrElev')} {startElev.toFixed(2)} {t('slopeFtUnit')}</div>
+                    ? <div style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, marginTop: 2 }}>{t('slopeCurrElev')} {fmtElev(startElev)}</div>
                     : <div style={{ fontSize: 13, color: RED_DARK, marginTop: 2, fontWeight: 700 }}>{t('slopeStartNoElev')}</div>
                   }
                 </>
@@ -1575,7 +1599,7 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
                   onClick={() => setDistance('')}
                 >✕</button>
               )}
-              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_SEC, paddingRight: 12, paddingLeft: 4, flexShrink: 0 }}>{t('slopeFtUnit')}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_SEC, paddingRight: 12, paddingLeft: 4, flexShrink: 0 }}>{unitLabel}</span>
             </div>
             {touched.dist && distance !== '' && !validDist && (
               <div style={{ fontSize: 12, fontWeight: 700, color: RED_DARK, marginTop: 3 }}>
@@ -1684,8 +1708,8 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
                   {t('slopeStartElev')}
                 </div>
                 <div style={{ fontSize: 17, fontWeight: 900, color: TEXT_PRI, fontFamily: 'monospace', lineHeight: 1.1 }}>
-                  {liveResult.startElev.toFixed(2)}
-                  <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, marginLeft: 2 }}>ft</span>
+                  {ftToDisplay(liveResult.startElev).toFixed(isMetric ? 3 : 2)}
+                  <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_SEC, marginLeft: 2 }}>{unitLabel}</span>
                 </div>
               </div>
 
@@ -1695,8 +1719,8 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
                   {t('slopeElevChange')}
                 </div>
                 <div style={{ fontSize: 17, fontWeight: 900, color: rc, fontFamily: 'monospace', lineHeight: 1.1 }}>
-                  {dir === 'uphill' ? '+' : '−'}{liveResult.elevChange.toFixed(2)}
-                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 2 }}>ft</span>
+                  {dir === 'uphill' ? '+' : '−'}{ftToDisplay(liveResult.elevChange).toFixed(isMetric ? 3 : 2)}
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 2 }}>{unitLabel}</span>
                 </div>
               </div>
 
@@ -1709,8 +1733,8 @@ function TargetSlopeTab({ points, setMap, savedTargetCalcs, onSaveTarget, onUpda
                   <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.88)' }}>{dir === 'uphill' ? '↗' : '↘'}</span>
                 </div>
                 <div style={{ fontSize: 17, fontWeight: 900, color: '#fff', fontFamily: 'monospace', lineHeight: 1.1 }}>
-                  {liveResult.reqElev.toFixed(2)}
-                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 2 }}>ft</span>
+                  {ftToDisplay(liveResult.reqElev).toFixed(isMetric ? 3 : 2)}
+                  <span style={{ fontSize: 11, fontWeight: 700, marginLeft: 2 }}>{unitLabel}</span>
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ import {
 } from '../constants';
 import { useLang } from '../LangContext';
 import { strings } from '../i18n';
+import { useUnit, FT_TO_M } from '../UnitContext';
 import { SinglePointTab } from './ViewPointsScreen';
 
 // ─── Color constants ───────────────────────────────────────────────────────────
@@ -187,14 +188,16 @@ interface CreateSetProps {
 function CreateSetModal({ open, onClose, pointLabel, engFt, rodFeet, rodInches, rodFracLbl, nextSetId, onCreate }: CreateSetProps) {
   const [name, setName] = useState('');
   const { t, lang } = useLang();
+  const { isMetric, unitLabel } = useUnit();
   return (
     <CenteredModal open={open} onClose={onClose}>
       <ModalHeader title={t('createSetTitle')} onClose={onClose} />
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <p style={{ ...c.modalDesc, textAlign: 'left', fontSize: 14, lineHeight: 1.6, margin: 0 }}>
           {lang === 'es' ? 'Punto' : 'Point'} {pointLabel}{' '}(
-          <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={14} />
-          {` | ${isNaN(engFt) || engFt === 0 ? '—' : engFt.toFixed(2)} ft ${lang === 'es' ? 'Ing.' : 'Engineering'})`}{' '}
+          {!isMetric && <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={TEXT_PRI} size={14} />}
+          {!isMetric && ' | '}
+          {`${isNaN(engFt) || engFt === 0 ? '—' : `${engFt.toFixed(isMetric ? 3 : 2)} ${unitLabel}`} ${lang === 'es' ? 'Ing.' : 'Engineering'})`}{' '}
           {lang === 'es' ? 'será el primero en este conjunto.' : 'will be the first point in this set.'}
         </p>
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
@@ -570,6 +573,7 @@ interface BmVerifiedModalProps {
   derivedBm: number;
 }
 function BmVerifiedModal({ open, onContinue, enteredBm, derivedBm }: BmVerifiedModalProps) {
+  const { fmtElev } = useUnit();
   if (!open) return null;
   return (
     <div
@@ -595,12 +599,12 @@ function BmVerifiedModal({ open, onContinue, enteredBm, derivedBm }: BmVerifiedM
           <div style={{ backgroundColor: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Entered Benchmark</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{enteredBm.toFixed(2)} ft</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{fmtElev(enteredBm)}</span>
             </div>
             <div style={{ height: 1, backgroundColor: '#BBF7D0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>Derived Benchmark</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#16A34A' }}>{derivedBm.toFixed(2)} ft</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#16A34A' }}>{fmtElev(derivedBm)}</span>
             </div>
           </div>
           {/* Continue → saves the point */}
@@ -625,9 +629,9 @@ interface BmMismatchModalProps {
 }
 function BmMismatchModal({ open, onClose, onUseDerived, onEditValue, enteredBm, derivedBm }: BmMismatchModalProps) {
   const { lang } = useLang();
+  const { fmtElev, fmtDist } = useUnit();
   const es = lang === 'es';
   if (!open) return null;
-  const diff = Math.abs(enteredBm - derivedBm).toFixed(2);
 
   // Inline bilingual strings — no i18n file changes required
   const tx = {
@@ -675,16 +679,16 @@ function BmMismatchModal({ open, onClose, onUseDerived, onEditValue, enteredBm, 
           <div style={{ backgroundColor: '#FFFBEB', border: '1.5px solid #FCD34D', borderRadius: 10, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{tx.entered}</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{enteredBm.toFixed(2)} ft</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI }}>{fmtElev(enteredBm)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{tx.derived}</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#B45309' }}>{derivedBm.toFixed(2)} ft</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#B45309' }}>{fmtElev(derivedBm)}</span>
             </div>
             <div style={{ height: 1, backgroundColor: '#FCD34D' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 600 }}>{tx.diff}</span>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#DC2626' }}>{diff} ft</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: '#DC2626' }}>{fmtDist(Math.abs(enteredBm - derivedBm))}</span>
             </div>
           </div>
 
@@ -778,6 +782,7 @@ function InfoTip({ text, title }: { text: string; title?: string }) {
 export default function AddNewPointScreen({ projectId, isVisible = true, editPoint, onEditConsumed, onComparePoint, onDirtyChange, onFindSlope, imperativeRef }: Props) {
   const { getPoints, addPoint, updatePoint, getSets, addSet, nextLabel, nextSetLabel } = useSurveyStore();
   const { t, lang } = useLang();
+  const { isMetric, unitLabel, fmtElev, fmtDist, ftToDisplay, displayToFt } = useUnit();
 
   const points = getPoints(projectId);
   const sets   = getSets(projectId);
@@ -839,7 +844,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   // ── Derived values ────────────────────────────────────────────────────────
   const currentPoint  = currentIdx >= 0 && currentIdx < points.length ? points[currentIdx] : null;
   const currentLabel  = currentPoint?.label ?? nextLabel(projectId);
-  const engFt         = parseFloat(engFtStr);
+  const engFt         = parseFloat(engFtStr); // in display units (m in metric, ft in imperial)
+  const engFtFeet     = displayToFt(engFt);   // always in feet for internal calculations
   const isNewPoint    = currentIdx < 0 || currentIdx >= points.length;
   // Keep ref in sync so the imperative API can read this without a stale closure.
   isNewPointRef.current = isNewPoint;
@@ -859,8 +865,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const currentIsSetReference = setReferencePoint?.id === currentPoint?.id;
   const refBmPoint = (setReferencePoint && !currentIsSetReference) ? setReferencePoint : null;
   const autoDerivedBm: number | null =
-    (refBmPoint && !isNaN(engFt) && engFt > 0)
-      ? refBmPoint.bmElevation + (refBmPoint.engineeringFeet - engFt)
+    (refBmPoint && !isNaN(engFtFeet) && engFtFeet > 0)
+      ? refBmPoint.bmElevation + (refBmPoint.engineeringFeet - engFtFeet)
       : null;
   const showManualBm = !setReferencePoint || currentIsSetReference;
   const isKnownElevation = currentIsSetReference && (currentPoint?.bmElevation ?? 0) > 0;
@@ -868,9 +874,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   // ── Benchmark mismatch validation ─────────────────────────────────────────
   // Triggers when the user has manually entered a BM AND the set provides a
   // derived BM — we compare rounded to 2dp to avoid float-precision mismatches.
-  const enteredBmNum   = parseFloat(bmElevStr);
+  const enteredBmNum   = parseFloat(bmElevStr); // in display units
+  const enteredBmFt    = displayToFt(!isNaN(enteredBmNum) ? enteredBmNum : 0); // in feet
   const roundedEnteredBm = !isNaN(enteredBmNum) && enteredBmNum > 0
-    ? parseFloat(enteredBmNum.toFixed(2)) : 0;
+    ? parseFloat(enteredBmFt.toFixed(2)) : 0;
   const roundedDerivedBm = autoDerivedBm != null
     ? parseFloat(autoDerivedBm.toFixed(2)) : 0;
   const needsBmValidation = !isNaN(enteredBmNum) && enteredBmNum > 0 && autoDerivedBm != null;
@@ -878,8 +885,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const bmBlocked         = needsBmValidation && !bmValuesMatch;
 
   const fifDisplay      = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
-  const engDisplay      = !isNaN(engFt) && engFt > 0 ? `${engFt.toFixed(2)} ft` : '';
-  const hasRodReading   = !isNaN(engFt) && engFt > 0;
+  const engDisplay      = !isNaN(engFtFeet) && engFtFeet > 0 ? fmtDist(engFtFeet) : '';
+  const hasRodReading   = !isNaN(engFtFeet) && engFtFeet > 0;
 
   // ── Dirty detection (unsaved data in edit mode) ───────────────────────────
   const isDirty = isEditMode && (rodFeet !== '' || rodInches > 0 || rodFracDec > 0 || engFtStr !== '' || bmElevStr !== '');
@@ -964,8 +971,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setRodInches(pt.rodInches ?? 0);
     setRodFracDec(pt.rodFractionDec ?? 0);
     setRodFracLbl(pt.rodFractionLabel ?? '0/0');
-    setEngFtStr(pt.engineeringFeet > 0 ? String(pt.engineeringFeet) : '');
-    setBmElevStr(pt.bmElevation > 0 ? String(pt.bmElevation) : '');
+    setEngFtStr(pt.engineeringFeet > 0 ? (isMetric ? (pt.engineeringFeet * FT_TO_M).toFixed(3) : String(pt.engineeringFeet)) : '');
+    setBmElevStr(pt.bmElevation > 0 ? (isMetric ? (pt.bmElevation * FT_TO_M).toFixed(3) : String(pt.bmElevation)) : '');
     setBmExpanded(pt.bmElevation > 0);
     setPointName(pt.pointName ?? '');
     setTakenBy(pt.takenBy ?? '');
@@ -1002,11 +1009,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     clearForm();
     setCurrentIdx(-1);
     setIsEditMode(true);
-    setRodFormat('fif');
+    setRodFormat(isMetric ? 'eng' : 'fif');
     setCameFromNewPoint(false);
     setEditingFromManage(false);
     savedNewPointRef.current = null;
   }, [isVisible]);
+
+  // Force decimal mode when metric is active (FIF is imperial-only)
+  useEffect(() => {
+    if (isMetric && rodFormat === 'fif') setRodFormat('eng');
+  }, [isMetric]);
 
   // ── Expose imperative API to App.tsx for global back-navigation ──────────────
   useEffect(() => {
@@ -1039,7 +1051,10 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     lockRef.current = true;
     setRodFeet(feet); setRodInches(inches); setRodFracDec(frac); setRodFracLbl(fracLbl);
     const eng = toEngFt(feet, inches, frac);
-    setEngFtStr(isNaN(eng) || (feet === '' && inches === 0 && frac === 0) ? '' : eng.toFixed(2));
+    // Store engFtStr in display units
+    setEngFtStr(isNaN(eng) || (feet === '' && inches === 0 && frac === 0)
+      ? ''
+      : (isMetric ? (eng * FT_TO_M).toFixed(3) : eng.toFixed(2)));
     setRodReadingWarn(false);
     setRodSaveWarn(false);
     lockRef.current = false;
@@ -1048,10 +1063,12 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const updateFromEng = (val: string) => {
     setEngFtStr(val);
     if (lockRef.current) return;
-    const eng = parseFloat(val);
-    if (!isNaN(eng) && eng >= 0) {
+    const displayVal = parseFloat(val);
+    if (!isNaN(displayVal) && displayVal >= 0) {
       lockRef.current = true;
-      const { feet, inches, fraction, frLabel } = fromEngFt(eng);
+      // Convert display units to feet for FIF decomposition
+      const engFeet = isMetric ? displayVal / FT_TO_M : displayVal;
+      const { feet, inches, fraction, frLabel } = fromEngFt(engFeet);
       setRodFeet(feet); setRodInches(inches); setRodFracDec(fraction); setRodFracLbl(frLabel);
       lockRef.current = false;
     }
@@ -1094,7 +1111,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   // ── Save — actual write (called after validation passes) ─────────────────
   const doActualSave = async () => {
-    const eng = parseFloat(engFtStr);
+    // Convert display-unit values to feet for storage
+    const eng = displayToFt(parseFloat(engFtStr));
     // Flush pending new set to storage before persisting the point
     if (pendingNewSet && assignedSet === pendingNewSet.id) {
       addSet(projectId, pendingNewSet);
@@ -1103,7 +1121,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
     const bm   = autoDerivedBm != null
       ? autoDerivedBm
-      : (bmElevStr.trim() === '' ? 0 : parseFloat(bmElevStr));
+      : (bmElevStr.trim() === '' ? 0 : displayToFt(parseFloat(bmElevStr)));
     const elev = bm + eng;
     const now  = Date.now();
     const iso  = new Date(now).toISOString();
@@ -1171,7 +1189,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   // ── Save — gated entry point ───────────────────────────────────────────────
   const handleSave = async () => {
-    const eng = parseFloat(engFtStr);
+    const eng = displayToFt(parseFloat(engFtStr));
     if (isNaN(eng) || eng <= 0) { setRodSaveWarn(true); return; }
     setRodSaveWarn(false);
     if (!assignedSet) { setSetWarning(true); return; }
@@ -1366,7 +1384,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
                       <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('pointElevation')}</span>
                       <span style={{ fontSize: 22, fontWeight: 800, color: TEXT_PRI, letterSpacing: '-0.5px' }}>
-                        {setReferencePoint.bmElevation.toFixed(2)} ft
+                        {fmtElev(setReferencePoint.bmElevation)}
                       </span>
                     </div>
                     {/* Derived Benchmark — live-calculated for non-reference points */}
@@ -1374,7 +1392,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 0' }}>
                         <span style={{ fontSize: 17, color: TEXT_SEC, fontWeight: 700 }}>{t('derivedBenchmark')}</span>
                         <span style={{ fontSize: 22, fontWeight: 800, color: BLUE, letterSpacing: '-0.5px' }}>
-                          {autoDerivedBm.toFixed(2)} ft
+                          {fmtElev(autoDerivedBm)}
                         </span>
                       </div>
                     )}
@@ -1387,19 +1405,21 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
           {/* 2-column layout: format toggle | entry fields */}
           <div style={{ display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'stretch', minHeight: 54 }}>
 
-            {/* Left: vertically stacked format toggle — equal-height, equal-width buttons */}
+            {/* Left: vertically stacked format toggle — in metric, only decimal mode is available */}
             <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, backgroundColor: '#EEF4FF', border: '1px solid #BFDBFE', borderRadius: 7, padding: 2, gap: 2 }}>
-              <button
-                style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
-                onClick={() => setRodFormat('fif')}
-              >
-                {t('feetInchesBtn')}
-              </button>
+              {!isMetric && (
+                <button
+                  style={{ ...s.fmtBtn, ...(rodFormat === 'fif' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
+                  onClick={() => setRodFormat('fif')}
+                >
+                  {t('feetInchesBtn')}
+                </button>
+              )}
               <button
                 style={{ ...s.fmtBtn, ...(rodFormat === 'eng' ? s.fmtBtnOn : {}), flex: 1, padding: '2px 8px' }}
                 onClick={() => setRodFormat('eng')}
               >
-                {t('engineeringFtBtn')}
+                {isMetric ? 'Decimal (m)' : t('engineeringFtBtn')}
               </button>
             </div>
 
@@ -1483,7 +1503,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     type="text" inputMode="decimal" value={engFtStr}
                     onChange={e => {
                       const v = e.target.value;
-                      if (v === '' || /^\d*\.?\d{0,2}$/.test(v)) updateFromEng(v);
+                      const decimals = isMetric ? 3 : 2;
+                      const re = new RegExp(`^\\d*\\.?\\d{0,${decimals}}$`);
+                      if (v === '' || re.test(v)) updateFromEng(v);
                     }}
                     onFocus={(e) => {
                       if (engFtStr !== '' && parseFloat(engFtStr) === 0) {
@@ -1491,7 +1513,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                         updateFromEng('');
                       }
                     }}
-                    placeholder="0.00 ft" readOnly={!isEditMode}
+                    placeholder={`0.00 ${unitLabel}`} readOnly={!isEditMode}
                   />
                   {isEditMode && (
                     <>
@@ -1517,7 +1539,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               <span style={s.autoGenVal}>{engFtStr}′</span>
             </div>
           )}
-          {rodFormat === 'eng' && fifDisplay && fifDisplay !== '—' && (
+          {rodFormat === 'eng' && !isMetric && fifDisplay && fifDisplay !== '—' && (
             <div style={s.autoGenRow}>
               <span style={s.autoGenLbl}>{t('autoGenFIF')}:</span>
               <StackedFIFSpan feet={rodFeet || '0'} inches={rodInches} frac={rodFracLbl} color={NAVY} size={15} />
@@ -1537,9 +1559,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
               </div>
               <div style={s.autoBmRight}>
                 <span style={s.autoBmVal}>
-                  {autoDerivedBm != null ? autoDerivedBm.toFixed(2) : (engFt > 0 ? '…' : '—')}
+                  {autoDerivedBm != null ? ftToDisplay(autoDerivedBm).toFixed(isMetric ? 3 : 2) : (engFtFeet > 0 ? '…' : '—')}
                 </span>
-                <span style={s.autoBmUnit}>ft</span>
+                <span style={s.autoBmUnit}>{unitLabel}</span>
               </div>
             </div>
           ) : isKnownElevation && !isEditMode ? (
@@ -1548,8 +1570,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 <span style={s.autoBmLbl}>{t('pointElevation')}</span>
               </div>
               <div style={s.autoBmRight}>
-                <span style={s.autoBmVal}>{currentPoint!.bmElevation.toFixed(2)}</span>
-                <span style={s.autoBmUnit}>ft</span>
+                <span style={s.autoBmVal}>{ftToDisplay(currentPoint!.bmElevation).toFixed(isMetric ? 3 : 2)}</span>
+                <span style={s.autoBmUnit}>{unitLabel}</span>
               </div>
             </div>
           ) : (
@@ -1563,9 +1585,9 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                     </span>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
                       <span style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: 'monospace', lineHeight: 1.3 }}>
-                        {parseFloat(bmElevStr).toFixed(2)}
+                        {parseFloat(bmElevStr).toFixed(isMetric ? 3 : 2)}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#F5F7FA', marginBottom: 1 }}>ft</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#F5F7FA', marginBottom: 1 }}>{unitLabel}</span>
                     </div>
                   </div>
                   {isEditMode && (
@@ -1825,7 +1847,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
                 onKeyDown={e => { if (e.key === 'Enter') confirmBm(); }}
                 className="bm-elev-input"
                 style={{ width: '100%', height: 62, border: `2px solid ${bmInputHighlight ? '#EF4444' : BLUE_ACC}`, borderRadius: 12, textAlign: 'center' as const, fontSize: 28, fontWeight: 700, color: NAVY, outline: 'none', padding: '0 16px', boxSizing: 'border-box' as const, fontFamily: 'monospace', backgroundColor: '#FFFFFF', boxShadow: bmInputHighlight ? '0 0 0 4px rgba(239,68,68,0.22)' : undefined }}
-                placeholder="0.00 ft"
+                placeholder={`0.00 ${unitLabel}`}
               />
               {/* Cancel / OK */}
               <div style={{ display: 'flex', gap: 12 }}>

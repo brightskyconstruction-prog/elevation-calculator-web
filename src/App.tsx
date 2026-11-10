@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSurveyStore } from './stores/surveyStore';
 import { LangProvider, useLang } from './LangContext';
+import { UnitProvider, useUnit } from './UnitContext';
 import { MainTab, SurveyPoint } from './types';
 import AddNewPointScreen, { type AddNewPointScreenAPI } from './screens/AddNewPointScreen';
 import ViewPointsScreen   from './screens/ViewPointsScreen';
@@ -46,7 +47,9 @@ declare global {
 export default function App() {
   return (
     <LangProvider>
-      <AppInner />
+      <UnitProvider>
+        <AppInner />
+      </UnitProvider>
     </LangProvider>
   );
 }
@@ -64,6 +67,7 @@ function splashAlreadyShown(): boolean {
 // ─── Inner app (has access to useLang) ───────────────────────────────────────
 function AppInner() {
   const { t, lang, setLang } = useLang();
+  const { unitSystem, setUnitSystem } = useUnit();
 
   // Determine initial app state
   const [appState, setAppState] = useState<AppState>(() => {
@@ -673,6 +677,21 @@ function AppInner() {
           >
             <LauncherGridIcon />
           </button>
+          {/* Unit system toggle: FT (imperial) | M (metric) */}
+          <div style={styles.langToggle} title="Toggle measurement units">
+            <button
+              style={{ ...styles.langOpt, ...(unitSystem === 'imperial' ? styles.langOptActive : {}) }}
+              onClick={() => setUnitSystem('imperial')}
+              aria-pressed={unitSystem === 'imperial'}
+              aria-label="Imperial units (feet)"
+            >FT</button>
+            <button
+              style={{ ...styles.langOpt, ...(unitSystem === 'metric' ? styles.langOptActive : {}) }}
+              onClick={() => setUnitSystem('metric')}
+              aria-pressed={unitSystem === 'metric'}
+              aria-label="Metric units (meters)"
+            >M</button>
+          </div>
           {/* Two-button language toggle — abbreviated labels to save space */}
           <div style={styles.langToggle}>
             <button

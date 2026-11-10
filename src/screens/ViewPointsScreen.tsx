@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSurveyStore } from '../stores/surveyStore';
 import { SurveyPoint, SurveySet, PointsTab } from '../types';
 import { useLang } from '../LangContext';
+import { useUnit } from '../UnitContext';
 import { strings } from '../i18n';
 
 // ─── Modal animation CSS (shared with AddNewPointScreen, injected once) ───────
@@ -154,6 +155,7 @@ interface GoalModalProps {
 
 function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChangeInput, onSubmit, onClose }: GoalModalProps) {
   const { t, lang } = useLang();
+  const { isMetric, fmtDist } = useUnit();
   const es = lang === 'es';
   const [inputMode, setInputMode] = useState<'dec' | 'fif'>('dec');
   const [fifFeet,   setFifFeet]   = useState('0');
@@ -368,16 +370,20 @@ function GoalModal({ visible, goalField, goalPt, goalInput, existingVal, onChang
             <div style={{ fontSize: 11, fontWeight: 800, color: TEXT_SEC, letterSpacing: 0.7, textTransform: 'uppercase' as const, marginBottom: 3 }}>{t('difference')}</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flexWrap: 'wrap' as const }}>
               <span style={{ fontSize: 18, fontWeight: 800, color: diffClr, fontFamily: 'monospace', flexShrink: 0 }}>
-                {goalDiffSigned > 0 ? '+' : ''}{goalDiffSigned.toFixed(2)} ft
+                {goalDiffSigned > 0 ? '+' : ''}{isMetric ? fmtDist(goalDiffSigned) : `${goalDiffSigned.toFixed(2)} ft`}
               </span>
-              <span style={{ color: BORDER_B, fontSize: 18, fontWeight: 300, flexShrink: 0 }}>|</span>
-              <StackedFIFSpan
-                feet={diffFIF.feet}
-                inches={diffFIF.inches}
-                frac={diffFIF.frac}
-                color={diffClr}
-                size={17}
-              />
+              {!isMetric && (
+                <>
+                  <span style={{ color: BORDER_B, fontSize: 18, fontWeight: 300, flexShrink: 0 }}>|</span>
+                  <StackedFIFSpan
+                    feet={diffFIF.feet}
+                    inches={diffFIF.inches}
+                    frac={diffFIF.frac}
+                    color={diffClr}
+                    size={17}
+                  />
+                </>
+              )}
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: diffClr, marginTop: 2 }}>
               {goalDiffSigned >  0.00005 ? `↑ ${t('fillRequired')}` :
@@ -430,6 +436,7 @@ interface CompareTabProps {
 
 function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId }: CompareTabProps) {
   const { t, lang } = useLang();
+  const { isMetric, fmtDist, fmtElev } = useUnit();
 
   // showComparison: true = results view, false = picker view
   const [showComparison, setShowComparison] = useState(!!(fromId && toId));
@@ -503,7 +510,11 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
   const dirWord  = diff != null ? (Math.abs(diff) < 0.00005 ? t('dirSameLevel') : diff > 0 ? t('dirAbove') : t('dirBelow')) : '';
   const compColor= diff != null ? (Math.abs(diff) < 0.00005 ? BLUE_ACC : diff > 0 ? GREEN : RED) : TEXT_PRI;
   const absFIFStr= absDiff != null ? toFIFStr(absDiff) : '';
-  const compText = ptA && ptB ? strings[lang].comparisonFIF(displayA, absDiff?.toFixed(2) ?? '0', absFIFStr, dirWord, displayB) : '';
+  const compText = ptA && ptB
+    ? (isMetric
+        ? strings[lang].comparisonFIF(displayA, fmtDist(absDiff ?? 0), '', dirWord, displayB)
+        : strings[lang].comparisonFIF(displayA, absDiff?.toFixed(2) ?? '0', absFIFStr, dirWord, displayB))
+    : '';
 
   const handleTempSelect = useCallback((ptId: string) => {
     if (tempA === ptId) { setTempA(null); return; }
@@ -583,14 +594,14 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
           {/* ROD READING col — decimal + FIF + goal */}
           <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, padding: '0 6px' }}>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.engineeringFeet.toFixed(2)} ft</div>
-              <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_SEC} size={15} />
+              <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{isMetric ? fmtDist(pt.engineeringFeet) : `${pt.engineeringFeet.toFixed(2)} ft`}</div>
+              {!isMetric && <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_SEC} size={15} />}
             </div>
             {rodGoal != null ? (
               <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'rod')}>
                 <div style={{ fontSize: 9, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalHeight')}</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{rodGoal.toFixed(2)} ft</div>
-                <StackedFIFSpan {...engToFIF(rodGoal!)} color={GREEN} size={11} />
+                <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{isMetric ? fmtDist(rodGoal) : `${rodGoal.toFixed(2)} ft`}</div>
+                {!isMetric && <StackedFIFSpan {...engToFIF(rodGoal!)} color={GREEN} size={11} />}
               </div>
             ) : (
               <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 8px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'rod')}>
@@ -604,14 +615,14 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             {pt.bmElevation > 0 ? (
               <>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation.toFixed(2)} ft</div>
-                  <StackedFIFSpan {...engToFIF(pt.bmElevation)} color={TEXT_SEC} size={15} />
+                  <div style={{ fontSize: 15, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{isMetric ? fmtElev(pt.bmElevation) : `${pt.bmElevation.toFixed(2)} ft`}</div>
+                  {!isMetric && <StackedFIFSpan {...engToFIF(pt.bmElevation)} color={TEXT_SEC} size={15} />}
                 </div>
                 {elevGoal != null ? (
                   <div style={{ borderRadius: 4, backgroundColor: 'rgba(31,138,77,0.13)', border: `1.5px solid ${GREEN}`, padding: '2px 5px', cursor: 'pointer', textAlign: 'right' }} onClick={() => openGoal(pt.id, 'elev')}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: GREEN, letterSpacing: 0.4, textTransform: 'uppercase' as const }}>{t('goalElev')}</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{elevGoal.toFixed(2)} ft</div>
-                    <StackedFIFSpan {...engToFIF(elevGoal!)} color={GREEN} size={11} />
+                    <div style={{ fontSize: 14, fontWeight: 800, color: GREEN, fontFamily: 'monospace' }}>{isMetric ? fmtElev(elevGoal) : `${elevGoal.toFixed(2)} ft`}</div>
+                    {!isMetric && <StackedFIFSpan {...engToFIF(elevGoal!)} color={GREEN} size={11} />}
                   </div>
                 ) : (
                   <div style={{ borderRadius: 4, backgroundColor: SURFACE, border: `1px solid ${BORDER}`, padding: '3px 8px', cursor: 'pointer', textAlign: 'center' }} onClick={() => openGoal(pt.id, 'elev')}>
@@ -634,8 +645,8 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', padding: '0 6px' }}>
               {rodDiff != null && (
                 <>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{Math.abs(rodDiff).toFixed(2)} ft</span>
-                  <StackedFIFSpan {...engToFIF(Math.abs(rodDiff))} color={diffColor(rodDiff)} size={11} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(rodDiff), fontFamily: 'monospace' }}>{isMetric ? fmtDist(Math.abs(rodDiff)) : `${Math.abs(rodDiff).toFixed(2)} ft`}</span>
+                  {!isMetric && <StackedFIFSpan {...engToFIF(Math.abs(rodDiff))} color={diffColor(rodDiff)} size={11} />}
                 </>
               )}
             </div>
@@ -643,8 +654,8 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
             <div style={{ flex: 3.1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingLeft: 6 }}>
               {elevDiff != null && (
                 <>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{Math.abs(elevDiff).toFixed(2)} ft</span>
-                  <StackedFIFSpan {...engToFIF(Math.abs(elevDiff))} color={diffColor(elevDiff)} size={11} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: diffColor(elevDiff), fontFamily: 'monospace' }}>{isMetric ? fmtElev(Math.abs(elevDiff)) : `${Math.abs(elevDiff).toFixed(2)} ft`}</span>
+                  {!isMetric && <StackedFIFSpan {...engToFIF(Math.abs(elevDiff))} color={diffColor(elevDiff)} size={11} />}
                 </>
               )}
             </div>
@@ -830,18 +841,21 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                 </div>
                                 {/* Divider */}
                                 <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 2 }} />
-                                {/* Rod — decimal ft | FIF, both at size 12 */}
+                                {/* Rod — decimal ft|m | FIF (imperial only), both at size 12 */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, lineHeight: 1.2, flexWrap: 'nowrap' as const, overflow: 'hidden' }}>
                                   <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{pt.engineeringFeet.toFixed(2)} ft</span>
-                                  <span style={{ fontSize: 10, color: TEXT_DIS, fontWeight: 400, flexShrink: 0 }}>|</span>
-                                  <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_PRI} size={12} />
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtDist(pt.engineeringFeet) : `${pt.engineeringFeet.toFixed(2)} ft`}</span>
+                                  {!isMetric && (
+                                    <>
+                                      <span style={{ fontSize: 10, color: TEXT_DIS, fontWeight: 400, flexShrink: 0 }}>|</span>
+                                      <StackedFIFSpan {...engToFIF(pt.engineeringFeet)} color={TEXT_PRI} size={12} />
+                                    </>
+                                  )}
                                 </div>
-                                {/* Elev — decimal ft only */}
+                                {/* Elev — decimal */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'nowrap' as const, lineHeight: 1.2 }}>
                                   <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerElev')} -</span>
-                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? pt.bmElevation.toFixed(2) : '—'}</span>
-                                  {pt.bmElevation > 0 && <span style={{ fontSize: 14, color: TEXT_SEC, fontWeight: 600 }}>ft</span>}
+                                  <span style={{ fontSize: 16, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{pt.bmElevation > 0 ? (isMetric ? fmtElev(pt.bmElevation) : `${pt.bmElevation.toFixed(2)} ft`) : '—'}</span>
                                 </div>
                               </div>
                             );
@@ -981,6 +995,7 @@ interface GraphTabProps {
 
 function GraphTab({ points, sets }: GraphTabProps) {
   const { t } = useLang();
+  const { isMetric, unitLabel, ftToDisplay } = useUnit();
   const [selectedSet, setSelectedSet] = useState('');
   const [showMoreSets, setShowMoreSets] = useState(false);
 
@@ -1180,7 +1195,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
             <rect x={PAD_L} y={PAD_T} width={PLOT_W} height={PLOT_H} fill="none" stroke="#E2E8F0" strokeWidth="0.75" rx="3" />
 
             {/* Y-axis unit */}
-            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="11" fontWeight="800" fill={TEXT_SEC}>ft</text>
+            <text x={PAD_L - 6} y={PAD_T - 8} textAnchor="end" fontSize="11" fontWeight="800" fill={TEXT_SEC}>{unitLabel}</text>
 
             {/* Y-axis grid + tick labels */}
             {axisTicks.map((tick, i) => {
@@ -1191,7 +1206,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
                   <line x1={PAD_L} y1={ty} x2={PAD_L + PLOT_W} y2={ty}
                     stroke="#D1D8E4" strokeWidth="0.75" strokeDasharray="3,4" />
                   <text x={PAD_L - 4} y={ty + 3.5} textAnchor="end" fontSize="11.5" fontWeight="700" fill={TEXT_SEC}>
-                    {tick.toFixed(2)}
+                    {ftToDisplay(tick).toFixed(isMetric ? 3 : 2)}
                   </text>
                 </g>
               );
@@ -1236,7 +1251,7 @@ function GraphTab({ points, sets }: GraphTabProps) {
                   {/* Rod reading value */}
                   <text x={cx} y={valY} textAnchor="middle"
                     fontSize={valFontSz} fontWeight="800" fill={NAVY}>
-                    {pt.engineeringFeet.toFixed(2)}
+                    {ftToDisplay(pt.engineeringFeet).toFixed(isMetric ? 3 : 2)}
                   </text>
 
                   {/* Point label below baseline */}
@@ -1331,6 +1346,7 @@ function exportPointsCSV(pts: SurveyPoint[], sets: SurveySet[]): void {
 
 export function SinglePointTab({ points, sets, projectId, onEditPoint }: SinglePointTabProps) {
   const { t, lang } = useLang();
+  const { isMetric, fmtElev, fmtDist } = useUnit();
   const { deletePoint } = useSurveyStore();
   const es = lang === 'es';
 
@@ -1553,18 +1569,22 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
               {/* ── Rod Reading row ── */}
               <div style={{ padding: '3px 12px 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' as const }}>
                 <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, flexShrink: 0 }}>{tx.rodSuffix} -</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{pt.engineeringFeet.toFixed(2)} ft</span>
-                <span style={{ color: BORDER_B, fontSize: 15, flexShrink: 0 }}>|</span>
-                <span style={{ flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
-                  <StackedFIFSpan {...fifData} color={TEXT_PRI} size={15} />
-                </span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtDist(pt.engineeringFeet) : `${pt.engineeringFeet.toFixed(2)} ft`}</span>
+                {!isMetric && (
+                  <>
+                    <span style={{ color: BORDER_B, fontSize: 15, flexShrink: 0 }}>|</span>
+                    <span style={{ flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
+                      <StackedFIFSpan {...fifData} color={TEXT_PRI} size={15} />
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* ── Elevation row (own line) ── */}
               {hasBm && (
                 <div style={{ padding: '2px 12px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ fontSize: 14, fontWeight: 800, color: elevColor, flexShrink: 0 }}>{tx.elevSuffix} -</span>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{(pt.bmElevation ?? 0).toFixed(2)} ft</span>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: elevColor, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtElev(pt.bmElevation ?? 0) : `${(pt.bmElevation ?? 0).toFixed(2)} ft`}</span>
                 </div>
               )}
 
@@ -1656,14 +1676,14 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
                   <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const }}>{t('rodReading')} –</span>
-                  <StackedFIFSpan feet={dpRFeet} inches={dpRInch} frac={dpRFrac} color={TEXT_PRI} size={18} />
-                  <span style={{ color: BORDER_B, fontSize: 17 }}>|</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{viewDetailsPt.engineeringFeet.toFixed(2)} ft</span>
+                  {!isMetric && <StackedFIFSpan feet={dpRFeet} inches={dpRInch} frac={dpRFrac} color={TEXT_PRI} size={18} />}
+                  {!isMetric && <span style={{ color: BORDER_B, fontSize: 17 }}>|</span>}
+                  <span style={{ fontSize: 18, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace' }}>{isMetric ? fmtDist(viewDetailsPt.engineeringFeet) : `${viewDetailsPt.engineeringFeet.toFixed(2)} ft`}</span>
                 </div>
                 {dpHasBm && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
                     <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 1, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const }}>{tx.elevLabel} –</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: dpType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>{(viewDetailsPt.bmElevation ?? 0).toFixed(2)} ft</span>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: dpType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace' }}>{isMetric ? fmtElev(viewDetailsPt.bmElevation ?? 0) : `${(viewDetailsPt.bmElevation ?? 0).toFixed(2)} ft`}</span>
                   </div>
                 )}
               </div>
@@ -1789,10 +1809,10 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' as const }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{tx.rodSuffix} {deleteConfirmPt.engineeringFeet.toFixed(2)} ft</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_PRI, fontFamily: 'monospace' }}>{tx.rodSuffix} {isMetric ? fmtDist(deleteConfirmPt.engineeringFeet) : `${deleteConfirmPt.engineeringFeet.toFixed(2)} ft`}</span>
                       {dcHasBm && (
                         <><span style={{ color: BORDER_B }}>•</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{tx.elevSuffix} {(deleteConfirmPt.bmElevation ?? 0).toFixed(2)} ft</span></>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: TEXT_SEC, fontFamily: 'monospace' }}>{tx.elevSuffix} {isMetric ? fmtElev(deleteConfirmPt.bmElevation ?? 0) : `${(deleteConfirmPt.bmElevation ?? 0).toFixed(2)} ft`}</span></>
                       )}
                     </div>
                   </div>
@@ -1853,21 +1873,25 @@ export function SinglePointTab({ points, sets, projectId, onEditPoint }: SingleP
                       </div>
                       {onPage && <span style={{ fontSize: 13, color: BLUE, marginLeft: 'auto', fontWeight: 800 }}>✓</span>}
                     </div>
-                    {/* Row 2: Rod - decimal ft | FIF stacked */}
+                    {/* Row 2: Rod - decimal | FIF stacked (imperial only) */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'nowrap' as const, overflow: 'hidden' }}>
                       <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, flexShrink: 0 }}>{tx.rodSuffix} -</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{mpt.engineeringFeet.toFixed(2)} ft</span>
-                      <span style={{ color: BORDER_B, fontSize: 13, flexShrink: 0 }}>|</span>
-                      <span style={{ flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
-                        <StackedFIFSpan {...engToFIF(mpt.engineeringFeet)} color={TEXT_PRI} size={13} />
-                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtDist(mpt.engineeringFeet) : `${mpt.engineeringFeet.toFixed(2)} ft`}</span>
+                      {!isMetric && (
+                        <>
+                          <span style={{ color: BORDER_B, fontSize: 13, flexShrink: 0 }}>|</span>
+                          <span style={{ flexShrink: 1, minWidth: 0, overflow: 'hidden' }}>
+                            <StackedFIFSpan {...engToFIF(mpt.engineeringFeet)} color={TEXT_PRI} size={13} />
+                          </span>
+                        </>
+                      )}
                     </div>
                     {/* Row 3: Elev. - value [set badge • name] */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
                       {(mpt.bmElevation ?? 0) > 0 ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
                           <span style={{ fontSize: 13, fontWeight: 800, color: mType === 'benchmark' ? '#92610A' : TEXT_PRI, flexShrink: 0 }}>{tx.elevSuffix} -</span>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: mType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{(mpt.bmElevation ?? 0).toFixed(2)} ft</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: mType === 'benchmark' ? '#92610A' : TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtElev(mpt.bmElevation ?? 0) : `${(mpt.bmElevation ?? 0).toFixed(2)} ft`}</span>
                         </div>
                       ) : (
                         <div style={{ flex: 1 }} />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { INCHES_OPTIONS, FRACTION_OPTIONS } from '../constants';
 import { useLang } from '../LangContext';
+import { useUnit } from '../UnitContext';
 import ConfirmModal from '../components/ConfirmModal';
 
 // ─── Modal animation (idempotent injection) ───────────────────────────────────
@@ -138,10 +139,12 @@ function StackedFraction({ feet, inches, fracLbl, negative = false, color = '#ff
 
 // ─── Step value node (FIF or decimal, inline) ────────────────────────────────
 function StepValueNode({ step, size = 13 }: { step: SessionStep; size?: number }) {
+  const { isMetric, ftToDisplay } = useUnit();
   if (step.mode === 'eng') {
+    const dispVal = ftToDisplay(Math.abs(parseFloat(step.eng) || 0));
     return (
       <span style={{ fontSize: size, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
-        {Math.abs(parseFloat(step.eng) || 0).toFixed(2)} ft
+        {dispVal.toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
       </span>
     );
   }
@@ -158,6 +161,7 @@ function StepValueNode({ step, size = 13 }: { step: SessionStep; size?: number }
 // ─── Compact calc row — expression (last ≤3 ops, no = result) + result row ────
 function CompactCalcRow({ item }: { item: CalcHistItem }) {
   const { t } = useLang();
+  const { isMetric, ftToDisplay } = useUnit();
   const rFIF    = engToFif(Math.abs(item.result));
   const opCount = item.steps.length - 1;
   // Show at most last 3 steps; prefix "…" if earlier steps were cut
@@ -193,7 +197,7 @@ function CompactCalcRow({ item }: { item: CalcHistItem }) {
         <StackedFraction {...rFIF} negative={item.result < 0} color={NAVY} size={14} />
         <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_S, flexShrink: 0 }}>•</span>
         <span style={{ fontSize: 13, fontWeight: 700, color: NAVY, fontFamily: 'monospace', flexShrink: 0 }}>
-          {item.result < 0 ? '−' : ''}{Math.abs(item.result).toFixed(2)} ft
+          {item.result < 0 ? '−' : ''}{ftToDisplay(Math.abs(item.result)).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
         </span>
         {opCount > 1 && (
           <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: NAVY, backgroundColor: BLUE_D, borderRadius: 4, padding: '2px 7px', flexShrink: 0 }}>
@@ -208,6 +212,7 @@ function CompactCalcRow({ item }: { item: CalcHistItem }) {
 // ─── Calculation Details modal — centered, step-by-step with running totals ───
 function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () => void }) {
   const { t } = useLang();
+  const { isMetric, ftToDisplay } = useUnit();
   // Compute running totals after each step
   const runningTotals: number[] = [];
   let running = item.steps[0]?.val ?? 0;
@@ -267,7 +272,7 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
                     <StackedFraction {...stepFIF} color={NAVY} size={16} />
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: NAVY, fontFamily: 'monospace' }}>
-                    {Math.abs(step.val).toFixed(4)} ft
+                    {ftToDisplay(Math.abs(step.val)).toFixed(4)} {isMetric ? 'm' : 'ft'}
                   </div>
                 </div>
                 {/* Result after each operation (intermediate or final) */}
@@ -285,7 +290,7 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 2 }}>•</div>
                         <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
-                          {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(4)} ft
+                          {rtNeg ? '−' : ''}{ftToDisplay(Math.abs(runningTotals[i])).toFixed(4)} {isMetric ? 'm' : 'ft'}
                         </div>
                         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
                           {item.steps.length - 1} {t('operations')} · {item.steps.length} values
@@ -300,7 +305,7 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
                         </div>
                         <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_S, marginBottom: 2 }}>•</div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, fontFamily: 'monospace' }}>
-                          {rtNeg ? '−' : ''}{Math.abs(runningTotals[i]).toFixed(2)} ft
+                          {rtNeg ? '−' : ''}{ftToDisplay(Math.abs(runningTotals[i])).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
                         </div>
                       </div>
                     )}
@@ -318,7 +323,7 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
               </div>
               <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, marginBottom: 2 }}>•</div>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontFamily: 'monospace' }}>
-                {item.result < 0 ? '−' : ''}{Math.abs(item.result).toFixed(4)} ft
+                {item.result < 0 ? '−' : ''}{ftToDisplay(Math.abs(item.result)).toFixed(4)} {isMetric ? 'm' : 'ft'}
               </div>
             </div>
           )}
@@ -330,9 +335,11 @@ function CalcDetailsModal({ item, onClose }: { item: CalcHistItem; onClose: () =
 
 // ─── Conv history row ─────────────────────────────────────────────────────────
 function ConvHistRow({ item, compact = false }: { item: ConvItem; compact?: boolean }) {
+  const { isMetric, ftToDisplay } = useUnit();
   const sz = compact ? 14 : 16;
   const FIFNode = <StackedFraction feet={item.fifFeet} inches={item.fifInches} fracLbl={item.fifFracLbl} color={TEXT_P} size={sz} />;
-  const EngNode = <span style={{ fontSize: sz, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' }}>{item.engVal.toFixed(2)} ft</span>;
+  const dispVal = ftToDisplay(item.engVal);
+  const EngNode = <span style={{ fontSize: sz, fontWeight: 700, color: TEXT_P, fontFamily: 'monospace' }}>{dispVal.toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}</span>;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       {item.mode === 'fif_to_eng' ? FIFNode : EngNode}
@@ -803,6 +810,7 @@ function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
 // ═══════════════════════════════════════════════════════════════════════════════
 function CalculatorView({ uid }: { uid: string }) {
   const { t } = useLang();
+  const { isMetric, ftToDisplay } = useUnit();
   const [modeA, setModeA] = useState<Mode>('fif');
   const [modeB, setModeB] = useState<Mode>('fif');
   const [op,    setOp]    = useState<Op>('+');
@@ -1067,7 +1075,7 @@ function CalculatorView({ uid }: { uid: string }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' }}>
               {result !== null && resultFif ? (
                 <>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{result.toFixed(2)} ft</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{ftToDisplay(result).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}</span>
                   <div style={{ height: 1, width: '80%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
                   <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={15} />
                 </>

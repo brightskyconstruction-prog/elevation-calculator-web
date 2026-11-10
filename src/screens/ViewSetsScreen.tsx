@@ -3,6 +3,7 @@ import { useSurveyStore } from '../stores/surveyStore';
 import { SurveySet, SurveyPoint } from '../types';
 import { fmtTimestamp } from '../constants';
 import { useLang } from '../LangContext';
+import { useUnit } from '../UnitContext';
 import { strings } from '../i18n';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -361,6 +362,7 @@ interface SetDetailProps {
 
 function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDetailProps) {
   const { t, lang }                   = useLang();
+  const { fmtElev, fmtRodReading, unitLabel } = useUnit();
   const { updatePoint, updateSet }    = useSurveyStore();
 
   // view state
@@ -492,8 +494,8 @@ function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDeta
   const handleSharePoint = (pt: SurveyPoint) => {
     const text = [
       `Point: ${pt.label}${pt.pointName ? ` — ${pt.pointName}` : ''}`,
-      `Rod: ${rodFifStr(pt)}  |  ${(pt.engineeringFeet ?? 0).toFixed(4)} ft`,
-      (pt.bmElevation ?? 0) > 0 ? `Elevation: ${(pt.bmElevation ?? 0).toFixed(3)} ft` : null,
+      `Rod: ${rodFifStr(pt)}  |  ${fmtRodReading(pt.engineeringFeet ?? 0)}`,
+      (pt.bmElevation ?? 0) > 0 ? `Elevation: ${fmtElev(pt.bmElevation ?? 0)}` : null,
       pt.createdLatitude != null ? `GPS: ${pt.createdLatitude}, ${pt.createdLongitude}` : null,
     ].filter(Boolean).join('\n');
     if ((navigator as any).share) {
@@ -557,28 +559,28 @@ function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDeta
           {refPt && (
             <div style={{ ...sdS.stat, backgroundColor:'#FFF3CD', border:`1px solid #F5A623` }}>
               <span style={{ ...sdS.statLbl, color:GOLD_LBL }}>{lang === 'es' ? 'Ref.' : 'Bmark'}</span>
-              <span style={{ ...sdS.statVal, color:GOLD_TXT }}>{(refPt.bmElevation ?? 0).toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={{ ...sdS.statVal, color:GOLD_TXT }}>{fmtElev(refPt.bmElevation ?? 0).replace(` ${unitLabel}`, '')}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>{unitLabel}</span></span>
             </div>
           )}
           {/* Highest */}
           {highElev != null && (
             <div style={sdS.stat}>
               <span style={sdS.statLbl}>{lang === 'es' ? 'Max' : 'High'}</span>
-              <span style={sdS.statVal}>{highElev.toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={sdS.statVal}>{fmtElev(highElev).replace(` ${unitLabel}`, '')}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>{unitLabel}</span></span>
             </div>
           )}
           {/* Lowest */}
           {lowElev != null && (
             <div style={sdS.stat}>
               <span style={sdS.statLbl}>{lang === 'es' ? 'Min' : 'Low'}</span>
-              <span style={sdS.statVal}>{lowElev.toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={sdS.statVal}>{fmtElev(lowElev).replace(` ${unitLabel}`, '')}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>{unitLabel}</span></span>
             </div>
           )}
           {/* Average */}
           {avgElev != null && elevs.length > 1 && (
             <div style={sdS.stat}>
               <span style={sdS.statLbl}>{lang === 'es' ? 'Prom.' : 'Avg.'}</span>
-              <span style={sdS.statVal}>{avgElev.toFixed(2)}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>ft</span></span>
+              <span style={sdS.statVal}>{fmtElev(avgElev).replace(` ${unitLabel}`, '')}<span style={{ fontSize:8, fontWeight:700, marginLeft:1 }}>{unitLabel}</span></span>
             </div>
           )}
         </div>
@@ -609,7 +611,7 @@ function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDeta
             {/* Known elevation (only if benchmark exists) */}
             {refPt && (
               <div>
-                <div style={sdS.editLbl}>{lang === 'es' ? 'Elevación Conocida (ft)' : 'Known Elevation (ft)'}</div>
+                <div style={sdS.editLbl}>{lang === 'es' ? `Elevación Conocida (${unitLabel})` : `Known Elevation (${unitLabel})`}</div>
                 <div style={{ fontSize:11, color:TEXT_D, marginBottom:5 }}>
                   {lang === 'es' ? `Punto de referencia: ${refPt.label}` : `Benchmark point: ${refPt.label}`}
                 </div>
@@ -653,7 +655,7 @@ function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDeta
                             {t(theme.labelKey)}
                           </span>
                           <span style={{ fontSize:10, fontWeight:600, color:TEXT_D, fontFamily:'monospace' }}>
-                            {(pt.engineeringFeet ?? 0).toFixed(2)} ft
+                            {fmtRodReading(pt.engineeringFeet ?? 0)}
                           </span>
                         </div>
                       </div>
@@ -740,12 +742,12 @@ function SetDetailView({ set, points, projectId, onClose, onEditPoint }: SetDeta
                         <div style={sdS.cell}>
                           <span style={sdS.cellLbl}>{t('rodReading')}</span>
                           <StackedFIFSpan feet={pt.rodFeet ?? '0'} inches={pt.rodInches ?? 0} frac={pt.rodFractionLabel ?? ''} color={CHARCOAL} size={16} />
-                          <span style={{ ...sdS.cellSub, color:CHARCOAL }}>{(pt.engineeringFeet ?? 0).toFixed(2)} ft</span>
+                          <span style={{ ...sdS.cellSub, color:CHARCOAL }}>{fmtRodReading(pt.engineeringFeet ?? 0)}</span>
                         </div>
                         {hasBm && (
                           <div style={sdS.cell}>
                             <span style={{ ...sdS.cellLbl, color:elevLblColor }}>{t(ELEV_LABEL_KEY[ptType])}</span>
-                            <span style={{ ...sdS.cellVal, color:elevValColor, fontWeight:800 }}>{(pt.bmElevation ?? 0).toFixed(3)} ft</span>
+                            <span style={{ ...sdS.cellVal, color:elevValColor, fontWeight:800 }}>{fmtElev(pt.bmElevation ?? 0)}</span>
                           </div>
                         )}
                       </div>
