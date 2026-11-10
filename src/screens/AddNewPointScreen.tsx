@@ -876,13 +876,16 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   // ── Benchmark mismatch validation ─────────────────────────────────────────
   // Triggers when the user has manually entered a BM AND the set provides a
-  // derived BM — we compare rounded to 2dp to avoid float-precision mismatches.
+  // derived BM — we compare rounded to avoid float-precision mismatches.
+  // In metric mode we keep 4dp feet (~0.03 mm) so the round-trip m→ft→m stays
+  // within display precision; imperial stays at 2dp (≈3 mm, matching rod reading).
   const enteredBmNum   = parseFloat(bmElevStr); // in display units
-  const enteredBmFt    = displayToFt(!isNaN(enteredBmNum) ? enteredBmNum : 0); // in feet
+  const enteredBmFt    = displayToFt(!isNaN(enteredBmNum) ? enteredBmNum : 0); // always feet
+  const compDp         = isMetric ? 4 : 2;
   const roundedEnteredBm = !isNaN(enteredBmNum) && enteredBmNum > 0
-    ? parseFloat(enteredBmFt.toFixed(2)) : 0;
+    ? parseFloat(enteredBmFt.toFixed(compDp)) : 0;
   const roundedDerivedBm = autoDerivedBm != null
-    ? parseFloat(autoDerivedBm.toFixed(2)) : 0;
+    ? parseFloat(autoDerivedBm.toFixed(compDp)) : 0;
   const needsBmValidation = !isNaN(enteredBmNum) && enteredBmNum > 0 && autoDerivedBm != null;
   const bmValuesMatch     = !needsBmValidation || roundedEnteredBm === roundedDerivedBm;
   const bmBlocked         = needsBmValidation && !bmValuesMatch;
@@ -2027,20 +2030,24 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
       {/* ── Benchmark Verified dialog ── */}
       <BmVerifiedModal
         open={showBmVerifiedModal}
-        enteredBm={roundedEnteredBm}
-        derivedBm={roundedDerivedBm}
+        enteredBm={enteredBmFt}
+        derivedBm={autoDerivedBm ?? 0}
         onContinue={() => { setShowBmVerifiedModal(false); doActualSave(); }}
       />
 
       {/* ── Benchmark Mismatch dialog ── */}
       <BmMismatchModal
         open={showBmMismatchModal}
-        enteredBm={roundedEnteredBm}
-        derivedBm={roundedDerivedBm}
+        enteredBm={enteredBmFt}
+        derivedBm={autoDerivedBm ?? 0}
         onClose={() => setShowBmMismatchModal(false)}
         onUseDerived={() => {
-          // Accept the derived value: update bmElevStr so they match, unblock save
-          setBmElevStr(autoDerivedBm != null ? autoDerivedBm.toFixed(2) : bmElevStr);
+          // Accept the derived value: set bmElevStr in the current display units
+          if (autoDerivedBm != null) {
+            setBmElevStr(isMetric
+              ? (autoDerivedBm * FT_TO_M).toFixed(3)
+              : autoDerivedBm.toFixed(2));
+          }
           setBmExpanded(true);
           setShowBmMismatchModal(false);
         }}
