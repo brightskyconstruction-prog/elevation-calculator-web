@@ -827,6 +827,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
   const [showSetListModal,  setShowSetListModal]  = useState(false);
   const [showAllSetsModal,  setShowAllSetsModal]  = useState(false);
   const [cameFromNewPoint, setCameFromNewPoint] = useState(false);
+  // Track previous isMetric so the unit-switch effect knows conversion direction
+  const prevIsMetricRef = useRef(isMetric);
   // ── Benchmark validation ──────────────────────────────────────────────────
   const [showBmVerifiedModal,  setShowBmVerifiedModal]  = useState(false);
   const [showBmMismatchModal,  setShowBmMismatchModal]  = useState(false);
@@ -876,19 +878,23 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
 
   // ── Benchmark mismatch validation ─────────────────────────────────────────
   // Triggers when the user has manually entered a BM AND the set provides a
-  // derived BM — we compare rounded to avoid float-precision mismatches.
-  // In metric mode we keep 4dp feet (~0.03 mm) so the round-trip m→ft→m stays
-  // within display precision; imperial stays at 2dp (≈3 mm, matching rod reading).
-  const enteredBmNum   = parseFloat(bmElevStr); // in display units
-  const enteredBmFt    = displayToFt(!isNaN(enteredBmNum) ? enteredBmNum : 0); // always feet
-  const compDp         = isMetric ? 4 : 2;
-  const roundedEnteredBm = !isNaN(enteredBmNum) && enteredBmNum > 0
-    ? parseFloat(enteredBmFt.toFixed(compDp)) : 0;
-  const roundedDerivedBm = autoDerivedBm != null
-    ? parseFloat(autoDerivedBm.toFixed(compDp)) : 0;
+  // derived BM. Compare at 2dp of the current display unit so that if the
+  // displayed difference rounds to "0.00 m" / "0.00 ft" the values are always
+  // considered a match (consistent with what the user sees on screen).
+  const enteredBmNum = parseFloat(bmElevStr); // in display units
+  const enteredBmFt  = displayToFt(!isNaN(enteredBmNum) ? enteredBmNum : 0); // always feet
   const needsBmValidation = !isNaN(enteredBmNum) && enteredBmNum > 0 && autoDerivedBm != null;
-  const bmValuesMatch     = !needsBmValidation || roundedEnteredBm === roundedDerivedBm;
-  const bmBlocked         = needsBmValidation && !bmValuesMatch;
+  let   bmValuesMatch = true;
+  if (needsBmValidation && autoDerivedBm != null) {
+    if (isMetric) {
+      // Compare at 2dp meters — consistent with fmtElev/fmtDist 2dp display
+      bmValuesMatch = parseFloat(enteredBmNum.toFixed(2)) === parseFloat((autoDerivedBm * FT_TO_M).toFixed(2));
+    } else {
+      // Compare at 2dp feet — unchanged imperial behaviour
+      bmValuesMatch = parseFloat(enteredBmFt.toFixed(2)) === parseFloat(autoDerivedBm.toFixed(2));
+    }
+  }
+  const bmBlocked = needsBmValidation && !bmValuesMatch;
 
   const fifDisplay      = (rodFeet || rodInches > 0) ? fmtFIF(rodFeet, rodInches, rodFracLbl) : '';
   const engDisplay      = !isNaN(engFtFeet) && engFtFeet > 0 ? fmtDist(engFtFeet) : '';
@@ -980,6 +986,7 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     : [];
 
   // ── Load point into form ───────────────────────────────────────────────────
+  // isMetric must be in deps so goTo() always converts to the current unit system
   const loadPoint = useCallback((pt: SurveyPoint) => {
     lockRef.current = true;
     setRodFeet(pt.rodFeet ?? '');
@@ -1010,7 +1017,8 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     setSavedLat(pt.createdLatitude ?? null);
     setSavedLon(pt.createdLongitude ?? null);
     setTimeout(() => { lockRef.current = false; }, 50);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMetric]);
 
   const clearForm = () => {
     setRodFeet(''); setRodInches(0); setRodFracDec(0); setRodFracLbl('0/0');
@@ -1043,10 +1051,48 @@ export default function AddNewPointScreen({ projectId, isVisible = true, editPoi
     savedNewPointRef.current = null;
   }, [isVisible]);
 
-  // Switch format modes when unit system changes
+  // Switch format modes AND convert entered values when unit system changes
   useEffect(() => {
+    const wasMetric = prevIsMetricRef.current;
+    prevIsMetricRef.current = isMetric;
+
+    // Always sync the rod-format toggle
     if (isMetric  && rodFormat === 'fif') setRodFormat('mcm');
     if (!isMetric && rodFormat === 'mcm') setRodFormat('fif');
+
+    // If unit didn't actually change (initial mount), nothing to convert
+    if (wasMetric === isMetric) return;
+
+    // Convert engFtStr from previous display units to new display units
+    const engNum = parseFloat(engFtStr);
+    if (engFtStr !== '' && !isNaN(engNum) && engNum > 0) {
+      const inFt = wasMetric ? engNum / FT_TO_M : engNum;
+      setEngFtStr(isMetric ? (inFt * FT_TO_M).toFixed(3) : inFt.toFixed(2));
+      // Also sync the structured fields (MCM or FIF)
+      if (isMetric) {
+        const totalM = inFt * FT_TO_M;
+        const wholeM = Math.floor(totalM);
+        const remM   = totalM - wholeM;
+        const cm     = Math.floor(remM * 100);
+        const mm     = Math.round((remM * 100 - cm) * 10);
+        setRodMeters(String(wholeM)); setRodCm(cm); setRodMm(mm);
+      } else {
+        const { feet, inches, fraction, frLabel } = fromEngFt(inFt);
+        setRodFeet(feet); setRodInches(inches); setRodFracDec(fraction); setRodFracLbl(frLabel);
+      }
+    }
+
+    // Convert bmElevStr from previous display units to new display units
+    const bmNum = parseFloat(bmElevStr);
+    if (bmElevStr !== '' && !isNaN(bmNum) && bmNum > 0) {
+      const bmFt = wasMetric ? bmNum / FT_TO_M : bmNum;
+      setBmElevStr(isMetric ? (bmFt * FT_TO_M).toFixed(3) : bmFt.toFixed(2));
+    }
+
+    // Reset mismatch state so it re-evaluates under the new unit system
+    setShowBmMismatchModal(false);
+    setBmMismatchAutoShown(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMetric]);
 
   // ── Expose imperative API to App.tsx for global back-navigation ──────────────
