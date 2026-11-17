@@ -836,7 +836,7 @@ function ModeToggleCompact({ mode, onChange }: { mode: Mode; onChange: (m: Mode)
     <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 3, border: `1px solid ${BORDER}`, overflow: 'hidden', flexShrink: 0 }}>
       {(['eng', 'fif'] as Mode[]).map(m => (
         <button key={m} style={{
-          height: 22, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 800,
+          height: 18, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 800,
           letterSpacing: 0.1, color: mode === m ? '#fff' : TEXT_S,
           backgroundColor: mode === m ? NAVY : SURFACE,
           transition: 'background-color 0.12s, color 0.12s',
@@ -850,7 +850,7 @@ function ModeToggleCompact({ mode, onChange }: { mode: Mode; onChange: (m: Mode)
 }
 
 // ─── Individual value card (1 of 6 in the grid) ──────────────────────────────
-function ValueCard({ idx, card, onUpdate, onClear }: {
+function ValueCard({ idx: _idx, card, onUpdate, onClear }: {
   idx: number; card: CardState;
   onUpdate: (patch: Partial<CardState>) => void;
   onClear: () => void;
@@ -860,14 +860,12 @@ function ValueCard({ idx, card, onUpdate, onClear }: {
   const [ftFocused,  setFtFocused]  = useState(false);
   const [mtFocused,  setMtFocused]  = useState(false);
 
-  const selSt = { width: '100%', height: 30, border: 'none', backgroundColor: SURFACE, fontSize: 14, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const };
-  const inpSt = { height: 30, border: 'none', backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center' as const, outline: 'none', padding: 0, width: '100%', boxSizing: 'border-box' as const };
+  const selSt = { width: '100%', height: 26, border: 'none', backgroundColor: SURFACE, fontSize: 13, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const };
+  const inpSt = { height: 26, border: 'none', backgroundColor: '#fff', fontSize: 14, fontWeight: 700, color: '#1A2D35', textAlign: 'center' as const, outline: 'none', padding: 0, width: '100%', boxSizing: 'border-box' as const };
   const div1  = { height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 as const };
 
   return (
-    <div style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '4px 3px', display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
-      {/* Number badge */}
-      <div style={{ fontSize: 9, fontWeight: 800, color: NAVY, textTransform: 'uppercase' as const, letterSpacing: 0.5, textAlign: 'center' as const, backgroundColor: '#EEF4FF', borderRadius: 2, padding: '1px 0', flexShrink: 0 }}>V{idx + 1}</div>
+    <div style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '3px 2px', display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
       {/* Mode toggle */}
       <ModeToggleCompact mode={card.mode} onChange={m => onUpdate({ mode: m })} />
       {/* Inputs */}
@@ -905,7 +903,7 @@ function ValueCard({ idx, card, onUpdate, onClear }: {
           </div>
         )
       ) : (
-        <input style={{ flex: 1, minHeight: 44, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
+        <input style={{ flex: 1, minHeight: 36, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
           value={card.eng} onChange={e => onUpdate({ eng: e.target.value })}
           inputMode="decimal" enterKeyHint="done"
           placeholder={engFocused ? '' : '0.00'}
@@ -913,7 +911,7 @@ function ValueCard({ idx, card, onUpdate, onClear }: {
           onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
       )}
       {/* Clear */}
-      <button style={{ height: 20, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 3, fontSize: 9, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', flexShrink: 0, letterSpacing: 0.1 }}
+      <button style={{ height: 16, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 3, fontSize: 9, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', flexShrink: 0, letterSpacing: 0.1 }}
         onClick={onClear}>✕ Clear</button>
     </div>
   );
@@ -927,7 +925,7 @@ function OpColumn({ opIdx, ops, onToggle }: { opIdx: number; ops: Op[]; onToggle
       {(['+', '-'] as Op[]).map(o => (
         <button key={o} onClick={() => onToggle(opIdx, o)}
           style={{
-            width: 26, height: 30, borderRadius: 6,
+            width: 26, height: 26, borderRadius: 6,
             border: `2px solid ${cur === o ? GOLD : BORDER}`,
             backgroundColor: cur === o ? NAVY : CARD,
             color: cur === o ? '#fff' : TEXT_S,
@@ -1052,7 +1050,7 @@ function CalculatorView({ uid }: { uid: string }) {
 
   return (
     <>
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 10, display: 'flex', flexDirection: 'column', gap: 8, width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 8, display: 'flex', flexDirection: 'column', gap: 5, width: '100%', boxSizing: 'border-box' }}>
 
         {/* ── Row 1: Cards 0–2 ── */}
         <div style={{ display: 'flex', alignItems: 'stretch', gap: 3, minWidth: 0 }}>
@@ -1095,34 +1093,34 @@ function CalculatorView({ uid }: { uid: string }) {
         </div>
 
         {/* ── Full-width Result card ── */}
-        <div style={{ backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minHeight: 64 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1.2, textTransform: 'uppercase' as const }}>{t('result')}</span>
+        <div style={{ backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: '5px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minHeight: 46 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 1.2, textTransform: 'uppercase' as const }}>{t('result')}</span>
           {result !== null ? (
-            <>
-              <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'monospace', letterSpacing: 0.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
+              <span style={{ fontSize: 17, fontWeight: 800, color: '#fff', fontFamily: 'monospace', letterSpacing: 0.5, whiteSpace: 'nowrap' as const }}>
                 {ftToDisplay(result).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
               </span>
-              <div style={{ height: 1, width: '50%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13 }}>·</span>
               {isMetric ? (() => {
                 const totalM = Math.abs(ftToDisplay(result));
                 const wholeM = Math.floor(totalM);
                 const remM   = totalM - wholeM;
                 const cm     = Math.floor(remM * 100);
                 const mm     = Math.round((remM * 100 - cm) * 10);
-                return <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+                return <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'monospace', whiteSpace: 'nowrap' as const }}>{result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
               })() : (
-                resultFif && <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={16} />
+                resultFif && <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={13} />
               )}
-            </>
+            </div>
           ) : (
-            <span style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.28)', lineHeight: 1.4 }}>—</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'rgba(255,255,255,0.28)', lineHeight: 1.4 }}>—</span>
           )}
         </div>
 
         {/* ── Calculate ── */}
         <button
           style={{
-            width: '100%', height: 42,
+            width: '100%', height: 36,
             backgroundColor: canCalc ? NAVY : '#8A9BB5',
             border: `2px solid ${canCalc ? GOLD : '#B0C0D4'}`,
             borderRadius: 8, color: '#fff',
@@ -1136,13 +1134,13 @@ function CalculatorView({ uid }: { uid: string }) {
         {/* ── Recent Calculations ── */}
         {history.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}`, borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
-              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}`, borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: TEXT_P, letterSpacing: 0.7 }}>{t('recentCalcs')}</span>
+              <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '3px 8px', border: `1px solid ${BLUE}`, fontSize: 11, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
             </div>
             {history.slice(0, 1).map(item => (
-              <div key={item.id} style={{ padding: '10px 12px', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <div key={item.id} style={{ padding: '7px 10px', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <CompactCalcRow item={item} />
                 </div>
