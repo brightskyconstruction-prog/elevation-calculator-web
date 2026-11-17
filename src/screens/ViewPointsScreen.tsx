@@ -840,11 +840,11 @@ function CompareTab({ projectId, points, sets, fromId, toId, setFromId, setToId 
                                   )}
                                 </div>
                                 {/* Divider */}
-                                <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 2 }} />
+                                <div style={{ height: 1, backgroundColor: sel ? `${selColor}28` : BORDER_S, marginBottom: 6 }} />
                                 {/* Rod — decimal ft|m | FIF (imperial only), both at size 12 */}
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, lineHeight: 1.2, flexWrap: 'nowrap' as const, overflow: 'hidden' }}>
                                   <span style={{ fontSize: 13, color: TEXT_SEC, fontWeight: 700, flexShrink: 0 }}>{t('pickerRod')} -</span>
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtDist(pt.engineeringFeet) : `${pt.engineeringFeet.toFixed(2)} ft`}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 800, color: TEXT_PRI, fontFamily: 'monospace', flexShrink: 0 }}>{isMetric ? fmtDist(pt.engineeringFeet) : `${pt.engineeringFeet.toFixed(2)} ft`}</span>
                                   {!isMetric && (
                                     <>
                                       <span style={{ fontSize: 10, color: TEXT_DIS, fontWeight: 400, flexShrink: 0 }}>|</span>
