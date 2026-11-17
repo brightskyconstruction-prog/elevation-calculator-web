@@ -928,7 +928,7 @@ function CalculatorView({ uid }: { uid: string }) {
   // ── History ───────────────────────────────────────────────────────────────
   const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(calcKey(uid), []));
   const [showAllCalcs, setShowAllCalcs] = useState(false);
-  const [calcConfirm,  setCalcConfirm]  = useState<null | { onConfirm: () => void }>(null);
+  const [calcConfirm,  setCalcConfirm]  = useState<null | { onConfirm: () => void; message: string; confirmLabel: string }>(null);
   const [viewFullItem, setViewFullItem] = useState<CalcHistItem | null>(null);
 
   useEffect(() => {
@@ -1018,7 +1018,11 @@ function CalculatorView({ uid }: { uid: string }) {
   };
 
   const handleDeleteAll = () => {
-    setCalcConfirm({ onConfirm: () => { setHistory([]); setShowAllCalcs(false); setCalcConfirm(null); } });
+    setCalcConfirm({
+      message: t('deleteCalcsConfirm'),
+      confirmLabel: t('deleteAll'),
+      onConfirm: () => { setHistory([]); setShowAllCalcs(false); setCalcConfirm(null); },
+    });
   };
 
   const handleEditItem = (item: CalcHistItem) => {
@@ -1027,13 +1031,21 @@ function CalculatorView({ uid }: { uid: string }) {
     item.steps.slice(0, 6).forEach((step, idx) => {
       const c: CardState = { ...emptyCard(), mode: step.mode };
       if (step.mode === 'fif') {
-        if (isMetric && !isNaN(step.val) && step.val > 0) {
-          const totalM = step.val * FT_TO_M;
-          const wholeM = Math.floor(totalM);
-          const remM   = totalM - wholeM;
-          c.mt = String(wholeM); c.cm = Math.floor(remM * 100); c.mm = Math.round((remM * 100 - c.cm) * 10);
-        } else {
+        if (isMetric) {
+          if (!isNaN(step.val) && step.val > 0) {
+            const totalM = step.val * FT_TO_M;
+            const wholeM = Math.floor(totalM);
+            const remM   = totalM - wholeM;
+            c.mt = String(wholeM); c.cm = Math.floor(remM * 100); c.mm = Math.round((remM * 100 - c.cm) * 10);
+          }
+        } else if (step.ft !== '') {
+          // step was saved in imperial mode — use saved fields directly
           c.ft = step.ft; c.inches = step.inches; c.frac = step.frac; c.frL = step.frL;
+        } else if (!isNaN(step.val)) {
+          // step was saved in metric mode — reconstruct imperial FIF from foot value
+          const fif = engToFif(step.val);
+          c.ft = String(fif.feet); c.inches = fif.inches;
+          c.frac = fracLblToDecimal(fif.fracLbl); c.frL = fif.fracLbl;
         }
       } else { c.eng = step.eng; }
       newCards[idx] = c;
@@ -1046,6 +1058,8 @@ function CalculatorView({ uid }: { uid: string }) {
 
   const handleDeleteItem = (item: CalcHistItem) => {
     setCalcConfirm({
+      message: t('deleteCalcConfirm'),
+      confirmLabel: t('delete'),
       onConfirm: () => { setHistory(prev => prev.filter(h => h.id !== item.id)); setCalcConfirm(null); },
     });
   };
@@ -1185,8 +1199,8 @@ function CalculatorView({ uid }: { uid: string }) {
       )}
       {calcConfirm && (
         <ConfirmModal
-          message={t('deleteCalcsConfirm')}
-          confirmLabel={t('deleteAll')}
+          message={calcConfirm.message}
+          confirmLabel={calcConfirm.confirmLabel}
           cancelLabel={t('cancel')}
           danger
           onConfirm={calcConfirm.onConfirm}
