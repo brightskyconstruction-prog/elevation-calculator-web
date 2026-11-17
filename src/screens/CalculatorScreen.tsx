@@ -275,7 +275,9 @@ function CalcGridModal({ item, onClose, onEdit, onDelete }: {
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', zIndex: 400 }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.60)', display: 'flex', alignItems: 'flex-end', zIndex: 400 }} onClick={onClose}>
+      <div className="anp-modal-in" style={{ width: '100%', maxWidth: 480, margin: '0 auto', backgroundColor: SCREEN, display: 'flex', flexDirection: 'column', maxHeight: '88vh', borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', backgroundColor: NAVY, borderBottom: `2px solid ${GOLD}`, flexShrink: 0 }}>
         <div>
@@ -284,9 +286,9 @@ function CalcGridModal({ item, onClose, onEdit, onDelete }: {
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button style={{ height: 30, padding: '0 10px', backgroundColor: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.35)', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
-            onClick={onEdit}>✏️ {t('editCalcBtn')}</button>
+            onClick={onEdit}>✏️ Edit</button>
           <button style={{ height: 30, padding: '0 10px', backgroundColor: 'rgba(220,53,53,0.25)', border: '1px solid #E53935', borderRadius: 6, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' as const }}
-            onClick={onDelete}>🗑️ {t('deleteCalcBtn')}</button>
+            onClick={onDelete}>🗑️ Delete</button>
           <button style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.18)', border: 'none', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
             onClick={onClose}>✕</button>
         </div>
@@ -346,6 +348,7 @@ function CalcGridModal({ item, onClose, onEdit, onDelete }: {
         </div>
 
       </div>
+      </div>{/* inner card */}
     </div>
   );
 }
