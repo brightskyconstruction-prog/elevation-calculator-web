@@ -972,207 +972,246 @@ function OpSelectionModal({ onSelect, onClose, suggestedOp }: {
   );
 }
 
+// ─── Card state ───────────────────────────────────────────────────────────────
+interface CardState {
+  mode: Mode;
+  ft: string; inches: number; frac: number; frL: string; eng: string; ftErr: string;
+  mt: string; cm: number; mm: number;
+}
+function emptyCard(): CardState {
+  return { mode: 'fif', ft: '', inches: 0, frac: 0, frL: 'None', eng: '', ftErr: '', mt: '0', cm: 0, mm: 0 };
+}
+function cardValFt(card: CardState, isMetric: boolean): number {
+  if (card.mode === 'eng') {
+    if (card.eng === '') return NaN;
+    const v = parseFloat(card.eng);
+    if (isNaN(v)) return NaN;
+    return isMetric ? v / FT_TO_M : v;
+  }
+  if (isMetric) {
+    const mt = parseFloat(card.mt || '0') || 0;
+    if (mt === 0 && card.cm === 0 && card.mm === 0) return NaN;
+    return (mt + card.cm / 100 + card.mm / 1000) / FT_TO_M;
+  }
+  if (card.ft === '') return NaN;
+  const f = parseFloat(card.ft);
+  if (isNaN(f) || f < 0) return NaN;
+  return f + card.inches / 12 + card.frac / 12;
+}
+
+// ─── Compact mode toggle (for 3-col grid) ────────────────────────────────────
+function ModeToggleCompact({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
+  const { isMetric } = useUnit();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 3, border: `1px solid ${BORDER}`, overflow: 'hidden', flexShrink: 0 }}>
+      {(['eng', 'fif'] as Mode[]).map(m => (
+        <button key={m} style={{
+          height: 22, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 800,
+          letterSpacing: 0.1, color: mode === m ? '#fff' : TEXT_S,
+          backgroundColor: mode === m ? NAVY : SURFACE,
+          transition: 'background-color 0.12s, color 0.12s',
+          whiteSpace: 'nowrap' as const, padding: 0,
+        }} onClick={() => onChange(m)}>
+          {m === 'eng' ? (isMetric ? 'Dec m' : 'Dec ft') : (isMetric ? 'M-CM' : 'Ft-In')}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Individual value card (1 of 6 in the grid) ──────────────────────────────
+function ValueCard({ idx, card, onUpdate, onClear }: {
+  idx: number; card: CardState;
+  onUpdate: (patch: Partial<CardState>) => void;
+  onClear: () => void;
+}) {
+  const { isMetric } = useUnit();
+  const [engFocused, setEngFocused] = useState(false);
+  const [ftFocused,  setFtFocused]  = useState(false);
+  const [mtFocused,  setMtFocused]  = useState(false);
+
+  const selSt = { width: '100%', height: 30, border: 'none', backgroundColor: SURFACE, fontSize: 14, fontWeight: 700, color: TEXT_P, textAlign: 'center' as const, boxSizing: 'border-box' as const };
+  const inpSt = { height: 30, border: 'none', backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center' as const, outline: 'none', padding: 0, width: '100%', boxSizing: 'border-box' as const };
+  const div1  = { height: 1, backgroundColor: '#8C8C8C', flexShrink: 0 as const };
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, backgroundColor: CARD, borderRadius: 7, border: `1.5px solid ${BORDER}`, padding: '4px 3px', display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
+      {/* Number badge */}
+      <div style={{ fontSize: 9, fontWeight: 800, color: NAVY, textTransform: 'uppercase' as const, letterSpacing: 0.5, textAlign: 'center' as const, backgroundColor: '#EEF4FF', borderRadius: 2, padding: '1px 0', flexShrink: 0 }}>V{idx + 1}</div>
+      {/* Mode toggle */}
+      <ModeToggleCompact mode={card.mode} onChange={m => onUpdate({ mode: m })} />
+      {/* Inputs */}
+      {card.mode === 'fif' ? (
+        isMetric ? (
+          <div style={{ border: `1.5px solid ${GOLD}`, borderRadius: 5, overflow: 'hidden', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <input style={inpSt} value={card.mt === '0' ? '' : card.mt}
+              onChange={e => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) onUpdate({ mt: v || '0' }); }}
+              inputMode="numeric" placeholder={mtFocused ? '' : 'M'}
+              onFocus={() => setMtFocused(true)} onBlur={() => setMtFocused(false)} />
+            <div style={div1} />
+            <select style={selSt} value={String(card.cm)} onChange={e => onUpdate({ cm: parseInt(e.target.value, 10) })}>
+              {CM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value}</option>)}
+            </select>
+            <div style={div1} />
+            <select style={selSt} value={String(card.mm)} onChange={e => onUpdate({ mm: parseInt(e.target.value, 10) })}>
+              {MM_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.value}</option>)}
+            </select>
+          </div>
+        ) : (
+          <div style={{ border: `1.5px solid ${card.ftErr ? '#C0392B' : GOLD}`, borderRadius: 5, overflow: 'hidden', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+            <input style={inpSt} value={card.ft}
+              onChange={e => { const v = e.target.value; if (v === '' || /^\d+$/.test(v)) onUpdate({ ft: v, ftErr: '' }); else onUpdate({ ftErr: '#' }); }}
+              inputMode="numeric" placeholder={ftFocused ? '' : 'Ft'}
+              onFocus={() => setFtFocused(true)} onBlur={() => setFtFocused(false)} />
+            <div style={div1} />
+            <select style={selSt} value={String(card.inches)} onChange={e => onUpdate({ inches: parseInt(e.target.value, 10) })}>
+              {INCHES_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <div style={div1} />
+            <select style={selSt} value={card.frL === 'None' ? '0' : String(card.frac)}
+              onChange={e => { const opt = FRACTION_OPTIONS.find(o => o.value === e.target.value); if (opt) onUpdate({ frac: parseFloat(opt.value), frL: opt.label }); }}>
+              {FRACTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+        )
+      ) : (
+        <input style={{ flex: 1, minHeight: 44, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 16, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
+          value={card.eng} onChange={e => onUpdate({ eng: e.target.value })}
+          inputMode="decimal" enterKeyHint="done"
+          placeholder={engFocused ? '' : '0.00'}
+          onFocus={() => setEngFocused(true)} onBlur={() => setEngFocused(false)}
+          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+      )}
+      {/* Clear */}
+      <button style={{ height: 20, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 3, fontSize: 9, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', flexShrink: 0, letterSpacing: 0.1 }}
+        onClick={onClear}>✕ Clear</button>
+    </div>
+  );
+}
+
+// ─── Operator column between adjacent cards ───────────────────────────────────
+function OpColumn({ opIdx, ops, onToggle }: { opIdx: number; ops: Op[]; onToggle: (idx: number, op: Op) => void }) {
+  const cur = ops[opIdx];
+  return (
+    <div style={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+      {(['+', '-'] as Op[]).map(o => (
+        <button key={o} onClick={() => onToggle(opIdx, o)}
+          style={{
+            width: 26, height: 30, borderRadius: 6,
+            border: `2px solid ${cur === o ? GOLD : BORDER}`,
+            backgroundColor: cur === o ? NAVY : CARD,
+            color: cur === o ? '#fff' : TEXT_S,
+            fontSize: o === '+' ? 18 : 22, fontWeight: 900,
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'monospace', lineHeight: 1, padding: 0,
+            transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
+          }}
+        >{o === '+' ? '+' : '−'}</button>
+      ))}
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// CALCULATOR VIEW — with sequential "Add More" chaining
+// CALCULATOR VIEW — 6-card 2×3 grid
 // ═══════════════════════════════════════════════════════════════════════════════
 function CalculatorView({ uid }: { uid: string }) {
   const { t } = useLang();
   const { isMetric, ftToDisplay } = useUnit();
-  const [modeA, setModeA] = useState<Mode>('fif');
-  const [modeB, setModeB] = useState<Mode>('fif');
-  const [op,    setOp]    = useState<Op>('+');
 
-  const [aFt,    setAFt]    = useState('');
-  const [aIn,    setAIn]    = useState(0);
-  const [aFr,    setAFr]    = useState(0);
-  const [aFrL,   setAFrL]   = useState('None');
-  const [aEng,   setAEng]   = useState('');
-  const [aFtErr, setAFtErr] = useState('');
+  // ── 6 input cards + 5 operators ──────────────────────────────────────────
+  const [cards, setCards] = useState<CardState[]>(() => Array.from({ length: 6 }, () => emptyCard()));
+  const [ops,   setOps]   = useState<Op[]>(['+', '+', '+', '+', '+']);
 
-  const [bFt,    setBFt]    = useState('');
-  const [bIn,    setBIn]    = useState(0);
-  const [bFr,    setBFr]    = useState(0);
-  const [bFrL,   setBFrL]   = useState('None');
-  const [bEng,   setBEng]   = useState('');
-  const [bFtErr, setBFtErr] = useState('');
+  // ── Result state ──────────────────────────────────────────────────────────
+  const [result,   setResult]   = useState<number | null>(null);
+  const [calcDone, setCalcDone] = useState(false);
 
-  // Metric M-CM-MM state for inputs A and B
-  const [aMt, setAMt] = useState('0');
-  const [aCm, setACm] = useState(0);
-  const [aMm, setAMm] = useState(0);
-  const [bMt, setBMt] = useState('0');
-  const [bCm, setBCm] = useState(0);
-  const [bMm, setBMm] = useState(0);
-
-  const [result,       setResult]       = useState<number | null>(null);
-  const [calcDone,     setCalcDone]     = useState(false);
-  const [aEngFocused,  setAEngFocused]  = useState(false);
-  const [bEngFocused,  setBEngFocused]  = useState(false);
+  // ── History ───────────────────────────────────────────────────────────────
   const [history,      setHistory]      = useState<CalcHistItem[]>(() => loadJson(calcKey(uid), []));
   const [showAllCalcs, setShowAllCalcs] = useState(false);
-  const [showOpModal,  setShowOpModal]  = useState(false);
   const [menuOpenId,   setMenuOpenId]   = useState<string | null>(null);
   const [calcConfirm,  setCalcConfirm]  = useState<null | { onConfirm: () => void }>(null);
+  const [viewFullItem, setViewFullItem] = useState<CalcHistItem | null>(null);
 
-  // ── Session state — tracks chained Add More calculations ──────────────────
-  const [sessionSteps,   setSessionSteps]   = useState<SessionStep[]>([]);
-  const [sessionId,      setSessionId]      = useState<string | null>(null);
-  const [addMoreActive,  setAddMoreActive]  = useState(false);  // result was copied to A
-  const [addMoreEnabled, setAddMoreEnabled] = useState(false);  // result ready for chaining
-  const [viewFullItem,   setViewFullItem]   = useState<CalcHistItem | null>(null);
-
-  // Reload history when the active user changes (account switch)
   useEffect(() => {
     setHistory(loadJson(calcKey(uid), []));
     setShowAllCalcs(false);
     setViewFullItem(null);
   }, [uid]);
 
-  // Persist history under the uid-scoped key
   useEffect(() => {
     try { localStorage.setItem(calcKey(uid), JSON.stringify(history)); } catch {}
   }, [history, uid]);
 
   const resetCalc = () => { setResult(null); setCalcDone(false); };
 
-  const resetSession = () => {
-    setSessionSteps([]); setSessionId(null);
-    setAddMoreActive(false); setAddMoreEnabled(false);
-  };
-
-  // Clear A resets everything (breaks any active session)
-  const clearA = () => { setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng(''); setAFtErr(''); setAMt('0'); setACm(0); setAMm(0); resetCalc(); resetSession(); };
-  // Clear B also resets session — user is starting over
-  const clearB = () => { setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr(''); setBMt('0'); setBCm(0); setBMm(0); resetCalc(); resetSession(); };
-
-  // A input handlers — modifying A while addMoreActive breaks the session
-  const onFtChangeA = (v: string) => {
-    if (addMoreActive) resetSession();
-    if (v === '' || /^\d+$/.test(v)) { setAFt(v); setAFtErr(''); } else setAFtErr('Whole numbers only');
+  const updateCard = (idx: number, patch: Partial<CardState>) => {
+    setCards(prev => prev.map((c, i) => i === idx ? { ...c, ...patch } : c));
     resetCalc();
   };
-  // B input handlers — modifying B never breaks the session
-  const onFtChangeB = (v: string) => {
-    if (v === '' || /^\d+$/.test(v)) { setBFt(v); setBFtErr(''); } else setBFtErr('Whole numbers only');
+  const clearCard = (idx: number) => {
+    setCards(prev => prev.map((c, i) => i === idx ? emptyCard() : c));
+    resetCalc();
+  };
+  const toggleOp = (idx: number, op: Op) => {
+    setOps(prev => prev.map((o, i) => i === idx ? op : o));
     resetCalc();
   };
 
-  const valA = modeA === 'eng'
-    ? (isMetric ? parseFloat(aEng) / FT_TO_M : parseFloat(aEng))
-    : modeA === 'fif' && isMetric
-      ? ((parseFloat(aMt || '0') || 0) + aCm / 100 + aMm / 1000) / FT_TO_M
-      : fifToEng(aFt, aIn, aFr);
-  const valB = modeB === 'eng'
-    ? (isMetric ? parseFloat(bEng) / FT_TO_M : parseFloat(bEng))
-    : modeB === 'fif' && isMetric
-      ? ((parseFloat(bMt || '0') || 0) + bCm / 100 + bMm / 1000) / FT_TO_M
-      : fifToEng(bFt, bIn, bFr);
-  const canCalc = !isNaN(valA) && !isNaN(valB);
-  const calcEnabled = canCalc && !calcDone;
+  // Compute values in feet for each card
+  const vals = cards.map(c => cardValFt(c, isMetric));
+  const filledCount = vals.filter(v => !isNaN(v)).length;
+  const canCalc = filledCount >= 2 && !calcDone;
   const resultFif = result !== null ? engToFif(Math.abs(result)) : null;
 
-  const triggerCalculate = () => { if (!calcEnabled) return; setShowOpModal(true); };
-
-  const handleOpSelect = (selectedOp: Op) => {
-    setShowOpModal(false);
-    setOp(selectedOp);
-    const raw = selectedOp === '+' ? valA + valB : valA - valB;
-    if (isNaN(raw)) return;
-    setResult(raw);
-    setCalcDone(true);
-    setAddMoreEnabled(true);
-
-    // Build session steps
-    let newSteps: SessionStep[];
-    let curId: string;
-    if (!addMoreActive || sessionSteps.length === 0) {
-      // First calculation — start a new session
-      newSteps = [
-        { op: '+', mode: modeA, ft: aFt, inches: aIn, frac: aFr, frL: aFrL, eng: aEng, val: valA },
-        { op: selectedOp, mode: modeB, ft: bFt, inches: bIn, frac: bFr, frL: bFrL, eng: bEng, val: valB },
-      ];
-      curId = genId();
-      setSessionId(curId);
-    } else {
-      // Continuing session — append new B step
-      newSteps = [
-        ...sessionSteps,
-        { op: selectedOp, mode: modeB, ft: bFt, inches: bIn, frac: bFr, frL: bFrL, eng: bEng, val: valB },
-      ];
-      curId = sessionId!;
-    }
-    setSessionSteps(newSteps);
-    setAddMoreActive(false);  // reset; next Calculate starts fresh unless Add More is pressed
-
-    // Upsert the history entry for this session
-    const isNew = !addMoreActive || sessionSteps.length === 0;
-    const item: CalcHistItem = { id: curId, steps: newSteps, result: raw, ...(isNew ? { timestamp: Date.now() } : {}) };
-    setHistory(prev => {
-      const idx = prev.findIndex(h => h.id === curId);
-      if (idx === -1) return [item, ...prev].slice(0, MAX_HIST);
-      const existing = prev[idx];
-      const upd = [...prev]; upd[idx] = { ...item, timestamp: existing.timestamp }; return upd;
-    });
-  };
-
-  // "Add Another Value" — moves current result into Input A (preserving mode), clears Input B
-  const handleAddMore = () => {
-    if (!addMoreEnabled || result === null) return;
-    if (modeA === 'fif') {
-      if (isMetric) {
-        // Preserve M-CM-MM mode — convert result back to MCM components
-        const totalM = Math.abs(result) * FT_TO_M;
-        const wholeM = Math.floor(totalM);
-        const remM   = totalM - wholeM;
-        const cm     = Math.floor(remM * 100);
-        const mm     = Math.round((remM * 100 - cm) * 10);
-        setAMt(String(wholeM)); setACm(cm); setAMm(mm);
-        setAFt(''); setAIn(0); setAFr(0); setAFrL('None'); setAEng('');
-      } else {
-        // Preserve Feet-Inches-Fraction mode — convert result back to FIF components
-        const fif = engToFif(Math.abs(result));
-        const frOpt = FRACTION_OPTIONS.find(o => {
-          const noFrac = !fif.fracLbl || fif.fracLbl === 'None';
-          if (noFrac) return o.value === '0';
-          return Math.abs(parseFloat(o.value) - fracLblToDecimal(fif.fracLbl)) < 0.001;
-        });
-        setAFt(String(fif.feet));
-        setAIn(fif.inches);
-        setAFr(frOpt ? parseFloat(frOpt.value) : 0);
-        setAFrL(frOpt?.label ?? 'None');
-        setAEng('');
+  const handleCalculate = () => {
+    if (filledCount < 2) return;
+    let res = NaN;
+    let started = false;
+    const steps: SessionStep[] = [];
+    for (let i = 0; i < 6; i++) {
+      const v = vals[i];
+      if (!isNaN(v)) {
+        const effectiveOp: Op = !started ? '+' : (i > 0 ? ops[i - 1] : '+');
+        if (!started) { res = v; started = true; }
+        else { res = effectiveOp === '+' ? res + v : res - v; }
+        steps.push({ op: effectiveOp, mode: cards[i].mode, ft: cards[i].ft, inches: cards[i].inches, frac: cards[i].frac, frL: cards[i].frL, eng: cards[i].eng, val: v });
       }
-      // modeA stays 'fif'
-    } else {
-      // Preserve Decimal mode — keep full precision including sign
-      // In metric: store decimal meters
-      setAEng(isMetric ? (Math.abs(result) * FT_TO_M).toFixed(3) : String(result));
-      setAFt(''); setAIn(0); setAFr(0); setAFrL('None');
-      setAMt('0'); setACm(0); setAMm(0);
-      // modeA stays 'eng'
     }
-    setAFtErr('');
-    setBFt(''); setBIn(0); setBFr(0); setBFrL('None'); setBEng(''); setBFtErr('');
-    setBMt('0'); setBCm(0); setBMm(0);
-    setResult(null);
-    setCalcDone(false);
-    setAddMoreEnabled(false);
-    setAddMoreActive(true);     // mark: next Calculate continues this session
+    if (isNaN(res)) return;
+    setResult(res);
+    setCalcDone(true);
+    const item: CalcHistItem = { id: genId(), steps, result: res, timestamp: Date.now() };
+    setHistory(prev => [item, ...prev].slice(0, MAX_HIST));
   };
 
   const handleDeleteAll = () => {
     setCalcConfirm({ onConfirm: () => { setHistory([]); setShowAllCalcs(false); setCalcConfirm(null); } });
   };
 
-  // Restore a history item — puts first two steps back into A/B cards
   const handleEditItem = (item: CalcHistItem) => {
-    const s0 = item.steps[0]; const s1 = item.steps[1];
-    if (!s0) return;
-    setModeA(s0.mode);
-    setAFt(s0.ft); setAIn(s0.inches); setAFr(s0.frac); setAFrL(s0.frL); setAEng(s0.eng); setAFtErr('');
-    if (s1) { setModeB(s1.mode); setBFt(s1.ft); setBIn(s1.inches); setBFr(s1.frac); setBFrL(s1.frL); setBEng(s1.eng); setOp(s1.op); }
-    setBFtErr('');
-    resetCalc(); resetSession(); setMenuOpenId(null);
+    const newCards: CardState[] = Array.from({ length: 6 }, () => emptyCard());
+    const newOps: Op[] = ['+', '+', '+', '+', '+'];
+    item.steps.slice(0, 6).forEach((step, idx) => {
+      const c: CardState = { ...emptyCard(), mode: step.mode };
+      if (step.mode === 'fif') {
+        if (isMetric && !isNaN(step.val) && step.val > 0) {
+          const totalM = step.val * FT_TO_M;
+          const wholeM = Math.floor(totalM);
+          const remM   = totalM - wholeM;
+          c.mt = String(wholeM); c.cm = Math.floor(remM * 100); c.mm = Math.round((remM * 100 - c.cm) * 10);
+        } else {
+          c.ft = step.ft; c.inches = step.inches; c.frac = step.frac; c.frL = step.frL;
+        }
+      } else { c.eng = step.eng; }
+      newCards[idx] = c;
+      if (idx > 0) newOps[idx - 1] = step.op;
+    });
+    setCards(newCards);
+    setOps(newOps);
+    resetCalc();
+    setMenuOpenId(null);
   };
 
   const handleDeleteItem = (item: CalcHistItem) => {
@@ -1183,164 +1222,88 @@ function CalculatorView({ uid }: { uid: string }) {
 
   return (
     <>
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 10, display: 'flex', flexDirection: 'column', gap: 10, width: '100%', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: 10, display: 'flex', flexDirection: 'column', gap: 8, width: '100%', boxSizing: 'border-box' }}>
 
-        {/* "Add More" in-progress hint banner */}
-        {addMoreActive && (
-          <div style={{ backgroundColor: '#EEF4FF', borderRadius: 6, border: `1px solid ${NAVY}`, padding: '5px 10px', fontSize: 11, fontWeight: 700, color: NAVY, textAlign: 'center' as const }}>
-            {t('addMoreHint')}
-          </div>
-        )}
+        {/* ── Row 1: Cards 0–2 ── */}
+        <div style={{ display: 'flex', alignItems: 'stretch', gap: 3, minWidth: 0 }}>
+          <ValueCard idx={0} card={cards[0]} onUpdate={p => updateCard(0, p)} onClear={() => clearCard(0)} />
+          <OpColumn opIdx={0} ops={ops} onToggle={toggleOp} />
+          <ValueCard idx={1} card={cards[1]} onUpdate={p => updateCard(1, p)} onClear={() => clearCard(1)} />
+          <OpColumn opIdx={1} ops={ops} onToggle={toggleOp} />
+          <ValueCard idx={2} card={cards[2]} onUpdate={p => updateCard(2, p)} onClear={() => clearCard(2)} />
+        </div>
 
-        {/* Calculator row: A | op | B | result — layout unchanged */}
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, minWidth: 0 }}>
-
-          {/* Input A */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${addMoreActive ? NAVY : BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
-            <ModeToggle mode={modeA} onChange={m => { if (addMoreActive) resetSession(); setModeA(m); resetCalc(); }} />
-            {modeA === 'fif' ? (
-              isMetric ? (
-                <MCMInputs mt={aMt} onMtChange={v => { if (addMoreActive) resetSession(); setAMt(v); resetCalc(); }}
-                           cm={aCm} onCmChange={v => { if (addMoreActive) resetSession(); setACm(v); resetCalc(); }}
-                           mm={aMm} onMmChange={v => { if (addMoreActive) resetSession(); setAMm(v); resetCalc(); }}
-                           onClear={clearA} />
-              ) : (
-                <FIFInputs
-                  ft={aFt} setFt={setAFt}
-                  inches={aIn} setInches={v => { if (addMoreActive) resetSession(); setAIn(v); resetCalc(); }}
-                  frac={aFr}   setFrac={v => { if (addMoreActive) resetSession(); setAFr(v); resetCalc(); }}
-                  frL={aFrL}   setFrL={v => { if (addMoreActive) resetSession(); setAFrL(v); resetCalc(); }}
-                  ftErr={aFtErr} onFtChange={onFtChangeA}
-                />
-              )
-            ) : (
-              <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: addMoreActive ? '#EEF4FF' : '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
-                value={aEng}
-                onChange={e => { if (addMoreActive) resetSession(); setAEng(e.target.value); resetCalc(); }}
-                inputMode="decimal" enterKeyHint="done"
-                placeholder={aEngFocused ? '' : '0.00'}
-                onFocus={() => setAEngFocused(true)}
-                onBlur={() => setAEngFocused(false)}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              />
-            )}
-            {!(modeA === 'fif' && isMetric) && (
-              <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearA}>✕ {t('clearBtn')}</button>
-            )}
-          </div>
-
-          {/* Op selector column */}
-          <div style={{ width: 34, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        {/* ── Inter-row operator (op[2]: between Card 2 and Card 3) ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ flex: 1, height: 1, backgroundColor: BORDER }} />
+          <div style={{ display: 'flex', gap: 3 }}>
             {(['+', '-'] as Op[]).map(o => (
-              <button key={o} onClick={() => { if (sessionSteps.length > 0) resetSession(); setOp(o); resetCalc(); }}
+              <button key={o} onClick={() => toggleOp(2, o)}
                 style={{
-                  width: 34, height: 38, borderRadius: 8,
-                  border: `2px solid ${op === o ? GOLD : BORDER}`,
-                  backgroundColor: op === o ? NAVY : CARD,
-                  color: op === o ? '#FFFFFF' : TEXT_S,
-                  fontSize: o === '+' ? 24 : 28, fontWeight: 900,
+                  width: 28, height: 22, borderRadius: 5,
+                  border: `1.5px solid ${ops[2] === o ? GOLD : BORDER}`,
+                  backgroundColor: ops[2] === o ? NAVY : CARD,
+                  color: ops[2] === o ? '#fff' : TEXT_S,
+                  fontSize: o === '+' ? 15 : 18, fontWeight: 900,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'monospace', lineHeight: 1, padding: 0,
-                  transition: 'background-color 0.15s, border-color 0.15s, color 0.15s', flexShrink: 0,
+                  transition: 'background-color 0.15s, border-color 0.15s',
                 }}
-                aria-label={o === '+' ? 'Addition' : 'Subtraction'} aria-pressed={op === o}
               >{o === '+' ? '+' : '−'}</button>
             ))}
           </div>
-
-          {/* Input B */}
-          <div style={{ flex: 3, minWidth: 0, backgroundColor: CARD, borderRadius: 8, border: `1.5px solid ${BORDER}`, padding: 6, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
-            <ModeToggle mode={modeB} onChange={m => { setModeB(m); resetCalc(); }} />
-            {modeB === 'fif' ? (
-              isMetric ? (
-                <MCMInputs mt={bMt} onMtChange={v => { setBMt(v); resetCalc(); }}
-                           cm={bCm} onCmChange={v => { setBCm(v); resetCalc(); }}
-                           mm={bMm} onMmChange={v => { setBMm(v); resetCalc(); }}
-                           onClear={clearB} />
-              ) : (
-                <FIFInputs
-                  ft={bFt} setFt={setBFt}
-                  inches={bIn} setInches={v => { setBIn(v); resetCalc(); }}
-                  frac={bFr}   setFrac={v => { setBFr(v); resetCalc(); }}
-                  frL={bFrL}   setFrL={v => { setBFrL(v); resetCalc(); }}
-                  ftErr={bFtErr} onFtChange={onFtChangeB}
-                />
-              )
-            ) : (
-              <input
-                style={{ flex: 1, minHeight: 50, borderRadius: 4, border: `1.5px solid ${GOLD}`, backgroundColor: '#fff', fontSize: 20, fontWeight: 700, color: '#1A2D35', textAlign: 'center', outline: 'none' }}
-                value={bEng}
-                onChange={e => { setBEng(e.target.value); resetCalc(); }}
-                inputMode="decimal" enterKeyHint="done"
-                placeholder={bEngFocused ? '' : '0.00'}
-                onFocus={() => setBEngFocused(true)}
-                onBlur={() => setBEngFocused(false)}
-                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              />
-            )}
-            {!(modeB === 'fif' && isMetric) && (
-              <button style={{ height: 26, backgroundColor: '#FDECEC', border: `1px solid #F5B5B5`, borderRadius: 4, fontSize: 11, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', letterSpacing: 0.3 }} onClick={clearB}>✕ {t('clearBtn')}</button>
-            )}
-          </div>
-
-          {/* Result card — unchanged */}
-          <div style={{ flex: 2.8, minWidth: 0, backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: 2, overflow: 'hidden' }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1, textTransform: 'uppercase' }}>{t('result')}</span>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' }}>
-              {result !== null ? (
-                <>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.2 }}>{ftToDisplay(result).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}</span>
-                  <div style={{ height: 1, width: '80%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  {isMetric ? (() => {
-                    const totalM = Math.abs(ftToDisplay(result));
-                    const wholeM = Math.floor(totalM);
-                    const remM   = totalM - wholeM;
-                    const cm     = Math.floor(remM * 100);
-                    const mm     = Math.round((remM * 100 - cm) * 10);
-                    return <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: 'monospace', textAlign: 'center', lineHeight: 1.3 }}>{result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
-                  })() : (
-                    resultFif && <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={15} />
-                  )}
-                </>
-              ) : (
-                <span style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.25)' }}>—</span>
-              )}
-            </div>
-          </div>
+          <div style={{ flex: 1, height: 1, backgroundColor: BORDER }} />
         </div>
 
-        {/* Add More — disabled until a result is ready, sits directly above Calculate */}
-        <button onClick={handleAddMore} disabled={!addMoreEnabled}
-          style={{
-            width: '100%', height: 38,
-            backgroundColor: addMoreEnabled ? '#EEF4FF' : CARD,
-            border: `2px solid ${addMoreEnabled ? NAVY : BORDER}`,
-            borderRadius: 8,
-            color: addMoreEnabled ? NAVY : TEXT_D,
-            fontSize: 14, fontWeight: 800, letterSpacing: 0.5,
-            cursor: addMoreEnabled ? 'pointer' : 'default',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
-          }}
-        >
-          <span style={{ fontSize: 16, fontFamily: 'monospace', lineHeight: 1 }}>+</span>
-          {t('addMoreBtn')}
-        </button>
+        {/* ── Row 2: Cards 3–5 ── */}
+        <div style={{ display: 'flex', alignItems: 'stretch', gap: 3, minWidth: 0 }}>
+          <ValueCard idx={3} card={cards[3]} onUpdate={p => updateCard(3, p)} onClear={() => clearCard(3)} />
+          <OpColumn opIdx={3} ops={ops} onToggle={toggleOp} />
+          <ValueCard idx={4} card={cards[4]} onUpdate={p => updateCard(4, p)} onClear={() => clearCard(4)} />
+          <OpColumn opIdx={4} ops={ops} onToggle={toggleOp} />
+          <ValueCard idx={5} card={cards[5]} onUpdate={p => updateCard(5, p)} onClear={() => clearCard(5)} />
+        </div>
 
-        {/* Calculate */}
+        {/* ── Full-width Result card ── */}
+        <div style={{ backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minHeight: 64 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: 1.2, textTransform: 'uppercase' as const }}>{t('result')}</span>
+          {result !== null ? (
+            <>
+              <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'monospace', letterSpacing: 0.5 }}>
+                {ftToDisplay(result).toFixed(isMetric ? 3 : 2)} {isMetric ? 'm' : 'ft'}
+              </span>
+              <div style={{ height: 1, width: '50%', backgroundColor: 'rgba(255,255,255,0.25)' }} />
+              {isMetric ? (() => {
+                const totalM = Math.abs(ftToDisplay(result));
+                const wholeM = Math.floor(totalM);
+                const remM   = totalM - wholeM;
+                const cm     = Math.floor(remM * 100);
+                const mm     = Math.round((remM * 100 - cm) * 10);
+                return <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', fontFamily: 'monospace' }}>{result < 0 ? '−' : ''}{wholeM}m {String(cm).padStart(2,'0')}cm{mm > 0 ? ` ${mm}mm` : ''}</span>;
+              })() : (
+                resultFif && <StackedFraction feet={resultFif.feet} inches={resultFif.inches} fracLbl={resultFif.fracLbl} negative={result < 0} color="#fff" size={16} />
+              )}
+            </>
+          ) : (
+            <span style={{ fontSize: 24, fontWeight: 700, color: 'rgba(255,255,255,0.28)', lineHeight: 1.4 }}>—</span>
+          )}
+        </div>
+
+        {/* ── Calculate ── */}
         <button
           style={{
-            width: '100%', height: 40,
-            backgroundColor: NAVY, border: `2px solid ${GOLD}`,
+            width: '100%', height: 42,
+            backgroundColor: canCalc ? NAVY : '#8A9BB5',
+            border: `2px solid ${canCalc ? GOLD : '#B0C0D4'}`,
             borderRadius: 8, color: '#fff',
             fontSize: 17, fontWeight: 800, letterSpacing: 1.5,
-            cursor: calcEnabled ? 'pointer' : 'default',
+            cursor: canCalc ? 'pointer' : 'default',
+            transition: 'background-color 0.15s, border-color 0.15s',
           }}
-          onClick={triggerCalculate}
+          onClick={handleCalculate}
         >{t('calculate')}</button>
 
-        {/* Recent Calculations */}
+        {/* ── Recent Calculations ── */}
         {history.length > 0 && (
           <div style={{ backgroundColor: CARD, borderRadius: 8, border: `1px solid ${BORDER}` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', backgroundColor: SURFACE, borderBottom: `1px solid ${BORDER}`, borderTopLeftRadius: 8, borderTopRightRadius: 8 }}>
@@ -1348,7 +1311,6 @@ function CalculatorView({ uid }: { uid: string }) {
               <button style={{ backgroundColor: BLUE_D, borderRadius: 4, padding: '4px 10px', border: `1px solid ${BLUE}`, fontSize: 13, fontWeight: 700, color: BLUE_A, cursor: 'pointer' }}
                 onClick={() => setShowAllCalcs(true)}>{t('allCalcs')}</button>
             </div>
-            {/* Only the most recent session */}
             {history.slice(0, 1).map(item => (
               <div key={item.id} style={{ padding: '10px 12px', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1376,9 +1338,6 @@ function CalculatorView({ uid }: { uid: string }) {
         )}
       </div>
 
-      {showOpModal && (
-        <OpSelectionModal onSelect={handleOpSelect} onClose={() => setShowOpModal(false)} suggestedOp={op} />
-      )}
       {showAllCalcs && (
         <AllCalcsModal
           history={history}
