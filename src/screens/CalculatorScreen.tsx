@@ -941,7 +941,41 @@ function CalculatorView({ uid }: { uid: string }) {
     try { localStorage.setItem(calcKey(uid), JSON.stringify(history)); } catch {}
   }, [history, uid]);
 
+  // ── Sync card values when unit system switches ────────────────────────────
+  useEffect(() => {
+    setCards(prev => prev.map(card => {
+      // Read value from the PREVIOUS unit system
+      const valFt = cardValFt(card, !isMetric);
+      if (isNaN(valFt)) return card;
+      if (card.mode === 'eng') {
+        // Convert decimal display value
+        return { ...card, eng: isMetric ? (valFt * FT_TO_M).toFixed(3) : valFt.toFixed(2) };
+      }
+      // FIF mode — convert between m-cm-mm ↔ ft-in-frac
+      if (isMetric) {
+        const totalM = valFt * FT_TO_M;
+        const wholeM = Math.floor(totalM);
+        const remM   = totalM - wholeM;
+        const cm     = Math.floor(remM * 100);
+        const mm     = Math.round((remM * 100 - cm) * 10);
+        return { ...card, mt: String(wholeM), cm, mm };
+      } else {
+        const fif = engToFif(valFt);
+        return { ...card, ft: String(fif.feet), inches: fif.inches, frac: fracLblToDecimal(fif.fracLbl), frL: fif.fracLbl };
+      }
+    }));
+    setResult(null);
+    setCalcDone(false);
+  }, [isMetric]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const resetCalc = () => { setResult(null); setCalcDone(false); };
+
+  const clearAll = () => {
+    setCards(Array.from({ length: 6 }, () => emptyCard()));
+    setOps(['+', '+', '+', '+', '+']);
+    setResult(null);
+    setCalcDone(false);
+  };
 
   const updateCard = (idx: number, patch: Partial<CardState>) => {
     setCards(prev => prev.map((c, i) => i === idx ? { ...c, ...patch } : c));
@@ -1060,8 +1094,9 @@ function CalculatorView({ uid }: { uid: string }) {
           <ValueCard idx={5} card={cards[5]} onUpdate={p => updateCard(5, p)} onClear={() => clearCard(5)} />
         </div>
 
-        {/* ── Full-width Result card ── */}
-        <div style={{ backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: '5px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minHeight: 46 }}>
+        {/* ── Result + Clear All row ── */}
+        <div style={{ display: 'flex', gap: 5, alignItems: 'stretch' }}>
+        <div style={{ flex: 1, backgroundColor: DARK, borderRadius: 8, border: `2px solid ${GOLD}`, padding: '5px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, minHeight: 46 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: 1.2, textTransform: 'uppercase' as const }}>{t('result')}</span>
           {result !== null ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, justifyContent: 'center' }}>
@@ -1084,6 +1119,16 @@ function CalculatorView({ uid }: { uid: string }) {
             <span style={{ fontSize: 20, fontWeight: 700, color: 'rgba(255,255,255,0.28)', lineHeight: 1.4 }}>—</span>
           )}
         </div>
+        {/* Clear All */}
+        <button
+          style={{ width: 42, flexShrink: 0, backgroundColor: '#FDECEC', border: '1px solid #F5B5B5', borderRadius: 8, fontSize: 9, fontWeight: 800, color: '#D32F2F', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, letterSpacing: 0.1 }}
+          onClick={clearAll}
+        >
+          <span>✕</span>
+          <span>Clear</span>
+          <span>All</span>
+        </button>
+        </div>{/* end result row */}
 
         {/* ── Calculate ── */}
         <button
